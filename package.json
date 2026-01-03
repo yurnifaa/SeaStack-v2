@@ -1,0 +1,12 @@
+{
+  "name": "seastack-root",
+  "version": "1.0.0",
+  "scripts": {
+    "flask": "cd backend && python server.py",
+    "next": "cd frontend && npm run dev",
+    "dev": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"yellow,cyan\" \"npm run flask\" \"npm run next\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
