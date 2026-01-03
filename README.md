@@ -1,0 +1,2 @@
+# PLEASE DON'T merge with the main branch
+## This is the Version 2 of the Main Branch with a different and updated Tech Stack so it's not completely polished. It's best to have the 'main' back-up just in case. 
