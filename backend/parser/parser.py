@@ -6,10 +6,30 @@ from backend.parser.Follow_Set import FOLLOW
 
 class Parser:
     def __init__(self, tokens):
-        self.tokens = tokens
+        # 1. Define tokens to ignore
+        # These must match the strings your Lexer generates EXACTLY.
+        ignored_types = [
+            "whitespace", 
+            "newline", 
+            "single-comment", 
+            "multi-comment"
+    ]
+        
+        # 2. Filter out junk tokens
+        self.tokens = [t for t in tokens if t.type not in ignored_types]
+        
+        # 3. NORMALIZE IDENTIFIERS (The Fix)
+        # The Lexer produces 'id1', 'id2'. The Parser tables expect 'id'.
+        # We rewrite the type to 'id' so the grammar rules match.
+        for t in self.tokens:
+            if t.type.startswith("id") and t.type[2:].isdigit():
+                t.type = "id"
+        
+        # 4. Initialize state
         self.pos = 0
         self.current_token = self.tokens[self.pos] if self.tokens else None
         self.errors = []
+        self.logs = []
 
     # =========================================
     # Utility Methods
@@ -46,7 +66,7 @@ class Parser:
         
         print(err_msg)
         self.errors.append(err_msg)
-        sys.exit(1)
+        raise Exception(err_msg)
 
     def validate_token(self, non_terminal):
         """
@@ -81,14 +101,21 @@ class Parser:
     # =========================================
     def parse(self):
         print("Starting Parsing...")
-        self.skip_whitespace_and_comments()     # Skip any initial comments/newlines before starting the main rule
-        self.program()
-        self.skip_whitespace_and_comments()     # Skip trailing newlines/comments before checking for EOF
+        self.logs.append("Starting Parsing...") # <--- ADD LOG
 
-        if self.current_token is not None:
-            self.error(f"Unexpected token after end of program: {self.current_token.type}")
-        else:
-            print("Parsing Completed Successfully! No Syntax Errors.")
+        try:
+            self.program()
+            if self.current_token is not None:
+                self.error(f"Unexpected token after end of program: {self.current_token.type}")
+            else:
+                msg = "Parsing Completed Successfully! No Syntax Errors."
+                print(msg)
+                self.logs.append(msg) # <--- ADD LOG
+        except Exception as e:
+            # Catch the error we raised in self.error() so the server doesn't crash
+            self.logs.append(str(e))
+
+        return self.logs # <--- CRITICAL: RETURN THE LOGS
 
     # =========================================
     # Program Structure & Declarations

@@ -9,7 +9,7 @@ sys.path.append(current_dir)
 try:
     from backend.lexical.lexer import Lexer
     from backend.parser.parser import Parser
-    
+
 except ImportError as e:
     print("\nCRITICAL IMPORT ERROR:")
     print(f"Could not import backend modules. Details: {e}")
@@ -44,6 +44,12 @@ def run_test(filename):
 
     print(f"Lexer Success! {len(tokens)} tokens generated.")
 
+    # DEBUG: Print the first 5 tokens to check their types
+    print("--- FIRST 5 TOKENS ---")
+    for t in tokens[:5]:
+        print(f"Type: '{t.type}' | Value: '{t.value}'")
+    print("----------------------")
+    
     # --- STEP 2: PARSER ---
     print("\n[Step 2] Running Parser...")
     try:
