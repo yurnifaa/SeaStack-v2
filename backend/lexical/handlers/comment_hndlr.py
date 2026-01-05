@@ -1,4 +1,4 @@
-from lexer_token import Token
+from backend.lexical.lexer_token import Token
 
 class CommentHandler:
 

@@ -1,6 +1,6 @@
 import string
-from lexer_token import Token
-from handlers.delimiters import Delimiters
+from backend.lexical.lexer_token import Token
+from backend.lexical.handlers.delimiters import Delimiters
 
 # =========================================================================================
 # SCROLL and PARCH TD: Scroll and Parch state machine (rs120 - rs192)

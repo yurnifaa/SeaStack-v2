@@ -1,14 +1,14 @@
 import sys
-from lexer_token import Token
 
-from handlers.comment_hndlr import CommentHandler
-from handlers.digit_hndlr import DigitHandler
-from handlers.identifier_hndlr import IdentifierHandler
-from handlers.resword_hndlr import ReservedWordHandler
-from handlers.sp_lits_hndlr import LiteralHandler
-from handlers.symbol_hndlr import SymbolHandler
-from handlers.delimiters import Delimiters
+from backend.lexical.lexer_token import Token
 
+from backend.lexical.handlers.comment_hndlr import CommentHandler
+from backend.lexical.handlers.digit_hndlr import DigitHandler
+from backend.lexical.handlers.identifier_hndlr import IdentifierHandler
+from backend.lexical.handlers.resword_hndlr import ReservedWordHandler
+from backend.lexical.handlers.sp_lits_hndlr import LiteralHandler
+from backend.lexical.handlers.symbol_hndlr import SymbolHandler
+from backend.lexical.handlers.delimiters import Delimiters
 
 # =========================================================================
 # Lexer Class (uses inheritance to call each handler)

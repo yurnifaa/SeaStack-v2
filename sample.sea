@@ -1,0 +1,11 @@
+~ Global Variable
+COIN global_val = 100!!
+
+~ Main Function
+AHOY() [
+    ~ Local Declaration (Required by grammar)
+    COIN x = 10!!
+
+    ~ Statements (Required by grammar)
+    ECHO("Hello, SeaStack!")!!
+]

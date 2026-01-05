@@ -2,20 +2,28 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# IMPORT YOUR EXISTING LEXER UNTOUCHED
-from lexer import Lexer, Token 
+from lexer import Lexer, Token
+from parser.parser import Parser
 
 app = Flask(__name__)
-CORS(app) # Allow Next.js (Port 3000) to talk to Flask
+CORS(app) 
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_code():
     data = request.json
     code_string = data.get('code', '')
 
-    # --- LOGIC COPIED FROM YOUR ide_interface.py ---
-    lexer = Lexer(code_string)
-    tokens, errors = lexer.tokenize()
+    # 1. LEXICAL ANALYSIS
+    try:
+        lexer = Lexer(code_string)
+        tokens, errors = lexer.tokenize()
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "lexical_log": f"Critical Lexer Error: {str(e)}",
+            "tokens": [],
+            "syntax_log": []
+        })
     
     ui_tokens = []
     for token in tokens:
@@ -26,24 +34,39 @@ def analyze_code():
         else:
             ui_tokens.append({"lexeme": token.value, "token": token.type})
 
+    # Prepare Lexical Logs
     if errors:
-        PREFIX_WIDTH = 16
-        # Slight tweak: returning errors as a list is often easier for React to render than a giant string
         error_list = [f"Line {e.line}, Col {e.col} | {e.error_msg}: '{e.value}'" for e in errors]
-        error_msg = "\n".join(error_list)
-        log_msg = f"Lexical analysis completed with {len(errors)} error(s)."
+        lexical_log = f"Lexical Errors Found:\n" + "\n".join(error_list)
         success = False
     else:
-        error_msg = ""
-        log_msg = f"Lexical analysis successful. {len(ui_tokens)} tokens found."
+        lexical_log = f"Lexical analysis successful. {len(ui_tokens)} tokens found."
         success = True
-    # -----------------------------------------------
+
+    # 2. SYNTAX ANALYSIS
+    syntax_logs = []
+    if success:
+        try:
+            parser = Parser(tokens)
+            result_logs = parser.parse()
+            
+            # --- SAFETY NET START ---
+            # If parser returns None (the current bug), we force a log message
+            if result_logs is None:
+                syntax_logs = ["[WARNING]: Parser finished but returned no logs. (Did you forget 'return self.logs'?)"]
+            else:
+                syntax_logs = result_logs
+            # --- SAFETY NET END ---
+
+        except Exception as e:
+            syntax_logs.append(f"[CRITICAL ERROR]: Parser crashed. {str(e)}")
+            success = False
 
     return jsonify({
         "success": success,
         "tokens": ui_tokens,
-        "error": error_msg,
-        "log": log_msg
+        "lexical_log": lexical_log,
+        "syntax_log": syntax_logs # This will now NEVER be null
     })
 
 if __name__ == '__main__':

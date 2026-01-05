@@ -1,5 +1,5 @@
-from lexer_token import Token
-from handlers.delimiters import Delimiters
+from backend.lexical.lexer_token import Token
+from backend.lexical.handlers.delimiters import Delimiters
 import string
 
 # =================================================================================================

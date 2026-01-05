@@ -1,6 +1,6 @@
 # lexer_handlers/symbol_handler.py
-from lexer_token import Token
-from handlers.delimiters import Delimiters
+from backend.lexical.lexer_token import Token
+from backend.lexical.handlers.delimiters import Delimiters
 
 # =========================================================================================
 # RESERVED SYMBOLS TD: Reserved SYMBOLS state machine (rs120 - rs196)
