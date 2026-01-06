@@ -2,6 +2,8 @@
 # Maps <Non-Terminal> -> { Token_Type : Production_Rule_Number }
 # None represents Lambda/Epsilon (Empty production)
 
+# TO DO: complete the predict set for all non-terminals
+
 PREDICT = {
     # --- Program Structure ---
     "<program>": {

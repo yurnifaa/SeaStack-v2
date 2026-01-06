@@ -1,7 +1,7 @@
 import sys
 import os
+import re
 
-# Ensure backend can find sibling folders
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask, request, jsonify
@@ -26,11 +26,13 @@ def analyze_code():
     response_data = {
         "success": False,
         "tokens": [],
-        "lexical_errors": [], # Changed to list for structured data
-        "syntax_errors": []   # Changed to list for structured data
+        "lexical_errors": [],
+        "syntax_errors": []
     }
 
-    # --- LEXICAL ANALYSIS ---
+# =================================
+#    --- LEXICAL ANALYSIS ---
+# =================================
     try:
         lexer = Lexer(code_string)
         tokens, lex_errors = lexer.tokenize()
@@ -47,8 +49,12 @@ def analyze_code():
         # Process Lexical Errors
         if lex_errors:
             for e in lex_errors:
+                # Check for 'line' attribute
                 line = getattr(e, 'line', '?')
-                col = getattr(e, 'column', '?') # Ensure your Lexer error class has a .column attribute!
+                
+                # Check for 'col'
+                col = getattr(e, 'col', getattr(e, 'column', '?')) 
+                
                 msg = getattr(e, 'error_msg', str(e))
                 
                 response_data['lexical_errors'].append({
@@ -57,7 +63,6 @@ def analyze_code():
                     "message": msg
                 })
         
-        # Mark success if no lexical errors (though we might still run syntax)
         if not lex_errors:
             response_data['success'] = True
 
@@ -67,7 +72,9 @@ def analyze_code():
         })
         return jsonify(response_data)
 
-    # --- SYNTAX ANALYSIS ---
+# =================================
+#    --- SYNTAX ANALYSIS ---
+# =================================
     if not response_data['lexical_errors']:
         try:
             parser = Parser(tokens)
@@ -75,16 +82,43 @@ def analyze_code():
             
             if syntax_result and isinstance(syntax_result, list):
                 for err in syntax_result:
-                    # Handle if err is a dict or an object
-                    if isinstance(err, dict):
+                    
+                    if isinstance(err, str):
+                        if "Starting Parsing" in err:
+                            continue
+
+                        match = re.search(r'Line\s+(\d+),\s+Col\s+(\d+)', err, re.IGNORECASE)
+                        
+                        if match:
+                            line_num = match.group(1)
+                            col_num = match.group(2)
+                            
+
+                            if ':' in err:
+                                clean_msg = err.split(':', 1)[1].strip()
+                            else:
+                                clean_msg = err
+                                
+                            response_data['syntax_errors'].append({
+                                "line": line_num,
+                                "col": col_num,
+                                "message": clean_msg
+                            })
+                        else:
+                            # Fallback if pattern not found
+                            response_data['syntax_errors'].append({
+                                "line": "?", "col": "?", "message": err
+                            })
+
+                    elif isinstance(err, dict):
                          response_data['syntax_errors'].append(err)
                     else:
-                        # Fallback for object or string
                         response_data['syntax_errors'].append({
                             "line": getattr(err, 'line', '?'),
                             "col": getattr(err, 'col', '?'),
                             "message": getattr(err, 'message', str(err))
                         })
+
             elif syntax_result is None:
                 pass 
 
