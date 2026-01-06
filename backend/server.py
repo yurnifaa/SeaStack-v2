@@ -1,94 +1,100 @@
 import sys
 import os
 
-# 1. Setup path to find 'lexical' and 'parser' folders
-# This gets the folder where server.py is located (the 'backend' folder)
-backend_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(backend_dir)
+# Ensure backend can find sibling folders
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# 2. Corrected Imports based on your folder structure
-# Folder: backend/lexical -> file: lexer.py -> class: Lexer
-from lexical.lexer import Lexer
-# Folder: backend/parser -> file: parser.py -> class: Parser
-from parser.parser import Parser
+# --- IMPORTS ---
+try:
+    from lexical.lexer import Lexer
+    from syntax.syn_parser import Parser 
+except ImportError as e:
+    print(f"\n[ERROR] Import Failed! Details: {e}")
+    sys.exit(1)
 
 app = Flask(__name__)
-CORS(app) 
+CORS(app)
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_code():
     data = request.json
     code_string = data.get('code', '')
 
-    # --- 1. LEXICAL ANALYSIS ---
+    response_data = {
+        "success": False,
+        "tokens": [],
+        "lexical_errors": [], # Changed to list for structured data
+        "syntax_errors": []   # Changed to list for structured data
+    }
+
+    # --- LEXICAL ANALYSIS ---
     try:
         lexer = Lexer(code_string)
-        # Assuming tokenize returns (tokens, errors)
-        tokens, errors = lexer.tokenize()
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "lexical_log": f"Critical Lexer Error: {str(e)}",
-            "tokens": [],
-            "syntax_log": []
-        })
-    
-    # Format tokens for UI
-    ui_tokens = []
-    for token in tokens:
-        # Check if attributes exist, default to safety if missing
-        t_type = getattr(token, 'type', 'unknown')
-        t_value = getattr(token, 'value', '')
+        tokens, lex_errors = lexer.tokenize()
         
-        if t_type == 'newline':
-            ui_tokens.append({"lexeme": "newline", "token": "newline"})
-        elif t_type == 'whitespace' or t_type == 'space': # Handle variations
-            ui_tokens.append({"lexeme": "space", "token": "space"})
-        else:
-            ui_tokens.append({"lexeme": t_value, "token": t_type})
+        # Format tokens for UI
+        formatted_tokens = []
+        for t in tokens:
+            t_type = getattr(t, 'type', str(t))
+            t_value = getattr(t, 'value', '')
+            formatted_tokens.append({"token": t_type, "lexeme": t_value})
+        
+        response_data['tokens'] = formatted_tokens
 
-    # Prepare Lexical Logs
-    if errors:
-        error_list = [f"Line {e.line}: {e.error_msg} -> '{e.value}'" for e in errors]
-        lexical_log = f"Lexical Errors Found:\n" + "\n".join(error_list)
-        success = False
-    else:
-        lexical_log = f"Lexical analysis successful. {len(ui_tokens)} tokens found."
-        success = True
+        # Process Lexical Errors
+        if lex_errors:
+            for e in lex_errors:
+                line = getattr(e, 'line', '?')
+                col = getattr(e, 'column', '?') # Ensure your Lexer error class has a .column attribute!
+                msg = getattr(e, 'error_msg', str(e))
+                
+                response_data['lexical_errors'].append({
+                    "line": line,
+                    "col": col,
+                    "message": msg
+                })
+        
+        # Mark success if no lexical errors (though we might still run syntax)
+        if not lex_errors:
+            response_data['success'] = True
 
-    # --- 2. SYNTAX ANALYSIS ---
-    syntax_logs = []
-    
-    # Only run parser if lexer succeeded
-    if success:
+    except Exception as e:
+        response_data['lexical_errors'].append({
+            "line": "-", "col": "-", "message": f"Lexer Crashed: {str(e)}"
+        })
+        return jsonify(response_data)
+
+    # --- SYNTAX ANALYSIS ---
+    if not response_data['lexical_errors']:
         try:
-            # We must pass the RAW tokens list to the parser, not the UI tokens
             parser = Parser(tokens)
+            syntax_result = parser.parse()
             
-            # CRITICAL: parser.parse() must RETURN logs, not just print them
-            result_logs = parser.parse()
-            
-            if result_logs is None:
-                # If parser.py prints instead of returns, catch it here
-                syntax_logs = ["Parser finished (check terminal for details). Update parser.py to return strings."]
-            else:
-                syntax_logs = result_logs
+            if syntax_result and isinstance(syntax_result, list):
+                for err in syntax_result:
+                    # Handle if err is a dict or an object
+                    if isinstance(err, dict):
+                         response_data['syntax_errors'].append(err)
+                    else:
+                        # Fallback for object or string
+                        response_data['syntax_errors'].append({
+                            "line": getattr(err, 'line', '?'),
+                            "col": getattr(err, 'col', '?'),
+                            "message": getattr(err, 'message', str(err))
+                        })
+            elif syntax_result is None:
+                pass 
 
         except Exception as e:
-            syntax_logs.append(f"[CRITICAL PARSER ERROR]: {str(e)}")
-            import traceback
-            traceback.print_exc() # Print full error to backend terminal
-            success = False
-
-    return jsonify({
-        "success": success,
-        "tokens": ui_tokens,
-        "lexical_log": lexical_log,
-        "syntax_log": syntax_logs
-    })
+            response_data['syntax_errors'].append({
+                "line": "-", "col": "-", "message": f"Parser Crashed: {str(e)}"
+            })
+            response_data['success'] = False
+    
+    return jsonify(response_data)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -1,8 +1,8 @@
 import sys
 # Ensure these filenames match exactly what you created
-from backend.parser.First_Set import FIRST
-from backend.parser.Predict_Set import PREDICT
-from backend.parser.Follow_Set import FOLLOW
+from syntax.First_Set import FIRST
+from syntax.Predict_Set import PREDICT
+from syntax.Follow_Set import FOLLOW
 
 class Parser:
     def __init__(self, tokens):

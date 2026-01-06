@@ -8,7 +8,7 @@ sys.path.append(current_dir)
 # 2. Now we can import the modules safely
 try:
     from backend.lexical.lexer import Lexer
-    from backend.parser.parser import Parser
+    from backend.syntax.syn_parser import Parser
 
 except ImportError as e:
     print("\nCRITICAL IMPORT ERROR:")
