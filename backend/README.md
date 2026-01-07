@@ -1,3 +1,4 @@
 # TODO 
-1. Fix error messages on both Lexical and Syntax (BOTH FRONTEND AND BACKEND)
-2. Stuff sa Syntax idfk what the problem is 
+1. Rewrite the Lexical error messages like A.L.
+2. Rewrite the Syntax error messages like A.L.
+3. Update the First, Follow, and Predict set with the new one

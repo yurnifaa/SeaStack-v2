@@ -2,8 +2,6 @@
 # Maps <Non-Terminal> -> { Token_Type : Production_Rule_Number }
 # None represents Lambda/Epsilon (Empty production)
 
-# TO DO: complete the predict set for all non-terminals
-
 PREDICT = {
     # --- Program Structure ---
     "<program>": {
@@ -19,9 +17,77 @@ PREDICT = {
     "<d-type>": {
         "COIN": 7, "DIME": 8, "PARCH": 9, "SCROLL": 10, "BOOL": 11
     },
-    # ... (Rules 12-40 omitted for brevity, focusing on Expression/Logic below) ...
-
+    "<dtype-tail>": {
+        "=": 12, ",": 12, "{": 12, "!!": 12,  # Rule 12: Variable/Array
+        "(": 13                             # Rule 13: Function
+    },
+    "<var-arr-dec>": {
+        "=": 14, ",": 14, "!!": 14,         # Rule 14: Variable
+        "{": 15                             # Rule 15: Array
+    },
+    "<variable>": {
+        "=": 16, ",": 16, "!!": 16
+    },
+    "<var-init>": {
+        "=": 17,
+        ",": 18, "!!": 18                   # Rule 18: Lambda
+    },
+    "<multi-var-init>": {
+        ",": 19,
+        "!!": 20                            # Rule 20: Lambda
+    },
+    "<array>": {
+        "{": 21
+    },
+    "<arr-tail>": {
+        "{": 22,
+        "=": 23,
+        "!!": 24                            # Lambda
+    },
+    "<arr-val>": {
+        "id": 25, "-": 25, "COIN-lit": 25, "DIME-lit": 25, "SCROLL-lit": 25, 
+        "PARCH-lit": 25, "AYE": 25, "NAY": 25, "(": 25, "!": 25, "!#": 25
+    },
+    "<arr-val-tail>": {
+        ",": 26,
+        "]": 27                             # Lambda
+    },
+    "<arr2-tail>": {
+        "=": 28,
+        "!!": 29                            # Lambda
+    },
+    "<arr2-val>": {
+        "[": 30
+    },
+    "<arr2-val-tail>": {
+        ",": 31,
+        "]": 32                             # Lambda
+    },
+    "<locke-dec>": {
+        "LOCKE": 33
+    },
+    "<struct-def>": {
+        "MAST": 34,
+        "COIN": 35, "DIME": 35, "PARCH": 35, "SCROLL": 35, "BOOL": 35, "ABYSS": 35, "AHOY": 35 # Lambda
+    },
+    "<mem-dec>": {
+        "COIN": 36, "DIME": 36, "PARCH": 36, "SCROLL": 36, "BOOL": 36
+    },
+    "<mem-dec-tail>": {
+        ",": 37,
+        "!!": 38                            # Lambda
+    },
+    "<more-mem>": {
+        "COIN": 39, "DIME": 39, "PARCH": 39, "SCROLL": 39, "BOOL": 39,
+        "]": 40                             # Lambda
+    },
+    
     # --- EXPRESSIONS (Rules 41-80) ---
+    "<var-val>": {
+        # Rule 41: This was the missing bridge causing the error
+        "(": 41, "id": 41, "-": 41, "COIN-lit": 41, "DIME-lit": 41, 
+        "PARCH-lit": 41, "SCROLL-lit": 41, "AYE": 41, "NAY": 41, "!": 41, "!#": 41
+    },
     "<expression>": {
         "(": 42, "id": 42, "-": 42, "COIN-lit": 42, "DIME-lit": 42, 
         "PARCH-lit": 42, "SCROLL-lit": 42, "AYE": 42, "NAY": 42, "!": 42, "!#": 42
@@ -39,7 +105,6 @@ PREDICT = {
         "{": 48,
         "$": 49,
         "(": 50,
-        # Lambda (Follow set includes operators, delimiters)
         ",": 51, "+": 51, "-": 51, "*": 51, "/": 51, "%": 51, "^": 51, 
         "<": 51, ">": 51, "<=": 51, ">=": 51, "||": 51, "&&": 51, 
         "==": 51, "!=": 51, "&": 51, "!!": 51, ")": 51, "]": 51
@@ -48,7 +113,6 @@ PREDICT = {
         "+": 78, "-": 78, "*": 78, "/": 78, "%": 78, "^": 78, 
         "<": 78, ">": 78, "<=": 78, ">=": 78, "||": 78, "&&": 78, "==": 78, "!=": 78,
         "&": 79,
-        # Lambda
         ",": 80, "!!": 80, "]": 80, ")": 80
     },
 
@@ -56,12 +120,10 @@ PREDICT = {
     "<gen-exp>": {
         "+": 81, "-": 81, "*": 81, "/": 81, "%": 81, "^": 81, 
         "<": 81, ">": 81, "<=": 81, ">=": 81, "||": 81, "&&": 81, "==": 81, "!=": 81,
-        # Lambda
         ",": 82, "!!": 82, "]": 82, ")": 82
     },
     "<arith>": {
         "+": 83, "-": 83, "*": 83, "/": 83, "%": 83, "^": 83,
-        # Lambda
         "<": 84, ">": 84, "<=": 84, ">=": 84, "||": 84, "&&": 84, 
         "==": 84, "!=": 84, ",": 84, "!!": 84, ")": 84, "]": 84
     },
@@ -79,7 +141,6 @@ PREDICT = {
     },
     "<rel>": {
         "<": 99, ">": 99, "<=": 99, ">=": 99,
-        # Lambda
         "||": 100, "&&": 100, "==": 100, "!=": 100, ",": 100, "!!": 100, ")": 100, "]": 100
     },
     "<rel-op>": {
@@ -87,12 +148,34 @@ PREDICT = {
     },
     "<logeq>": {
         "||": 105, "&&": 105, "==": 105, "!=": 105,
-        # Lambda
         ",": 106, "!!": 106, "]": 106, ")": 106
     },
     "<logeq-op>": {
         "||": 107, "&&": 108, "==": 109, "!=": 109
     },
+    "<literals>": {
+        # From First Set of Literals
+        "COIN-lit": 64, "DIME-lit": 64, "-": 64, # digits
+        "AYE": 65, "NAY": 65,                    # bool
+        "PARCH-lit": 66,
+        "SCROLL-lit": 67
+    },
+    "<digits>": {
+        "COIN-lit": 68, "DIME-lit": 68, "-": 68 
+    },
+    "<neg>": {
+        "-": 69,
+        "COIN-lit": 70, "DIME-lit": 70 # Lambda
+    },
+    "<coin-dime>": {
+        "COIN-lit": 71,
+        "DIME-lit": 72
+    },
+    "<bool-lit>": {
+        "AYE": 73,
+        "NAY": 74
+    },
+
     # --- STATEMENTS (Rules 148-156) ---
     "<statements>": {
         "id": 148,
