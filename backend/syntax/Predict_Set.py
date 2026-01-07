@@ -176,6 +176,75 @@ PREDICT = {
         "NAY": 74
     },
 
+    # --- SCROLL & FUNCTIONS (Rules 117-135) ---
+    "<scroll>": {
+        "&": 117,
+        # Lambda
+        ",": 118, "!!": 118, "]": 118, ")": 118
+    },
+    "<scroll-ope>": {
+        "SCROLL-lit": 119, "id": 120, "(": 121
+    },
+    "<sub-func>": {
+        "COIN": 122, "DIME": 122, "PARCH": 122, "SCROLL": 122, "BOOL": 122,
+        "ABYSS": 123,
+        # Lambda
+        "AHOY": 124, "MAST": 124
+    },
+    "<return-func>": {
+        "(": 125
+    },
+    "<func-parameters>": {
+        "COIN": 126, "DIME": 126, "PARCH": 126, "SCROLL": 126, "BOOL": 126,
+        ")": 127 # Lambda
+    },
+    "<func-tail>": {
+        ",": 128,
+        ")": 129 # Lambda
+    },
+    "<back-val>": {
+        "COIN-lit": 130, "DIME-lit": 130, "PARCH-lit": 130, "SCROLL-lit": 130, "AYE": 130, "NAY": 130, "-": 130,
+        "id": 131,
+        "(": 132
+    },
+    "<nonreturn-func>": {
+        "ABYSS": 133
+    },
+    "<nonreturn-back>": {
+        "BACK": 134,
+        "]": 135 # Lambda
+    },
+
+    # --- LOCAL DECLARATIONS (Rules 136-147) ---
+    "<local-dec>": {
+        # This is the specific rule that fixes your error!
+        "COIN": 136, "DIME": 136, "PARCH": 136, "SCROLL": 136, "BOOL": 136,
+        "MAST": 137,
+        # Lambda (Start of statements)
+        "id": 138, "ASK": 138, "ECHO": 138, "LOOK": 138, "CHART": 138, 
+        "HOIST": 138, "HEAVE": 138, "HAUL": 138, "+#": 138, "-#": 138,
+        "SAIL": 138, "BACK": 138, "]": 138, "LAND": 138
+    },
+    "<struct>": {
+        "MAST": 140,
+        # Lambda
+        "id": 141, "ASK": 141, "ECHO": 141, "LOOK": 141, "CHART": 141, 
+        "HOIST": 141, "HEAVE": 141, "HAUL": 141, "+#": 141, "-#": 141,
+        "SAIL": 141, "BACK": 141, "]": 141
+    },
+    "<struct-dec>": {
+        "MAST": 142
+    },
+    "<struct-dec-init>": {
+        ",": 143,
+        "=": 144,
+        "!!": 145 # Lambda
+    },
+    "<struct-dec-tail>": {
+        ",": 146,
+        "!!": 147 # Lambda
+    },
+
     # --- STATEMENTS (Rules 148-156) ---
     "<statements>": {
         "id": 148,
