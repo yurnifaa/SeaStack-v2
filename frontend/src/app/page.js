@@ -1,11 +1,20 @@
 "use client";
-import { useState, useEffect } from "react"; 
+import { useState, useEffect, useRef } from "react"; 
 import SeaStackEditor from "../components/CodeEditor";
 
 export default function Home() {
   const [code, setCode] = useState("");
   const [tokens, setTokens] = useState([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // --- File Management State ---
+  const [fileName, setFileName] = useState("file.sea");
+  const [fileCount, setFileCount] = useState(1);
+  const fileInputRef = useRef(null); 
+
+  // --- NEW: Rename State ---
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [tempName, setTempName] = useState("");
 
   const [lexicalErrors, setLexicalErrors] = useState([]);
   const [syntaxErrors, setSyntaxErrors] = useState([]);   
@@ -33,6 +42,103 @@ export default function Home() {
     }
   };
 
+  // --- 1. File Open Logic ---
+  const handleFileBtnClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleFileSelection = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.sea')) {
+        alert("Please select a valid .sea file.");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        setCode(e.target.result); 
+        setFileName(file.name);   
+    };
+    reader.readAsText(file);
+    event.target.value = ''; 
+  };
+
+  // --- 2. Save As Logic ---
+  const handleSaveFile = async () => {
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fileName, // Uses the current (possibly renamed) tab name
+          types: [{
+              description: 'SeaStack Source File',
+              accept: { 'text/plain': ['.sea'] },
+          }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(code);
+        await writable.close();
+        setFileName(handle.name);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Save failed:', err);
+          alert('Failed to save file.');
+        }
+      }
+    } else {
+      // Fallback
+      const element = document.createElement("a");
+      const file = new Blob([code], {type: 'text/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = fileName;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    }
+  };
+
+  // --- 3. Close Tab Logic ---
+  const handleCloseTab = () => {
+    const nextCount = fileCount + 1;
+    setFileCount(nextCount);
+    setFileName(`file${nextCount}.sea`);
+    setCode(""); 
+    setTokens([]);
+    setLexicalErrors([]);
+    setSyntaxErrors([]);
+    setSemanticLogs([]);
+  };
+
+  // --- NEW: 4. Rename Logic (Double Click) ---
+  const handleTabDoubleClick = () => {
+    setTempName(fileName); // Load current name into input
+    setIsRenaming(true);   // Show input
+  };
+
+  const handleRenameSubmit = () => {
+    let finalName = tempName.trim();
+    
+    // If empty, revert to old name
+    if (!finalName) {
+        setIsRenaming(false);
+        return;
+    }
+
+    // Force .sea extension
+    if (!finalName.endsWith(".sea")) {
+        finalName += ".sea";
+    }
+
+    setFileName(finalName);
+    setIsRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e) => {
+    if (e.key === 'Enter') handleRenameSubmit();
+    if (e.key === 'Escape') setIsRenaming(false);
+  };
+
   const performAnalysis = async (targetTab) => {
     setLexicalErrors([]);
     setSyntaxErrors([]);
@@ -46,25 +152,17 @@ export default function Home() {
       });
 
       if (!res.ok) throw new Error(`Server status: ${res.status}`);
-
       const result = await res.json();
       
       if (result.tokens) setTokens(result.tokens);
-
-      if (result.lexical_errors && result.lexical_errors.length > 0) {
-          setLexicalErrors(result.lexical_errors);
-      }
-
-      if (result.syntax_errors && result.syntax_errors.length > 0) {
-          setSyntaxErrors(result.syntax_errors);
-      }
+      if (result.lexical_errors?.length > 0) setLexicalErrors(result.lexical_errors);
+      if (result.syntax_errors?.length > 0) setSyntaxErrors(result.syntax_errors);
 
       setActiveTab(targetTab);
 
     } catch (err) {
       console.error("Connection Error:", err);
       const errorObj = { line: "0", col: "0", message: "Cannot connect to Backend. Is 'server.py' running?" };
-      
       if (targetTab === "lexical") setLexicalErrors([errorObj]);
       else setSyntaxErrors([errorObj]);
     }
@@ -112,9 +210,16 @@ export default function Home() {
         </div>
 
         <div className="header-right">
-            <input type="file" id="file-input" accept=".sea" style={{ display: "none" }} />
-            <button className="btn-header">File</button>
-            <button className="btn-header">Save</button>
+            <input 
+                type="file" 
+                ref={fileInputRef}
+                onChange={handleFileSelection}
+                accept=".sea" 
+                style={{ display: "none" }} 
+            />
+            <button className="btn-header" onClick={handleFileBtnClick}>File</button>
+            <button className="btn-header" onClick={handleSaveFile}>Save</button>
+            
             <label className="switch">
             <input type="checkbox" onChange={toggleTheme} checked={isDarkMode} />
             <span className="slider">
@@ -128,8 +233,32 @@ export default function Home() {
         <div className="panel panel-left">
             <div className="panel-tab-bar">
                 <div className="tab active">
-                    <span>file.sea</span>
-                    <button className="close-tab">×</button>
+                    {/* --- NEW: Conditional Rendering for Rename --- */}
+                    {isRenaming ? (
+                        <input
+                            autoFocus
+                            type="text"
+                            value={tempName}
+                            onChange={(e) => setTempName(e.target.value)}
+                            onBlur={handleRenameSubmit}
+                            onKeyDown={handleRenameKeyDown}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'inherit',
+                                font: 'inherit',
+                                outline: 'none',
+                                minWidth: '50px',
+                                width: `${tempName.length + 1}ch` // Auto-width hack
+                            }}
+                        />
+                    ) : (
+                        <span onDoubleClick={handleTabDoubleClick} title="Double-click to rename">
+                            {fileName}
+                        </span>
+                    )}
+                    
+                    <button className="close-tab" onClick={handleCloseTab}>×</button>
                 </div>
             </div>
             <SeaStackEditor code={code} setCode={setCode} isDarkMode={isDarkMode} />
