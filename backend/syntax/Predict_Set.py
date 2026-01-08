@@ -1,5 +1,5 @@
 # Predict_Set.py
-# Maps <Non-Terminal> -> { Token_Type : Production_Rule_Number }
+# Maps <Non-Terminal> -> { Token_Type : Production_Number }
 # None represents Lambda/Epsilon (Empty production)
 
 PREDICT = {
@@ -18,23 +18,23 @@ PREDICT = {
         "COIN": 7, "DIME": 8, "PARCH": 9, "SCROLL": 10, "BOOL": 11
     },
     "<dtype-tail>": {
-        "=": 12, ",": 12, "{": 12, "!!": 12,  # Rule 12: Variable/Array
-        "(": 13                             # Rule 13: Function
+        "=": 12, ",": 12, "{": 12, "!!": 12,  # Production 12: Variable/Array
+        "(": 13                             # Production 13: Function
     },
     "<var-arr-dec>": {
-        "=": 14, ",": 14, "!!": 14,         # Rule 14: Variable
-        "{": 15                             # Rule 15: Array
+        "=": 14, ",": 14, "!!": 14,         # Production 14: Variable
+        "{": 15                             # Production 15: Array
     },
     "<variable>": {
         "=": 16, ",": 16, "!!": 16
     },
     "<var-init>": {
         "=": 17,
-        ",": 18, "!!": 18                   # Rule 18: Lambda
+        ",": 18, "!!": 18                   # Production 18: Lambda
     },
     "<multi-var-init>": {
         ",": 19,
-        "!!": 20                            # Rule 20: Lambda
+        "!!": 20                            # Production 20: Lambda
     },
     "<array>": {
         "{": 21
@@ -82,9 +82,9 @@ PREDICT = {
         "]": 40                             # Lambda
     },
     
-    # --- EXPRESSIONS (Rules 41-80) ---
+    # --- EXPRESSIONS (Productions 41-80) ---
     "<var-val>": {
-        # Rule 41: This was the missing bridge causing the error
+        # Production 41
         "(": 41, "id": 41, "-": 41, "COIN-lit": 41, "DIME-lit": 41, 
         "PARCH-lit": 41, "SCROLL-lit": 41, "AYE": 41, "NAY": 41, "!": 41, "!#": 41
     },
@@ -116,7 +116,7 @@ PREDICT = {
         ",": 80, "!!": 80, "]": 80, ")": 80
     },
 
-    # --- ARITHMETIC & LOGIC (Rules 81-121) ---
+    # --- ARITHMETIC & LOGIC (Productions 81-121) ---
     "<gen-exp>": {
         "+": 81, "-": 81, "*": 81, "/": 81, "%": 81, "^": 81, 
         "<": 81, ">": 81, "<=": 81, ">=": 81, "||": 81, "&&": 81, "==": 81, "!=": 81,
@@ -176,7 +176,7 @@ PREDICT = {
         "NAY": 74
     },
 
-    # --- SCROLL & FUNCTIONS (Rules 117-135) ---
+    # --- SCROLL & FUNCTIONS (Productions 117-135) ---
     "<scroll>": {
         "&": 117,
         # Lambda
@@ -215,9 +215,8 @@ PREDICT = {
         "]": 135 # Lambda
     },
 
-    # --- LOCAL DECLARATIONS (Rules 136-147) ---
+    # --- LOCAL DECLARATIONS (Productions 136-147) ---
     "<local-dec>": {
-        # This is the specific rule that fixes your error!
         "COIN": 136, "DIME": 136, "PARCH": 136, "SCROLL": 136, "BOOL": 136,
         "MAST": 137,
         # Lambda (Start of statements)
@@ -245,7 +244,7 @@ PREDICT = {
         "!!": 147 # Lambda
     },
 
-    # --- STATEMENTS (Rules 148-156) ---
+    # --- STATEMENTS (Productions 148-156) ---
     "<statements>": {
         "id": 148,
         "ASK": 149,
