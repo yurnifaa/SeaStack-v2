@@ -1,11 +1,10 @@
 # 🌊 SeaStack | Programming Language and Compiler
 A C-inspired programming language with an oceanic twist — built from scratch for automata theory and formal languages. SeaStack is a high-level programming language designed to combine structured programming principles with a thematic and engaging syntax inspired by the Ocean Voyager theme. It takes its foundation from the C language, adapting familiar constructs such as functions, loops, conditionals, and data type.  This built as part of an academic project in automata theory and formal languages, SeaStack includes its own lexer, parser, and GUI-based IDE.
 
-## 📖 IDE Screenshots
-### 🌕 Light Mode
+### 🌕 IDE - Light Mode
 ![Light Mode](frontend/public/GitHub_shots/Light_Mode2.png)
 
-### 🌑 Dark Mode
+### 🌑 IDE - Dark Mode
 ![Dark Mode](frontend/public/GitHub_shots/Dark_Mode2.png)
 
 ## Language Rules (to be added in the future)
@@ -68,7 +67,7 @@ Navigate to the root directory and install the required Python libraries:
 pip install -r requirements.txt
 ```
 
-*Frontend & Root Setup (Node.js)*<br>
+**Frontend & Root Setup (Node.js)**<br>
 Install dependencies for the root project (to run the scripts) and the frontend interface:
 ```plaintext 
 # 1. Install root dependencies (for the 'concurrently' script)
@@ -80,7 +79,7 @@ npm install
 cd ..
 ```
 
-*Run the Application*<br>
+**Run the Application**<br>
 Start both servers with one command from the root directory:
 ```plaintext 
 npm run dev
