@@ -55,7 +55,7 @@ SEASTACK_PROJ/
  ```
 
 ## 🖥️ How to Run
-Follow these steps to set up and run SeaStack locally on your machine.
+Follow these steps to set up and run SeaStack locally on your computer.
 
 ### 🔑 Prerequisites
 Ensure you have the following installed:
@@ -67,7 +67,7 @@ Navigate to the root directory and install the required Python libraries:
 pip install -r requirements.txt
 ```
 
-**Frontend & Root Setup (Node.js)**<br>
+**▶️ Frontend & Root Setup (Node.js)**<br>
 Install dependencies for the root project (to run the scripts) and the frontend interface:
 ```plaintext 
 # 1. Install root dependencies (for the 'concurrently' script)
@@ -79,7 +79,7 @@ npm install
 cd ..
 ```
 
-**Run the Application**<br>
+**▶️ Run the Application**<br>
 Start both servers with one command from the root directory:
 ```plaintext 
 npm run dev
