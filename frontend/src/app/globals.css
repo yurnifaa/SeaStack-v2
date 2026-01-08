@@ -54,23 +54,75 @@ html, body {
 
 .main-nav ul { margin: 0; padding: 0; list-style: none; display: flex; gap: 15px; }
 
-.main-nav li button {
-    color: rgb(0, 0, 0);
-    background: #fbca1f;
-    font-family: inherit;
-    padding: 8px 12px;
-    font-weight: 900;
-    font-size: 14px;
-    border: 2px solid black;
-    border-radius: 0.4em;
-    box-shadow: 0.1em 0.1em;
-    cursor: pointer;
-    line-height: 1;
-    transition: transform 0.1s;
+/* --- Button Styles --- */
+.c-button {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 12px;
+  text-decoration: none;
+  padding: 0.8em 1.3em;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  z-index: 1;
 }
 
-.main-nav li button:hover { background: #c8a31c; transform: translate(-0.1em, -0.1em); box-shadow: 0.30em 0.30em; }
-.main-nav li button:active { background: #fbca1f; transform: translate(-0.03em, -0.03em); box-shadow: 0.15em 0.15em; }
+.c-button--gooey {
+  color: #ffffff;
+  background-color: transparent;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  border: 3px solid #0C2B4E;
+  position: relative;
+  transition: all 700ms ease;
+  border-radius: 999px;
+}
+
+.c-button--gooey .c-button__blobs {
+  height: 100%;
+  filter: url(#goo);
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: -3px;
+  right: -1px;
+  z-index: -1;
+  border-radius: 999px;
+}
+
+.c-button--gooey .c-button__blobs div {
+  background-color: #2980b9;
+  width: 34%;
+  height: 100%;
+  border-radius: 100%;
+  position: absolute;
+  transform: scale(1.4) translateY(125%) translateZ(0);
+  transition: all 700ms ease;
+}
+
+.c-button--gooey .c-button__blobs div:nth-child(1) {
+  left: -5%;
+}
+
+.c-button--gooey .c-button__blobs div:nth-child(2) {
+  left: 30%;
+  transition-delay: 60ms;
+}
+
+.c-button--gooey .c-button__blobs div:nth-child(3) {
+  left: 66%;
+  transition-delay: 25ms;
+}
+
+.c-button--gooey:hover {
+  color: #fff;
+}
+
+.c-button--gooey:hover .c-button__blobs div {
+  transform: scale(1.4) translateY(0) translateZ(0);
+}
 
 .btn-header {
     background-color: #0C2B4E;

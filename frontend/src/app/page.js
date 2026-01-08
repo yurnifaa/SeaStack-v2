@@ -2,17 +2,31 @@
 import { useState, useEffect, useRef } from "react"; 
 import SeaStackEditor from "../components/CodeEditor";
 
+// --- NEW: Reusable Gooey Button Component ---
+const GooeyButton = ({ onClick, children }) => {
+  return (
+    <button className="c-button c-button--gooey" onClick={onClick}>
+      {children}
+      <div className="c-button__blobs">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </button>
+  );
+};
+
 export default function Home() {
   const [code, setCode] = useState("");
   const [tokens, setTokens] = useState([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // --- File Management State ---
+  // File Management State
   const [fileName, setFileName] = useState("file.sea");
   const [fileCount, setFileCount] = useState(1);
   const fileInputRef = useRef(null); 
 
-  // --- NEW: Rename State ---
+  // Rename State
   const [isRenaming, setIsRenaming] = useState(false);
   const [tempName, setTempName] = useState("");
 
@@ -70,7 +84,7 @@ export default function Home() {
     if ('showSaveFilePicker' in window) {
       try {
         const handle = await window.showSaveFilePicker({
-          suggestedName: fileName, // Uses the current (possibly renamed) tab name
+          suggestedName: fileName,
           types: [{
               description: 'SeaStack Source File',
               accept: { 'text/plain': ['.sea'] },
@@ -110,26 +124,21 @@ export default function Home() {
     setSemanticLogs([]);
   };
 
-  // --- NEW: 4. Rename Logic (Double Click) ---
+  // --- 4. Rename Logic ---
   const handleTabDoubleClick = () => {
-    setTempName(fileName); // Load current name into input
-    setIsRenaming(true);   // Show input
+    setTempName(fileName); 
+    setIsRenaming(true);   
   };
 
   const handleRenameSubmit = () => {
     let finalName = tempName.trim();
-    
-    // If empty, revert to old name
     if (!finalName) {
         setIsRenaming(false);
         return;
     }
-
-    // Force .sea extension
     if (!finalName.endsWith(".sea")) {
         finalName += ".sea";
     }
-
     setFileName(finalName);
     setIsRenaming(false);
   };
@@ -202,9 +211,16 @@ export default function Home() {
           <span className="title">SeaStack</span>
           <nav className="main-nav">
             <ul>
-              <li><button onClick={handleLexicalAnalysis}>Lexical</button></li>
-              <li><button onClick={handleSyntaxAnalysis}>Syntax</button></li>
-              <li><button>Semantic</button></li>
+              {/* --- UPDATED BUTTONS --- */}
+              <li>
+                <GooeyButton onClick={handleLexicalAnalysis}>Lexical</GooeyButton>
+              </li>
+              <li>
+                <GooeyButton onClick={handleSyntaxAnalysis}>Syntax</GooeyButton>
+              </li>
+              <li>
+                <GooeyButton onClick={() => setActiveTab("semantic")}>Semantic</GooeyButton>
+              </li>
             </ul>
           </nav>
         </div>
@@ -233,7 +249,6 @@ export default function Home() {
         <div className="panel panel-left">
             <div className="panel-tab-bar">
                 <div className="tab active">
-                    {/* --- NEW: Conditional Rendering for Rename --- */}
                     {isRenaming ? (
                         <input
                             autoFocus
@@ -249,7 +264,7 @@ export default function Home() {
                                 font: 'inherit',
                                 outline: 'none',
                                 minWidth: '50px',
-                                width: `${tempName.length + 1}ch` // Auto-width hack
+                                width: `${tempName.length + 1}ch`
                             }}
                         />
                     ) : (
@@ -300,15 +315,8 @@ export default function Home() {
         </nav>
         
         <div className="footer-content" style={{ padding: '10px', overflowY: 'auto' }}>
-          
-          {activeTab === "lexical" && (
-            <ErrorList errors={lexicalErrors} typeName="Lexical" />
-          )}
-
-          {activeTab === "syntax" && (
-             <ErrorList errors={syntaxErrors} typeName="Syntax" />
-          )}
-
+          {activeTab === "lexical" && <ErrorList errors={lexicalErrors} typeName="Lexical" />}
+          {activeTab === "syntax" && <ErrorList errors={syntaxErrors} typeName="Syntax" />}
           {activeTab === "semantic" && (
              <div className="log-container">
                {semanticLogs.length === 0 && <div style={{color: '#888', fontStyle: 'italic'}}>Ready for semantic analysis...</div>}
@@ -319,6 +327,30 @@ export default function Home() {
           )}
         </div>
       </footer>
+
+      {/* --- SVG Filter for Gooey Effect (Hidden but active) --- */}
+      <svg
+        style={{ display: 'block', height: 0, width: 0, position: 'absolute' }}
+        version="1.1"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <filter id="goo">
+            <feGaussianBlur
+              result="blur"
+              stdDeviation="10"
+              in="SourceGraphic"
+            />
+            <feColorMatrix
+              result="goo"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
+              mode="matrix"
+              in="blur"
+            />
+            <feBlend in2="goo" in="SourceGraphic" />
+          </filter>
+        </defs>
+      </svg>
     </div>
   );
 }
