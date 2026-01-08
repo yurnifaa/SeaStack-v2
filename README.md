@@ -59,19 +59,36 @@ SEASTACK_PROJ/
 └── test_compiler.py
  ```
 
-## How to Run
-Install Dependencies:
+## 🖥️ How to Run
+Follow these steps to set up and run SeaStack locally on your machine.
+
+### Prerequisites
+Ensure you have the following installed:
+- Node.js (v18 or higher recommended)
+- Python (v3.10 or higher recommended)
+
+Navigate to the root directory and install the required Python libraries:
 ```plaintext 
-This project requires eel: 
-pip install eel
+pip install -r requirements.txt
 ```
 
-Run the Application:
+*Frontend & Root Setup (Node.js)*
+Install dependencies for the root project (to run the scripts) and the frontend interface:
 ```plaintext 
-Execute the main app.py file:
-python app.py
+# 1. Install root dependencies (for the 'concurrently' script)
+npm install
+
+# 2. Install frontend dependencies (for React/Next.js)
+cd frontend
+npm install
+cd ..
 ```
-This will start the local server and open the desktop application window.
+
+*Run the Application*
+Start both servers with one command from the root directory:
+```plaintext 
+npm run dev
+```
 
 ## 👥 Contributors
 - ALISWAG, K. V. J.
