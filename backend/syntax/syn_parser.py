@@ -12,7 +12,7 @@ class Parser:
             "newline", 
             "single-comment", 
             "multi-comment"
-    ]
+        ]
         
         # 2. Filter out junk tokens
         self.tokens = [t for t in tokens if t.type not in ignored_types]
@@ -40,25 +40,45 @@ class Parser:
             self.current_token = None
 
     def eat(self, token_type):
-            """
-            Consumes the current token if it matches `token_type`.
-            """
-            if token_type not in ["newline", "whitespace", "single-line comment"]:
-                self.skip_whitespace_and_comments()
+        """
+        Consumes the current token if it matches `token_type`.
+        """
+        if token_type not in ["newline", "whitespace", "single-line comment"]:
+            self.skip_whitespace_and_comments()
 
-            if self.current_token and self.current_token.type == token_type:
-                self.advance()
-            else:
-                found = self.current_token.type if self.current_token else 'EOF'
-                self.error(f"Expected {token_type}, but found {found}")
-
-    def error(self, message):
-        """Records a syntax error and stops parsing."""
-        if self.current_token:
-            err_msg = f"Syntax Error at Line {self.current_token.line}, Col {self.current_token.col}: {message}"
+        if self.current_token and self.current_token.type == token_type:
+            self.advance()
         else:
-            err_msg = "Syntax Error: Unexpected End of File"
+            # NEW: Use the custom error format
+            self.error(expected=[token_type])
+
+    def error(self, message=None, expected=None, found=None):
+        """
+        Records a syntax error with the format:
+        Line X, Col Y | Unexpected token '<token>'. Expected any: [<possible tokens>]
+        """
+        # 1. Determine Location
+        if self.current_token:
+            line = self.current_token.line
+            col = self.current_token.col
+            found_str = found if found else self.current_token.type
+        else:
+            line = "?"
+            col = "?"
+            found_str = "EOF"
+
+        # 2. Construct Message
+        if expected:
+            # Clean up the expected list (remove None/Lambda, convert to string)
+            clean_expected = sorted([str(t) for t in expected if t is not None])
+            expected_str = f"[{', '.join(clean_expected)}]"
+            err_msg = f"Line {line}, Col {col} | Unexpected token '{found_str}'. Expected any: {expected_str}"
+        elif message:
+            err_msg = f"Line {line}, Col {col} | {message}"
+        else:
+            err_msg = f"Line {line}, Col {col} | Syntax Error"
         
+        # 3. Log and Raise
         print(err_msg)
         self.errors.append(err_msg)
         raise Exception(err_msg)
@@ -99,13 +119,16 @@ class Parser:
         try:
             self.program()
             if self.current_token is not None:
-                self.error(f"Unexpected token after end of program: {self.current_token.type}")
+                self.error(message=f"Unexpected token after end of program: {self.current_token.type}")
             else:
                 msg = "Parsing Completed Successfully! No Syntax Errors."
                 print(msg)
                 self.logs.append(msg)
         except Exception as e:
-            self.logs.append(str(e))
+            # The error is already in self.errors/logs via self.error()
+            # We append it here just in case, but self.error() handles formatting
+            if str(e) not in self.logs:
+                self.logs.append(str(e))
 
         return self.logs
 
@@ -116,7 +139,8 @@ class Parser:
     def program(self):
         # Production 1
         if not self.validate_token("<program>"):
-            self.error(f"Invalid start of program. Expected one of {FIRST['<program>']}")
+            # NEW: Pass the FIRST set as expected tokens
+            self.error(expected=FIRST["<program>"])
 
         production = self.get_production("<program>")
         if production == 1:
@@ -129,7 +153,7 @@ class Parser:
             self.statements()
             self.eat("]")
         else:
-            self.error("Invalid Production for <program>")
+            self.error(message="Invalid Production for <program>")
 
     def global_dec(self):
         # Productions 2-6
@@ -149,7 +173,7 @@ class Parser:
         elif production == 6:
             pass # Lambda
         else:
-            pass # Allow lambda if in follow set
+            pass # Allow lambda if in follow set or let caller handle
 
     def d_type(self):
         # Productions 7-11
@@ -159,7 +183,9 @@ class Parser:
         elif production == 9: self.eat("PARCH")
         elif production == 10: self.eat("SCROLL")
         elif production == 11: self.eat("BOOL")
-        else: self.error("Expected Data Type")
+        else:
+            # NEW: Use PREDICT keys for expected list
+            self.error(expected=list(PREDICT["<d-type>"].keys()))
 
     def dtype_tail(self):
         # Productions 12-13
@@ -171,14 +197,15 @@ class Parser:
             self.return_func()
             self.sub_func()
         else:
-            self.error("Invalid declaration tail")
+            self.error(expected=list(PREDICT["<dtype-tail>"].keys()))
 
     def var_arr_dec(self):
         # Productions 14-15
         production = self.get_production("<var-arr-dec>")
         if production == 14: self.variable()
         elif production == 15: self.array()
-        else: self.error("Expected variable or array declaration")
+        else:
+            self.error(expected=list(PREDICT["<var-arr-dec>"].keys()))
 
     def variable(self):
         # Production 16
@@ -364,6 +391,8 @@ class Parser:
         elif production == 45:
             self.not_rule()
             self.not_val()
+        else:
+             self.error(expected=list(PREDICT["<operands>"].keys()))
 
     def value(self):
         # Productions 46-47
@@ -373,6 +402,8 @@ class Parser:
             self.id_tail()
         elif production == 47:
             self.literals()
+        else:
+             self.error(expected=list(PREDICT["<value>"].keys()))
 
     def id_tail(self):
         # Productions 48-51
@@ -400,6 +431,7 @@ class Parser:
         production = self.get_production("<arr-index>")
         if production == 53: self.eat("COIN-lit")
         elif production == 54: self.eat("id")
+        else: self.error(expected=["COIN-lit", "id"])
 
     def arr_elmt_tail(self):
         # Productions 55-56
@@ -455,6 +487,8 @@ class Parser:
         elif production == 67: 
             self.eat("SCROLL-lit")
             self.arr_elmt_tail()
+        else:
+            self.error(expected=list(PREDICT["<literals>"].keys()))
 
     def digits(self):
         # Productions 68-69
@@ -554,6 +588,7 @@ class Parser:
         # No get_production check was here originally, just token check
         if self.current_token.type == "!": self.eat("!")
         elif self.current_token.type == "!#": self.eat("!#")
+        else: self.error(expected=["!", "!#"])
         
     def not_val(self):
         # Production 47
@@ -564,6 +599,7 @@ class Parser:
             self.eat("(")
             self.expression()
             self.eat(")")
+        else: self.error(expected=["id", "AYE", "NAY", "("])
 
     def rel(self):
         # Productions 99-100
@@ -599,6 +635,7 @@ class Parser:
         elif production == 109: 
             if self.current_token.type == "==": self.eat("==")
             elif self.current_token.type == "!=": self.eat("!=")
+            else: self.error(expected=["==", "!="])
 
     def scroll(self):
         # Productions 117-118
@@ -723,6 +760,8 @@ class Parser:
             self.loc_dec_tail()
         elif production == 137:
             self.struct()
+        # Note: If no match, we assume it might be a statement start (caught by FOLLOW/PREDICT logic)
+        # but technically local_dec must start with type or struct.
             
     def loc_dec_tail(self):
         # Productions 138-139
@@ -790,7 +829,7 @@ class Parser:
         elif production == 156: 
             self.unary_exp()
             self.eat("!!")
-        
+        # Lambda handling for statements via stmnt_tail recursion
         self.stmnt_tail()
 
     def stmnt_tail(self):
@@ -833,6 +872,8 @@ class Parser:
         elif production == 163:
             self.arith_assign_op()
             self.expression()
+        else:
+             self.error(expected=list(PREDICT["<assign-body>"].keys()))
 
     def assign_val(self):
         # Productions 164-165
