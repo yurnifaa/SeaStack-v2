@@ -6,7 +6,7 @@ from syntax.Follow_Set import FOLLOW
 
 class Parser:
     def __init__(self, tokens):
-        # 1. Define tokens to ignore
+        # Define tokens to ignore
         ignored_types = [
             "whitespace", 
             "newline", 
@@ -14,15 +14,15 @@ class Parser:
             "multi-comment"
         ]
         
-        # 2. Filter out junk tokens
+        # Filter out junk tokens
         self.tokens = [t for t in tokens if t.type not in ignored_types]
         
-        # 3. NORMALIZE IDENTIFIERS
+        # NORMALIZE IDENTIFIERS
         for t in self.tokens:
             if t.type.startswith("id") and t.type[2:].isdigit():
                 t.type = "id"
         
-        # 4. Initialize state
+        # Initialize state
         self.pos = 0
         self.current_token = self.tokens[self.pos] if self.tokens else None
         self.errors = []
@@ -57,7 +57,7 @@ class Parser:
         Records a syntax error with the format:
         Line X, Col Y | Unexpected token '<token>'. Expected any: [<possible tokens>]
         """
-        # 1. Determine Location
+        # Determine Location
         if self.current_token:
             line = self.current_token.line
             col = self.current_token.col
@@ -67,18 +67,17 @@ class Parser:
             col = "?"
             found_str = "EOF"
 
-        # 2. Construct Message
+        # Construct Message
         if expected:
-            # Clean up the expected list (remove None/Lambda, convert to string)
             clean_expected = sorted([str(t) for t in expected if t is not None])
             expected_str = f"[{', '.join(clean_expected)}]"
-            err_msg = f"Line {line}, Col {col} | Unexpected token '{found_str}'. Expected any: {expected_str}"
+            err_msg = f"Unexpected token '{found_str}'. Expected any: {expected_str}"
         elif message:
-            err_msg = f"Line {line}, Col {col} | {message}"
+            err_msg = f"{message}"
         else:
-            err_msg = f"Line {line}, Col {col} | Syntax Error"
+            err_msg = f"Syntax Error"
         
-        # 3. Log and Raise
+        # Log and Raise
         print(err_msg)
         self.errors.append(err_msg)
         raise Exception(err_msg)
@@ -125,8 +124,6 @@ class Parser:
                 print(msg)
                 self.logs.append(msg)
         except Exception as e:
-            # The error is already in self.errors/logs via self.error()
-            # We append it here just in case, but self.error() handles formatting
             if str(e) not in self.logs:
                 self.logs.append(str(e))
 
@@ -139,7 +136,6 @@ class Parser:
     def program(self):
         # Production 1
         if not self.validate_token("<program>"):
-            # NEW: Pass the FIRST set as expected tokens
             self.error(expected=FIRST["<program>"])
 
         production = self.get_production("<program>")
