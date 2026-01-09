@@ -709,6 +709,10 @@ class Parser:
             self.eat("!!")
         elif production == 135: pass
 
+    # =========================================
+    # Local Declarations (Rules 136-139)
+    # =========================================
+
     def local_dec(self):
         # Productions 136-137
         production = self.get_production("<local-dec>")
@@ -716,10 +720,18 @@ class Parser:
             self.d_type()
             self.eat("id")
             self.var_arr_dec()
-            self.local_dec()
+            self.loc_dec_tail()
         elif production == 137:
             self.struct()
             
+    def loc_dec_tail(self):
+        # Productions 138-139
+        production = self.get_production("<loc-dec-tail>")
+        if production == 138:
+            self.local_dec()
+        elif production == 139:
+            pass # Lambda
+
     def struct(self):
         # Productions 140-141
         production = self.get_production("<struct>")
