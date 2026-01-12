@@ -2,6 +2,7 @@ import sys
 import os
 import re
 
+# Add the parent directory to sys.path to allow imports from sibling folders
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask, request, jsonify
@@ -30,9 +31,10 @@ def analyze_code():
         "syntax_errors": []
     }
 
-# =================================
-#    --- LEXICAL ANALYSIS ---
-# =================================
+    # =================================
+    #    --- LEXICAL ANALYSIS ---
+    # =================================
+    tokens = [] # Initialize tokens to ensure scope availability
     try:
         lexer = Lexer(code_string)
         tokens, lex_errors = lexer.tokenize()
@@ -49,12 +51,8 @@ def analyze_code():
         # Process Lexical Errors
         if lex_errors:
             for e in lex_errors:
-                # Check for 'line' attribute
                 line = getattr(e, 'line', '?')
-                
-                # Check for 'col'
                 col = getattr(e, 'col', getattr(e, 'column', '?')) 
-                
                 msg = getattr(e, 'error_msg', str(e))
                 
                 response_data['lexical_errors'].append({
@@ -72,11 +70,12 @@ def analyze_code():
         })
         return jsonify(response_data)
 
-# =================================
-#    --- SYNTAX ANALYSIS ---
-# =================================
+    # =================================
+    #    --- SYNTAX ANALYSIS ---
+    # =================================
     if not response_data['lexical_errors']:
         try:
+            # Pass the tokens list from the lexer to the parser
             parser = Parser(tokens)
             syntax_result = parser.parse()
             
@@ -84,15 +83,16 @@ def analyze_code():
                 for err in syntax_result:
                     
                     if isinstance(err, str):
+                        # 1. Skip the start message
                         if "Starting Parsing" in err:
                             continue
 
+                        # 2. Check for Line/Col error pattern
                         match = re.search(r'Line\s+(\d+),\s+Col\s+(\d+)', err, re.IGNORECASE)
                         
                         if match:
                             line_num = match.group(1)
                             col_num = match.group(2)
-                            
 
                             if ':' in err:
                                 clean_msg = err.split(':', 1)[1].strip()
@@ -104,8 +104,17 @@ def analyze_code():
                                 "col": col_num,
                                 "message": clean_msg
                             })
+
+                        # 3. HANDLE SUCCESS MESSAGE (Keep it, but format cleanly)
+                        elif "Parsing Completed Successfully" in err:
+                            response_data['syntax_errors'].append({
+                                "line": "", 
+                                "col": "",
+                                "message": err
+                            })
+                            
+                        # 4. Fallback for other strings
                         else:
-                            # Fallback if pattern not found
                             response_data['syntax_errors'].append({
                                 "line": "?", "col": "?", "message": err
                             })
@@ -131,4 +140,5 @@ def analyze_code():
     return jsonify(response_data)
 
 if __name__ == '__main__':
+    # Run the server on port 5000
     app.run(debug=True, port=5000)

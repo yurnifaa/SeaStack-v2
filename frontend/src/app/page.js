@@ -181,9 +181,6 @@ export default function Home() {
   const handleSyntaxAnalysis = () => performAnalysis("syntax");
 
   const ErrorList = ({ errors, typeName }) => {
-    if (errors.length === 0) {
-        return <div style={{color: '#4ade80', fontStyle: 'italic', padding: '10px'}}>No {typeName} Errors found.</div>;
-    }
     return (
         <div style={{ fontFamily: '"Fira Code", monospace', fontSize: '0.9rem' }}>
             <div style={{ fontWeight: 'bold', color: '#f87171', marginBottom: '8px' }}>
