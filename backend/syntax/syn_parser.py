@@ -18,6 +18,7 @@ class Parser:
         self.tokens = [t for t in tokens if t.type not in ignored_types]
         
         # NORMALIZE IDENTIFIERS
+        # Ensures id1, id2, etc. are treated generically as "id"
         for t in self.tokens:
             if t.type.startswith("id") and t.type[2:].isdigit():
                 t.type = "id"
@@ -42,20 +43,17 @@ class Parser:
     def eat(self, token_type):
         """
         Consumes the current token if it matches `token_type`.
+        Strictly enforces matching; otherwise raises an error.
         """
-        if token_type not in ["newline", "whitespace", "single-line comment"]:
-            self.skip_whitespace_and_comments()
-
         if self.current_token and self.current_token.type == token_type:
             self.advance()
         else:
-            # NEW: Use the custom error format
             self.error(expected=[token_type])
 
     def error(self, message=None, expected=None, found=None):
         """
-        Records a syntax error with the format:
-        Line X, Col Y | Unexpected token '<token>'. Expected any: [<possible tokens>]
+        Records a syntax error. 
+        Stops execution immediately by raising an Exception.
         """
         # Determine Location
         if self.current_token:
@@ -71,11 +69,11 @@ class Parser:
         if expected:
             clean_expected = sorted([str(t) for t in expected if t is not None])
             expected_str = f"[{', '.join(clean_expected)}]"
-            err_msg = f"Unexpected token '{found_str}'. Expected any: {expected_str}"
+            err_msg = f"[Line {line}, Col {col}] Syntax Error: Unexpected token '{found_str}'. Expected any: {expected_str}"
         elif message:
-            err_msg = f"{message}"
+            err_msg = f"[Line {line}, Col {col}] Syntax Error: {message}"
         else:
-            err_msg = f"Syntax Error"
+            err_msg = f"[Line {line}, Col {col}] Syntax Error"
         
         # Log and Raise
         print(err_msg)
@@ -97,16 +95,13 @@ class Parser:
     def get_production(self, non_terminal):
         """
         Uses PREDICT_SET to return the Production Number based on current token.
+        Returns None if no production matches.
         """
         if not self.current_token:
             return None
             
         productions = PREDICT.get(non_terminal, {})
         return productions.get(self.current_token.type)
-
-    def skip_whitespace_and_comments(self):
-        while self.current_token and self.current_token.type in ["newline", "whitespace", "single-line comment", "multi-line comment"]:
-            self.advance()
 
     # =========================================
     # Entry Point
@@ -116,7 +111,11 @@ class Parser:
         self.logs.append("Starting Parsing...")
 
         try:
+            if not self.tokens:
+                raise Exception("Empty program.")
+
             self.program()
+            
             if self.current_token is not None:
                 self.error(message=f"Unexpected token after end of program: {self.current_token.type}")
             else:
@@ -134,10 +133,7 @@ class Parser:
     # =========================================
 
     def program(self):
-        # Production 1
-        if not self.validate_token("<program>"):
-            self.error(expected=FIRST["<program>"])
-
+        # <program>
         production = self.get_production("<program>")
         if production == 1:
             self.global_dec()
@@ -149,10 +145,10 @@ class Parser:
             self.statements()
             self.eat("]")
         else:
-            self.error(message="Invalid Production for <program>")
+            self.error(expected=list(PREDICT["<program>"].keys()))
 
     def global_dec(self):
-        # Productions 2-6
+        # <global-dec>
         production = self.get_production("<global-dec>")
         if production == 2:
             self.d_type()
@@ -167,12 +163,12 @@ class Parser:
             self.nonreturn_func()
             self.sub_func()
         elif production == 6:
-            pass # Lambda
+            pass # Lambda (Epsilon)
         else:
-            pass # Allow lambda if in follow set or let caller handle
+            self.error(expected=list(PREDICT["<global-dec>"].keys()))
 
     def d_type(self):
-        # Productions 7-11
+        # <d-type>
         production = self.get_production("<d-type>")
         if production == 7: self.eat("COIN")
         elif production == 8: self.eat("DIME")
@@ -180,11 +176,10 @@ class Parser:
         elif production == 10: self.eat("SCROLL")
         elif production == 11: self.eat("BOOL")
         else:
-            # NEW: Use PREDICT keys for expected list
             self.error(expected=list(PREDICT["<d-type>"].keys()))
 
     def dtype_tail(self):
-        # Productions 12-13
+        # <dtype-tail>
         production = self.get_production("<dtype-tail>")
         if production == 12:
             self.var_arr_dec()
@@ -196,7 +191,7 @@ class Parser:
             self.error(expected=list(PREDICT["<dtype-tail>"].keys()))
 
     def var_arr_dec(self):
-        # Productions 14-15
+        # <var-arr-dec>
         production = self.get_production("<var-arr-dec>")
         if production == 14: self.variable()
         elif production == 15: self.array()
@@ -204,24 +199,28 @@ class Parser:
             self.error(expected=list(PREDICT["<var-arr-dec>"].keys()))
 
     def variable(self):
-        # Production 16
+        # <variable>
         production = self.get_production("<variable>")
         if production == 16:
             self.var_init()
             self.multi_var_init()
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<variable>"].keys()))
 
     def var_init(self):
-        # Productions 17-18
+        # <var-init>
         production = self.get_production("<var-init>")
         if production == 17:
             self.eat("=")
             self.var_val()
         elif production == 18:
             pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<var-init>"].keys()))
 
     def multi_var_init(self):
-        # Productions 19-20
+        # <multi-var-init>
         production = self.get_production("<multi-var-init>")
         if production == 19:
             self.eat(",")
@@ -230,9 +229,11 @@ class Parser:
             self.multi_var_init()
         elif production == 20:
             pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<multi-var-init>"].keys()))
 
     def array(self):
-        # Production 21
+        # <array>
         production = self.get_production("<array>")
         if production == 21:
             self.eat("{")
@@ -240,9 +241,11 @@ class Parser:
             self.eat("}")
             self.arr_tail()
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<array>"].keys()))
 
     def arr_tail(self):
-        # Productions 22-24
+        # <arr-tail>
         production = self.get_production("<arr-tail>")
         if production == 22:
             self.eat("{")
@@ -256,9 +259,11 @@ class Parser:
             self.eat("]")
         elif production == 24:
             pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<arr-tail>"].keys()))
 
     def arr2_tail(self):
-        # Productions 28-29
+        # <arr2-tail>
         production = self.get_production("<arr2-tail>")
         if production == 28:
             self.eat("=")
@@ -267,45 +272,55 @@ class Parser:
             self.eat("]")
         elif production == 29:
             pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<arr2-tail>"].keys()))
             
     def arr_val(self):
-        # Production 25
+        # <arr-val>
         production = self.get_production("<arr-val>")
         if production == 25:
             self.var_val()
             self.arr_val_tail()
+        else:
+            self.error(expected=list(PREDICT["<arr-val>"].keys()))
     
     def arr_val_tail(self):
-        # Productions 26-27
+        # <arr-val-tail>
         production = self.get_production("<arr-val-tail>")
         if production == 26:
             self.eat(",")
             self.var_val()
             self.arr_val_tail()
         elif production == 27:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<arr-val-tail>"].keys()))
 
     def arr2_val(self):
-        # Production 30
+        # <arr2-val>
         production = self.get_production("<arr2-val>")
         if production == 30:
             self.eat("[")
             self.arr_val()
             self.eat("]")
             self.arr2_val_tail()
+        else:
+            self.error(expected=list(PREDICT["<arr2-val>"].keys()))
 
     def arr2_val_tail(self):
-        # Productions 31-32
+        # <arr2-val-tail>
         production = self.get_production("<arr2-val-tail>")
         if production == 31:
             self.eat(",")
             self.arr2_val()
             self.arr2_val_tail()
         elif production == 32:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<arr2-val-tail>"].keys()))
 
     def locke_dec(self):
-        # Production 33
+        # <locke-dec>
         production = self.get_production("<locke-dec>")
         if production == 33:
             self.eat("LOCKE")
@@ -314,9 +329,11 @@ class Parser:
             self.eat("=")
             self.literals()
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<locke-dec>"].keys()))
 
     def struct_def(self):
-        # Productions 34-35
+        # <struct-def>
         production = self.get_production("<struct-def>")
         if production == 34:
             self.eat("MAST")
@@ -330,53 +347,67 @@ class Parser:
             self.sub_func()
         elif production == 35:
             pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<struct-def>"].keys()))
 
     def mem_dec(self):
-        # Production 36
+        # <mem-dec>
         production = self.get_production("<mem-dec>")
         if production == 36:
             self.d_type()
             self.eat("id")
             self.mem_dec_tail()
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<mem-dec>"].keys()))
             
     def mem_dec_tail(self):
-        # Productions 37-38
+        # <mem-dec-tail>
         production = self.get_production("<mem-dec-tail>")
         if production == 37:
             self.eat(",")
             self.eat("id")
             self.mem_dec_tail()
         elif production == 38:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<mem-dec-tail>"].keys()))
             
     def more_mem(self):
-        # Productions 39-40
+        # <more-mem>
         production = self.get_production("<more-mem>")
         if production == 39:
             self.mem_dec()
+            self.more_mem() # Recursion missing in original code logic, added here for completeness if grammar implies list
         elif production == 40:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<more-mem>"].keys()))
 
     # =========================================
-    # Expressions (Productions 41 - 121)
+    # Expressions
     # =========================================
 
     def var_val(self):
-        # Production 41
+        # <var-val>
         production = self.get_production("<var-val>")
         if production == 41:
             self.expression()
+        else:
+            self.error(expected=list(PREDICT["<var-val>"].keys()))
+        
 
     def expression(self):
-        # Production 42
+        # <expression>
         production = self.get_production("<expression>")
         if production == 42:
             self.operands()
             self.exp_tail()
+        else:
+            self.error(expected=list(PREDICT["<expression>"].keys()))
 
     def operands(self):
-        # Productions 43-45
+        # <operands>
         production = self.get_production("<operands>")
         if production == 43:
             self.value()
@@ -391,7 +422,7 @@ class Parser:
              self.error(expected=list(PREDICT["<operands>"].keys()))
 
     def value(self):
-        # Productions 46-47
+        # <value>
         production = self.get_production("<value>")
         if production == 46:
             self.eat("id")
@@ -402,7 +433,7 @@ class Parser:
              self.error(expected=list(PREDICT["<value>"].keys()))
 
     def id_tail(self):
-        # Productions 48-51
+        # <id-tail>
         production = self.get_production("<id-tail>")
         if production == 48:
             self.arr_elmt()
@@ -412,70 +443,85 @@ class Parser:
             self.func_args()
         elif production == 51:
             pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<id-tail>"].keys()))
 
     def arr_elmt(self):
-        # Production 52
+        # <arr-elmt>
         production = self.get_production("<arr-elmt>")
         if production == 52:
             self.eat("{")
             self.arr_index()
             self.eat("}")
             self.arr_elmt_tail()
+        else:
+            self.error(expected=list(PREDICT["<arr-elmt>"].keys()))
             
     def arr_index(self):
-        # Productions 53-54
+        # <arr-index>
         production = self.get_production("<arr-index>")
         if production == 53: self.eat("COIN-lit")
         elif production == 54: self.eat("id")
-        else: self.error(expected=["COIN-lit", "id"])
+        else: self.error(expected=list(PREDICT["<arr-index>"].keys()))
 
     def arr_elmt_tail(self):
-        # Productions 55-56
+        # <arr-elmt-tail>
         production = self.get_production("<arr-elmt-tail>")
         if production == 55:
             self.eat("{")
             self.arr_index()
             self.eat("}")
         elif production == 56:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<arr-elmt-tail>"].keys()))
 
     def str_mem(self):
-        # Production 57
+        # <str-mem>
         production = self.get_production("<str-mem>")
         if production == 57:
             self.eat("$")
             self.eat("id")
+        else:
+            self.error(expected=list(PREDICT["<str-mem>"].keys()))
 
     def func_args(self):
-        # Productions 58-59
+        # <func-args>
         production = self.get_production("<func-args>")
         if production == 58:
             self.eat("(")
             self.args()
             self.eat(")")
         elif production == 59:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<func-args>"].keys()))
 
     def args(self):
-        # Productions 60-61
+        # <args>
         production = self.get_production("<args>")
         if production == 60:
             self.value()
             self.args_tail()
         elif production == 61:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<args>"].keys()))
 
     def args_tail(self):
-        # Productions 62-63
+        # <args-tail>
         production = self.get_production("<args-tail>")
         if production == 62:
             self.eat(",")
             self.value()
+            self.args_tail()
         elif production == 63:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<args-tail>"].keys()))
             
     def literals(self):
-        # Productions 64-67
+        # <literals>
         production = self.get_production("<literals>")
         if production == 64: self.digits()
         elif production == 65: self.bool_lit()
@@ -487,62 +533,78 @@ class Parser:
             self.error(expected=list(PREDICT["<literals>"].keys()))
 
     def digits(self):
-        # Productions 68-69
+        # <digits>
         production = self.get_production("<digits>")
-        if production == 68 or production == 69:
+        if production == 68:
             self.neg()
             self.coin_dime()
+        else:
+            self.error(expected=list(PREDICT["<digits>"].keys()))
 
     def neg(self):
-        # Productions 69-70
+        # <neg>
         production = self.get_production("<neg>")
         if production == 69: self.eat("-")
-        elif production == 70: pass
+        elif production == 70: pass # Lambda (Positive)
+        else:
+            self.error(expected=list(PREDICT["<neg>"].keys()))
 
     def coin_dime(self):
-        # Productions 71-72
+        # <coin-dime>
         production = self.get_production("<coin-dime>")
         if production == 71: self.eat("COIN-lit")
         elif production == 72: self.eat("DIME-lit")
+        else:
+            self.error(expected=list(PREDICT["<coin-dime>"].keys()))
         
     def bool_lit(self):
-        # Productions 73-74
+        # <bool-lit>
         production = self.get_production("<bool-lit>")
         if production == 73: self.eat("AYE")
         elif production == 74: self.eat("NAY")
+        else:
+            self.error(expected=list(PREDICT["<bool-lit>"].keys()))
 
     def exp_tail(self):
-        # Productions 78-80
+        # <exp-tail>
         production = self.get_production("<exp-tail>")
         if production == 78: self.gen_exp()
         elif production == 79: self.scroll()
-        elif production == 80: pass
+        elif production == 80: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<exp-tail>"].keys()))
 
     def gen_exp(self):
-        # Productions 81-82
+        # <gen-exp>
         production = self.get_production("<gen-exp>")
         if production == 81:
             self.arith()
             self.rel()
             self.logeq()
-        elif production == 82: pass
+        elif production == 82: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<gen-exp>"].keys()))
 
     def arith(self):
-        # Productions 83-84
+        # <arith>
         production = self.get_production("<arith>")
         if production == 83: self.arith_exp()
-        elif production == 84: pass
+        elif production == 84: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<arith>"].keys()))
 
     def arith_exp(self):
-        # Production 85
+        # <arith-exp>
         production = self.get_production("<arith-exp>")
         if production == 85:
             self.arith_op()
             self.gen_ope()
             self.arith()
+        else:
+            self.error(expected=list(PREDICT["<arith-exp>"].keys()))
 
     def arith_op(self):
-        # Productions 86-91
+        # <arith-op>
         production = self.get_production("<arith-op>")
         if production == 86: self.eat("+")
         elif production == 87: self.eat("-")
@@ -550,9 +612,11 @@ class Parser:
         elif production == 89: self.eat("/")
         elif production == 90: self.eat("%")
         elif production == 91: self.eat("^")
+        else:
+            self.error(expected=list(PREDICT["<arith-op>"].keys()))
 
     def gen_ope(self):
-        # Productions 92-95
+        # <gen-ope>
         production = self.get_production("<gen-ope>")
         if production == 92:
             self.eat("id")
@@ -566,84 +630,113 @@ class Parser:
             self.gen_ope() 
             self.gen_exp()
             self.eat(")")
+        else:
+            self.error(expected=list(PREDICT["<gen-ope>"].keys()))
 
     def bool_rule(self):
-        # Production 45 equivalent for predict check
+        # <bool>
         production = self.get_production("<bool>")
-        # Note: <bool> was not in your original map, ensure it is added if used.
-        # Assuming you meant checking literals logic or specific boolean production
-        if production == 45: 
-             # Logic logic ...
-             pass
+        if production == 96:
+            self.bool_lit()
+        elif production == 97:
+            self.not_rule()
+            self.not_val()
         else:
-             # Logic ...
-             self.bool_lit()
+            self.error(expected=list(PREDICT["<bool>"].keys()))
 
     def not_rule(self):
-        # Production 46
-        # No get_production check was here originally, just token check
-        if self.current_token.type == "!": self.eat("!")
-        elif self.current_token.type == "!#": self.eat("!#")
-        else: self.error(expected=["!", "!#"])
+        # <not>
+        production = self.get_production("<not>")
+        if production == 98: self.eat("!")
+        elif production == 99: self.eat("!#")
+        else: self.error(expected=list(PREDICT["<not>"].keys()))
         
     def not_val(self):
-        # Production 47
-        if self.current_token.type == "id": self.eat("id")
-        elif self.current_token.type == "AYE": self.eat("AYE")
-        elif self.current_token.type == "NAY": self.eat("NAY")
-        elif self.current_token.type == "(": 
+        # <not-val>
+        production = self.get_production("<not-val>")
+        if production == 100: self.eat("id")
+        elif production == 101: self.bool_lit()
+        elif production == 102: 
             self.eat("(")
             self.expression()
             self.eat(")")
-        else: self.error(expected=["id", "AYE", "NAY", "("])
+        else: self.error(expected=list(PREDICT["<not-val>"].keys()))
 
     def rel(self):
-        # Productions 99-100
+        # <rel>
         production = self.get_production("<rel>")
-        if production == 99:
+        if production == 103:
             self.rel_op()
             self.gen_ope()
             self.arith()
-        elif production == 100: pass
+        elif production == 104: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<rel>"].keys()))
 
     def rel_op(self):
-        # Productions 101-104
+        # <rel-op>
+        # Note: PREDICT has shared ID 107 for < and <=, relying on lexer to distinguish
         production = self.get_production("<rel-op>")
-        if production == 101: self.eat("<")
-        elif production == 102: self.eat(">")
-        elif production == 103: self.eat("<=")
-        elif production == 104: self.eat(">=")
+        # Handling ambiguity in PREDICT table mapping
+        if self.current_token.type == "<":
+            self.eat("<")
+        elif self.current_token.type == ">":
+            self.eat(">")
+        elif self.current_token.type == "<=":
+            self.eat("<=")
+        elif self.current_token.type == ">=":
+            self.eat(">=")
+        else:
+             self.error(expected=list(PREDICT["<rel-op>"].keys()))
 
     def logeq(self):
-        # Productions 105-106
+        # <logeq>
         production = self.get_production("<logeq>")
-        if production == 105:
+        if production == 109:
             self.logeq_op()
             self.gen_ope()
             self.gen_exp()
-        elif production == 106: pass
+        elif production == 110: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<logeq>"].keys()))
 
     def logeq_op(self):
-        # Productions 107-109
+        # <logeq-op>
         production = self.get_production("<logeq-op>")
-        if production == 107: self.eat("||")
-        elif production == 108: self.eat("&&")
-        elif production == 109: 
-            if self.current_token.type == "==": self.eat("==")
-            elif self.current_token.type == "!=": self.eat("!=")
-            else: self.error(expected=["==", "!="])
+        if production == 111: 
+            self.log_op()
+        elif production == 112: 
+            self.equal_op()
+        else:
+            self.error(expected=list(PREDICT["<logeq-op>"].keys()))
+    
+    def log_op(self):
+        # <log-op>
+        production = self.get_production("<log-op>")
+        if production == 113: self.eat("||")
+        elif production == 114: self.eat("&&")
+        else: self.error(expected=list(PREDICT["<log-op>"].keys()))
+
+    def equal_op(self):
+        # <equal-op>
+        production = self.get_production("<equal-op>")
+        if production == 115: self.eat("==")
+        elif production == 116: self.eat("!=")
+        else: self.error(expected=list(PREDICT["<equal-op>"].keys()))
 
     def scroll(self):
-        # Productions 117-118
+        # <scroll>
         production = self.get_production("<scroll>")
         if production == 117:
             self.eat("&")
             self.scroll_ope()
             self.scroll()
-        elif production == 118: pass
+        elif production == 118: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<scroll>"].keys()))
 
     def scroll_ope(self):
-        # Productions 119-121
+        # <scroll-ope>
         production = self.get_production("<scroll-ope>")
         if production == 119:
             self.eat("SCROLL-lit")
@@ -656,13 +749,15 @@ class Parser:
             self.scroll_ope()
             self.scroll()
             self.eat(")")
+        else:
+            self.error(expected=list(PREDICT["<scroll-ope>"].keys()))
 
     # =========================================
     # Functions (Sub, Return, Non-Return)
     # =========================================
 
     def sub_func(self):
-        # Productions 122-124
+        # <sub-func>
         production = self.get_production("<sub-func>")
         if production == 122:
             self.d_type()
@@ -671,10 +766,12 @@ class Parser:
         elif production == 123:
             self.nonreturn_func()
         elif production == 124:
-            pass
+            pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<sub-func>"].keys()))
 
     def return_func(self):
-        # Production 125
+        # <return-func>
         production = self.get_production("<return-func>")
         if production == 125:
             self.eat("(")
@@ -688,28 +785,34 @@ class Parser:
             self.eat("!!")
             self.eat("]")
             self.sub_func()
+        else:
+            self.error(expected=list(PREDICT["<return-func>"].keys()))
 
     def func_parameters(self):
-        # Productions 126-127
+        # <func-parameters>
         production = self.get_production("<func-parameters>")
         if production == 126:
             self.d_type()
             self.eat("id")
             self.func_tail()
-        elif production == 127: pass
+        elif production == 127: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<func-parameters>"].keys()))
 
     def func_tail(self):
-        # Productions 128-129
+        # <func-tail>
         production = self.get_production("<func-tail>")
         if production == 128:
             self.eat(",")
             self.d_type()
             self.eat("id")
             self.func_tail()
-        elif production == 129: pass
+        elif production == 129: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<func-tail>"].keys()))
 
     def back_val(self):
-        # Productions 130-132
+        # <back-val>
         production = self.get_production("<back-val>")
         if production == 130: self.literals()
         elif production == 131: self.eat("id")
@@ -717,9 +820,11 @@ class Parser:
             self.eat("(")
             self.expression()
             self.eat(")")
+        else:
+            self.error(expected=list(PREDICT["<back-val>"].keys()))
 
     def nonreturn_func(self):
-        # Production 133
+        # <nonreturn-func>
         production = self.get_production("<nonreturn-func>")
         if production == 133:
             self.eat("ABYSS")
@@ -733,21 +838,25 @@ class Parser:
             self.nonreturn_back()
             self.eat("]")
             self.sub_func()
+        else:
+            self.error(expected=list(PREDICT["<nonreturn-func>"].keys()))
 
     def nonreturn_back(self):
-        # Productions 134-135
+        # <nonreturn-back>
         production = self.get_production("<nonreturn-back>")
         if production == 134:
             self.eat("BACK")
             self.eat("!!")
-        elif production == 135: pass
+        elif production == 135: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<nonreturn-back>"].keys()))
 
     # =========================================
-    # Local Declarations (Rules 136-139)
+    # Local Declarations
     # =========================================
 
     def local_dec(self):
-        # Productions 136-137
+        # <local-dec>
         production = self.get_production("<local-dec>")
         if production == 136:
             self.d_type()
@@ -756,27 +865,33 @@ class Parser:
             self.loc_dec_tail()
         elif production == 137:
             self.struct()
-        # Note: If no match, we assume it might be a statement start (caught by FOLLOW/PREDICT logic)
-        # but technically local_dec must start with type or struct.
-            
+        else:
+            # IMPORTANT: Functions must have at least one local declaration.
+            # If current token is not a type or struct, this fails, fulfilling the requirement.
+            self.error(expected=list(PREDICT["<local-dec>"].keys()))
+
     def loc_dec_tail(self):
-        # Productions 138-139
+        # <loc-dec-tail>
         production = self.get_production("<loc-dec-tail>")
         if production == 138:
             self.local_dec()
         elif production == 139:
-            pass # Lambda
+            pass # Lambda (End of declarations, Start of statements)
+        else:
+            self.error(expected=list(PREDICT["<loc-dec-tail>"].keys()))
 
     def struct(self):
-        # Productions 140-141
+        # <struct>
         production = self.get_production("<struct>")
         if production == 140:
             self.struct_dec()
             self.struct()
-        elif production == 141: pass
+        elif production == 141: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<struct>"].keys()))
 
     def struct_dec(self):
-        # Production 142
+        # <struct-dec>
         production = self.get_production("<struct-dec>")
         if production == 142:
             self.eat("MAST")
@@ -784,9 +899,11 @@ class Parser:
             self.eat("id")
             self.struct_dec_init()
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<struct-dec>"].keys()))
 
     def struct_dec_init(self):
-        # Productions 143-145
+        # <struct-dec-init>
         production = self.get_production("<struct-dec-init>")
         if production == 143:
             self.eat(",")
@@ -797,22 +914,27 @@ class Parser:
             self.eat("[")
             self.arr_val()
             self.eat("]")
-        elif production == 145: pass
+        elif production == 145: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<struct-dec-init>"].keys()))
 
     def struct_dec_tail(self):
-        # Productions 146-147
+        # <struct-dec-tail>
         production = self.get_production("<struct-dec-tail>")
         if production == 146:
             self.eat(",")
             self.eat("id")
             self.struct_dec_tail()
-        elif production == 147: pass
+        elif production == 147: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<struct-dec-tail>"].keys()))
 
     # =========================================
-    # Statements (Productions 148 - 156)
+    # Statements
     # =========================================
 
     def statements(self):
+        # <statements>
         production = self.get_production("<statements>")
         if production == 148: self.assign_stmnt()
         elif production == 149: self.ask_stmnt()
@@ -825,42 +947,55 @@ class Parser:
         elif production == 156: 
             self.unary_exp()
             self.eat("!!")
-        # Lambda handling for statements via stmnt_tail recursion
+        else:
+            # Rule: Functions must have at least one statement.
+            self.error(expected=list(PREDICT["<statements>"].keys()))
+        
+        # Recursion for multiple statements
         self.stmnt_tail()
 
     def stmnt_tail(self):
+        # <stmnt-tail>
         production = self.get_production("<stmnt-tail>")
         if production == 157:
             self.statements()
         elif production == 158:
             pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<stmnt-tail>"].keys()))
 
     def assign_stmnt(self):
-        # Production 159
+        # <assign-stmnt>
         production = self.get_production("<assign-stmnt>")
         if production == 159:
             self.eat("id")
             self.assign_tail()
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<assign-stmnt>"].keys()))
 
     def assign_tail(self):
-        # Productions 160-161
+        # <assign-tail>
         production = self.get_production("<assign-tail>")
         if production == 160:
             self.arr_str()
             self.assign_body()
         elif production == 161:
             self.func_args()
+        else:
+            self.error(expected=list(PREDICT["<assign-tail>"].keys()))
 
     def arr_str(self):
-        # Productions 75-77 (Using for assignment logic)
+        # <arr-str>
         production = self.get_production("<arr-str>")
         if production == 75: self.arr_elmt()
         elif production == 76: self.str_mem()
-        elif production == 77: pass
+        elif production == 77: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<arr-str>"].keys()))
         
     def assign_body(self):
-        # Productions 162-163
+        # <assign-body>
         production = self.get_production("<assign-body>")
         if production == 162:
             self.eat("=")
@@ -872,22 +1007,26 @@ class Parser:
              self.error(expected=list(PREDICT["<assign-body>"].keys()))
 
     def assign_val(self):
-        # Productions 164-165
+        # <assign-val>
         production = self.get_production("<assign-val>")
         if production == 164: self.var_val()
         elif production == 165:
             self.eat("[")
             self.arr_assign()
             self.eat("]")
+        else:
+            self.error(expected=list(PREDICT["<assign-val>"].keys()))
             
     def arr_assign(self):
-        # Productions 166-167
+        # <arr-assign>
         production = self.get_production("<arr-assign>")
         if production == 166: self.arr_val()
         elif production == 167: self.arr2_val()
+        else:
+            self.error(expected=list(PREDICT["<arr-assign>"].keys()))
 
     def arith_assign_op(self):
-        # Productions 168-173
+        # <arith-assign-op>
         production = self.get_production("<arith-assign-op>")
         if production == 168: self.eat("+=")
         elif production == 169: self.eat("-=")
@@ -895,9 +1034,11 @@ class Parser:
         elif production == 171: self.eat("/=")
         elif production == 172: self.eat("%=")
         elif production == 173: self.eat("^=")
+        else:
+            self.error(expected=list(PREDICT["<arith-assign-op>"].keys()))
 
     def ask_stmnt(self):
-        # Production 174
+        # <ask-stmnt>
         production = self.get_production("<ask-stmnt>")
         if production == 174:
             self.eat("ASK")
@@ -907,18 +1048,22 @@ class Parser:
             self.addr()
             self.eat(")")
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<ask-stmnt>"].keys()))
             
     def addr(self):
-        # Production 175
+        # <addr>
         production = self.get_production("<addr>")
         if production == 175:
             self.eat("@")
             self.eat("id")
             self.arr_str()
             self.addr_tail()
+        else:
+            self.error(expected=list(PREDICT["<addr>"].keys()))
             
     def addr_tail(self):
-        # Productions 176-177
+        # <addr-tail>
         production = self.get_production("<addr-tail>")
         if production == 176:
             self.eat(",")
@@ -926,10 +1071,12 @@ class Parser:
             self.eat("id")
             self.arr_str()
             self.addr_tail()
-        elif production == 177: pass
+        elif production == 177: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<addr-tail>"].keys()))
 
     def echo_stmnt(self):
-        # Production 178
+        # <echo-stmnt>
         production = self.get_production("<echo-stmnt>")
         if production == 178:
             self.eat("ECHO")
@@ -938,27 +1085,33 @@ class Parser:
             self.echo_arg()
             self.eat(")")
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<echo-stmnt>"].keys()))
 
     def echo_arg(self):
-        # Productions 179-180
+        # <echo-arg>
         production = self.get_production("<echo-arg>")
         if production == 179:
             self.eat(",")
             self.expression()
             self.echo_arg_tail()
-        elif production == 180: pass
+        elif production == 180: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<echo-arg>"].keys()))
         
     def echo_arg_tail(self):
-        # Productions 181-182
+        # <echo-arg-tail>
         production = self.get_production("<echo-arg-tail>")
         if production == 181:
             self.eat(",")
             self.expression()
             self.echo_arg_tail()
-        elif production == 182: pass
+        elif production == 182: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<echo-arg-tail>"].keys()))
 
     def look_stmnt(self):
-        # Production 183
+        # <look-stmnt>
         production = self.get_production("<look-stmnt>")
         if production == 183:
             self.eat("LOOK")
@@ -970,24 +1123,30 @@ class Parser:
             self.sail_stmt()
             self.eat("]")
             self.look_tail()
+        else:
+            self.error(expected=list(PREDICT["<look-stmnt>"].keys()))
 
     def cond_exp(self):
-        # Production 184
+        # <cond-exp>
         production = self.get_production("<cond-exp>")
         if production == 184:
             self.gen_ope()
             self.gen_exp()
+        else:
+            self.error(expected=list(PREDICT["<cond-exp>"].keys()))
 
     def sail_stmt(self):
-        # Productions 185-186
+        # <sail-stmt>
         production = self.get_production("<sail-stmt>")
         if production == 185:
             self.eat("SAIL")
             self.eat("!!")
-        elif production == 186: pass
+        elif production == 186: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<sail-stmt>"].keys()))
 
     def look_tail(self):
-        # Productions 187-189
+        # <look-tail>
         production = self.get_production("<look-tail>")
         if production == 187:
             self.eat("DROPLOOK")
@@ -1005,10 +1164,12 @@ class Parser:
             self.statements()
             self.sail_stmt()
             self.eat("]")
-        elif production == 189: pass
+        elif production == 189: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<look-tail>"].keys()))
 
     def chart_stmnt(self):
-        # Production 190
+        # <chart-stmnt>
         production = self.get_production("<chart-stmnt>")
         if production == 190:
             self.eat("CHART")
@@ -1020,24 +1181,30 @@ class Parser:
             self.course_tail()
             self.adrift_case()
             self.eat("]")
+        else:
+            self.error(expected=list(PREDICT["<chart-stmnt>"].keys()))
 
     def chart_cond(self):
-        # Productions 191-192
+        # <chart-cond>
         production = self.get_production("<chart-cond>")
         if production == 191: self.const()
         elif production == 192: self.eat("id")
+        else:
+            self.error(expected=list(PREDICT["<chart-cond>"].keys()))
         
     def const(self):
-        # Productions 193-194
+        # <const>
         production = self.get_production("<const>")
         if production == 193:
             self.neg()
             self.eat("COIN-lit")
         elif production == 194:
             self.eat("PARCH-lit")
+        else:
+            self.error(expected=list(PREDICT["<const>"].keys()))
 
     def courses(self):
-        # Production 195
+        # <courses>
         production = self.get_production("<courses>")
         if production == 195:
             self.eat("COURSE")
@@ -1046,17 +1213,21 @@ class Parser:
             self.statements()
             self.eat("LAND")
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<courses>"].keys()))
 
     def course_tail(self):
-        # Productions 196-197
+        # <course-tail>
         production = self.get_production("<course-tail>")
         if production == 196:
             self.courses()
             self.course_tail()
-        elif production == 197: pass
+        elif production == 197: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<course-tail>"].keys()))
 
     def adrift_case(self):
-        # Productions 198-199
+        # <adrift-case>
         production = self.get_production("<adrift-case>")
         if production == 198:
             self.eat("ADRIFT")
@@ -1064,10 +1235,12 @@ class Parser:
             self.statements()
             self.eat("LAND")
             self.eat("!!")
-        elif production == 199: pass
+        elif production == 199: pass # Lambda
+        else:
+            self.error(expected=list(PREDICT["<adrift-case>"].keys()))
 
     def hoist_stmnt(self):
-        # Production 200
+        # <hoist-stmnt>
         production = self.get_production("<hoist-stmnt>")
         if production == 200:
             self.eat("HOIST")
@@ -1081,9 +1254,11 @@ class Parser:
             self.eat("[")
             self.statements()
             self.eat("]")
+        else:
+            self.error(expected=list(PREDICT["<hoist-stmnt>"].keys()))
 
     def init(self):
-        # Productions 201-203
+        # <init>
         production = self.get_production("<init>")
         if production == 201:
             self.eat("COIN")
@@ -1096,10 +1271,12 @@ class Parser:
             self.eat("=")
             self.neg()
             self.eat("COIN-lit")
-        elif production == 203: pass
+        elif production == 203: pass # Lambda (Empty init allowed)
+        else:
+            self.error(expected=list(PREDICT["<init>"].keys()))
 
     def heave_stmnt(self):
-        # Production 204
+        # <heave-stmnt>
         production = self.get_production("<heave-stmnt>")
         if production == 204:
             self.eat("HEAVE")
@@ -1109,9 +1286,11 @@ class Parser:
             self.eat("[")
             self.statements()
             self.eat("]")
+        else:
+            self.error(expected=list(PREDICT["<heave-stmnt>"].keys()))
 
     def haul_stmnt(self):
-        # Production 205
+        # <haul-stmnt>
         production = self.get_production("<haul-stmnt>")
         if production == 205:
             self.eat("HAUL")
@@ -1123,16 +1302,22 @@ class Parser:
             self.cond_exp()
             self.eat(")")
             self.eat("!!")
+        else:
+            self.error(expected=list(PREDICT["<haul-stmnt>"].keys()))
 
     def unary_exp(self):
-        # Production 206
+        # <unary-exp>
         production = self.get_production("<unary-exp>")
         if production == 206:
             self.unary_op()
             self.eat("id")
+        else:
+            self.error(expected=list(PREDICT["<unary-exp>"].keys()))
 
     def unary_op(self):
-        # Productions 207-208
+        # <unary-op>
         production = self.get_production("<unary-op>")
         if production == 207: self.eat("+#")
         elif production == 208: self.eat("-#")
+        else:
+            self.error(expected=list(PREDICT["<unary-op>"].keys()))
