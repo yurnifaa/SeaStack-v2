@@ -140,7 +140,6 @@ class Parser:
     # =========================================
     # Program Structure & Declarations
     # =========================================
-    # ... (Rest of the grammar methods remain identical to your original file) ...
     
     def program(self):
         # <program>
@@ -979,7 +978,7 @@ class Parser:
         elif production == 76: self.str_mem()
         elif production == 77: pass # Lambda
         else:
-            self.error(expected=list(PREDICT["<arr-str>"].keys()))
+          self.error(expected=list(PREDICT["<arr-str>"].keys()))
         
     def assign_body(self):
         # <assign-body>
