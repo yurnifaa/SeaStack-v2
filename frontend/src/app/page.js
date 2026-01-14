@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react"; 
 import SeaStackEditor from "../components/CodeEditor";
 
-// --- NEW: Reusable Gooey Button Component ---
+// --- Reusable Gooey Button Component ---
 const GooeyButton = ({ onClick, children }) => {
   return (
     <button className="c-button c-button--gooey" onClick={onClick}>
@@ -148,15 +148,17 @@ export default function Home() {
     if (e.key === 'Escape') setIsRenaming(false);
   };
 
-  // --- STRUCTURED ERROR FORMATTER ---
+  // ==========================================
+  // --- STRUCTURED ERROR FORMATTERS ---
+  // ==========================================
+
+  // 1. Syntax Formatter (Includes Source Line)
   const formatSyntaxError = (errObj, sourceCode) => {
-    // If it's a generic crash or doesn't have valid line info, return as is
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
-        return errObj;
+        return { ...errObj, isStructured: false };
     }
 
     const lineNum = parseInt(errObj.line, 10);
-    // Split code by newline to find the specific line (Adjust for 1-based indexing)
     const lines = sourceCode.split('\n');
     const actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
     
@@ -165,19 +167,34 @@ export default function Home() {
         ? errObj.expected.join(", ") 
         : "nothing";
 
-    // Format strictly as requested:
-    // Line X, Col Y | Unexpected token '<found>'.
-    // '<actual_line>'
-    // Expected any: '<expected>'
-    // NOTE: The 'Line X, Col Y |' part is handled by the visual component,
-    // so we format the 'message' part to contain the rest.
-    
-    const formattedMessage = `Unexpected token '${found}'.\n'${actualLine}'\nExpected any: '${expected}'`;
+    return {
+        line: errObj.line,
+        col: errObj.col,
+        foundToken: found,
+        sourceCode: actualLine, 
+        expectedTokens: expected,
+        isStructured: true
+    };
+  };
+
+  // 2. Lexical Formatter (Uses Structured Data from Server)
+  const formatLexicalError = (errObj) => {
+    if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
+        return { ...errObj, isStructured: false };
+    }
+
+    const found = errObj.found || errObj.message;
+    const expected = errObj.expected && errObj.expected.length > 0 
+        ? errObj.expected.join(", ") 
+        : "Valid Token";
 
     return {
         line: errObj.line,
         col: errObj.col,
-        message: formattedMessage
+        foundToken: found,
+        sourceCode: null, // Lexical errors don't show source line
+        expectedTokens: expected,
+        isStructured: true
     };
   };
 
@@ -197,19 +214,24 @@ export default function Home() {
       const result = await res.json();
       
       if (result.tokens) setTokens(result.tokens);
-      if (result.lexical_errors?.length > 0) setLexicalErrors(result.lexical_errors);
       
+      // --- Process Lexical Errors ---
+      if (result.lexical_errors?.length > 0) {
+          const formattedLex = result.lexical_errors.map(formatLexicalError);
+          setLexicalErrors(formattedLex);
+      }
+      
+      // --- Process Syntax Errors ---
       if (result.syntax_errors?.length > 0) {
-          // MAP ERRORS THROUGH HELPER FUNCTION BEFORE SETTING STATE
-          const formattedErrors = result.syntax_errors.map(err => formatSyntaxError(err, code));
-          setSyntaxErrors(formattedErrors);
+          const formattedSyn = result.syntax_errors.map(err => formatSyntaxError(err, code));
+          setSyntaxErrors(formattedSyn);
       }
 
       setActiveTab(targetTab);
 
     } catch (err) {
       console.error("Connection Error:", err);
-      const errorObj = { line: "0", col: "0", message: "Cannot connect to Backend. Is 'server.py' running?" };
+      const errorObj = { line: "0", col: "0", message: "Cannot connect to Backend. Is 'server.py' running?", isStructured: false };
       if (targetTab === "lexical") setLexicalErrors([errorObj]);
       else setSyntaxErrors([errorObj]);
     }
@@ -218,6 +240,9 @@ export default function Home() {
   const handleLexicalAnalysis = () => performAnalysis("lexical");
   const handleSyntaxAnalysis = () => performAnalysis("syntax");
 
+  // ==========================================
+  // --- ERROR LIST COMPONENT ---
+  // ==========================================
   const ErrorList = ({ errors, typeName }) => {
     return (
         <div style={{ fontFamily: '"Fira Code", monospace', fontSize: '0.9rem' }}>
@@ -226,13 +251,39 @@ export default function Home() {
             </div>
             
             {errors.map((err, i) => (
-                <div key={i} style={{ display: 'flex', gap: '10px', color: '#e5e7eb', marginBottom: '8px', alignItems: 'flex-start' }}>  
-                    <span style={{ minWidth: '120px', color: '#9ca3af', flexShrink: 0 }}>
+                <div key={i} style={{ display: 'flex', gap: '10px', color: '#e5e7eb', marginBottom: '12px', alignItems: 'flex-start' }}>  
+                    <span style={{ minWidth: '120px', color: '#9ca3af', flexShrink: 0, paddingTop: '2px' }}>
                         Line {err.line}, Col {err.col}
                     </span>
-                    <span style={{ color: '#6b7280' }}>|</span>
-                    {/* Added whiteSpace: 'pre-wrap' to render the newlines from formatSyntaxError */}
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{err.message}</span>
+                    <span style={{ color: '#6b7280', paddingTop: '2px' }}>|</span>
+                    
+                    {/* --- CONDITIONAL RENDERING FOR STYLING --- */}
+                    {err.isStructured ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            {/* 1. Message (RED) - Conditional format based on typeName */}
+                            <span style={{ color: '#f87171' }}>
+                                {typeName === "Lexical" 
+                                    ? `${err.foundToken}.` 
+                                    : `Unexpected token '${err.foundToken}'.`
+                                }
+                            </span>
+                            
+                            {/* 2. Source Line (GREY) - Only render if sourceCode exists */}
+                            {err.sourceCode && (
+                                <span style={{ color: '#9ca3af' }}>
+                                    &apos;{err.sourceCode}&apos;
+                                </span>
+                            )}
+                            
+                            {/* 3. Expected (ITALIC + DEFAULT COLOR) */}
+                            <span style={{ color: '#e5e7eb', fontStyle: 'italic' }}>
+                                Expected any: &apos;{err.expectedTokens}&apos;
+                            </span>
+                        </div>
+                    ) : (
+                         /* Fallback for Backend Crashes */
+                        <span style={{ whiteSpace: 'pre-wrap', paddingTop: '2px' }}>{err.message}</span>
+                    )}
                 </div>
             ))}
         </div>
@@ -247,16 +298,9 @@ export default function Home() {
           <span className="title">SeaStack</span>
           <nav className="main-nav">
             <ul>
-              {/* --- UPDATED BUTTONS --- */}
-              <li>
-                <GooeyButton onClick={handleLexicalAnalysis}>Lexical</GooeyButton>
-              </li>
-              <li>
-                <GooeyButton onClick={handleSyntaxAnalysis}>Syntax</GooeyButton>
-              </li>
-              <li>
-                <GooeyButton onClick={() => setActiveTab("semantic")}>Semantic</GooeyButton>
-              </li>
+              <li><GooeyButton onClick={handleLexicalAnalysis}>Lexical</GooeyButton></li>
+              <li><GooeyButton onClick={handleSyntaxAnalysis}>Syntax</GooeyButton></li>
+              <li><GooeyButton onClick={() => setActiveTab("semantic")}>Semantic</GooeyButton></li>
             </ul>
           </nav>
         </div>

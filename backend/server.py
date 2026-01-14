@@ -54,11 +54,43 @@ def analyze_code():
                 line = getattr(e, 'line', '?')
                 col = getattr(e, 'col', getattr(e, 'column', '?')) 
                 msg = getattr(e, 'error_msg', str(e))
+                val = getattr(e, 'value', '')
+
+                # --- STRUCTURED ERROR PARSING ---
+                # Default fallback
+                found_str = msg
+                expected_list = ["Valid Token"]
+
+                # 1. Handle SCROLL (String) Literals
+                if "SCROLL literal" in msg:
+                    found_str = "Invalid SCROLL literal"
+                    expected_list = ['"'] # Double quote
                 
+                # 2. Handle PARCH (Char) Literals
+                elif "PARCH literal" in msg:
+                    found_str = "Invalid PARCH literal"
+                    expected_list = ["'"] # Single quote
+
+                # 3. Handle Invalid Characters
+                elif "Invalid Character" in msg:
+                    # If we have the value, show it
+                    if val:
+                        found_str = f"Invalid character '{val}'"
+                    else:
+                        found_str = "Invalid character"
+                    expected_list = ["Valid Token"]
+
+                # 4. Handle Identifier Delimiters
+                elif "Invalid Indentifier" in msg or "Invalid Identifier" in msg:
+                    found_str = "Invalid Identifier"
+                    expected_list = ["Delimiter (Space, Operator, etc.)"]
+
                 response_data['lexical_errors'].append({
                     "line": line,
                     "col": col,
-                    "message": msg
+                    "found": found_str,
+                    "expected": expected_list,
+                    "message": msg # Keep original for debugging/fallback
                 })
         
         if not lex_errors:
@@ -66,7 +98,9 @@ def analyze_code():
 
     except Exception as e:
         response_data['lexical_errors'].append({
-            "line": "-", "col": "-", "message": f"Lexer Crashed: {str(e)}"
+            "line": "-", "col": "-", 
+            "found": "CRASH", "expected": [],
+            "message": f"Lexer Crashed: {str(e)}"
         })
         return jsonify(response_data)
 
@@ -78,14 +112,13 @@ def analyze_code():
             # Pass the tokens list from the lexer to the parser
             parser = Parser(tokens)
             
-            # Now returns a list of raw error DICTIONARIES, not strings
+            # Now returns a list of raw error DICTIONARIES
             syntax_errors = parser.parse() 
             
             if syntax_errors:
                 response_data['syntax_errors'].extend(syntax_errors)
                 response_data['success'] = False
             else:
-                # If list is empty, it means success (no errors returned)
                 pass
 
         except Exception as e:
@@ -101,5 +134,4 @@ def analyze_code():
     return jsonify(response_data)
 
 if __name__ == '__main__':
-    # Run the server on port 5000
     app.run(debug=True, port=5000)
