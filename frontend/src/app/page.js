@@ -148,6 +148,39 @@ export default function Home() {
     if (e.key === 'Escape') setIsRenaming(false);
   };
 
+  // --- STRUCTURED ERROR FORMATTER ---
+  const formatSyntaxError = (errObj, sourceCode) => {
+    // If it's a generic crash or doesn't have valid line info, return as is
+    if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
+        return errObj;
+    }
+
+    const lineNum = parseInt(errObj.line, 10);
+    // Split code by newline to find the specific line (Adjust for 1-based indexing)
+    const lines = sourceCode.split('\n');
+    const actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
+    
+    const found = errObj.found || "unknown";
+    const expected = errObj.expected && errObj.expected.length > 0 
+        ? errObj.expected.join(", ") 
+        : "nothing";
+
+    // Format strictly as requested:
+    // Line X, Col Y | Unexpected token '<found>'.
+    // '<actual_line>'
+    // Expected any: '<expected>'
+    // NOTE: The 'Line X, Col Y |' part is handled by the visual component,
+    // so we format the 'message' part to contain the rest.
+    
+    const formattedMessage = `Unexpected token '${found}'.\n'${actualLine}'\nExpected any: '${expected}'`;
+
+    return {
+        line: errObj.line,
+        col: errObj.col,
+        message: formattedMessage
+    };
+  };
+
   const performAnalysis = async (targetTab) => {
     setLexicalErrors([]);
     setSyntaxErrors([]);
@@ -165,7 +198,12 @@ export default function Home() {
       
       if (result.tokens) setTokens(result.tokens);
       if (result.lexical_errors?.length > 0) setLexicalErrors(result.lexical_errors);
-      if (result.syntax_errors?.length > 0) setSyntaxErrors(result.syntax_errors);
+      
+      if (result.syntax_errors?.length > 0) {
+          // MAP ERRORS THROUGH HELPER FUNCTION BEFORE SETTING STATE
+          const formattedErrors = result.syntax_errors.map(err => formatSyntaxError(err, code));
+          setSyntaxErrors(formattedErrors);
+      }
 
       setActiveTab(targetTab);
 
@@ -188,12 +226,13 @@ export default function Home() {
             </div>
             
             {errors.map((err, i) => (
-                <div key={i} style={{ display: 'flex', gap: '10px', color: '#e5e7eb', marginBottom: '4px' }}>
-                    <span style={{ minWidth: '120px', color: '#9ca3af' }}>
+                <div key={i} style={{ display: 'flex', gap: '10px', color: '#e5e7eb', marginBottom: '8px', alignItems: 'flex-start' }}>  
+                    <span style={{ minWidth: '120px', color: '#9ca3af', flexShrink: 0 }}>
                         Line {err.line}, Col {err.col}
                     </span>
                     <span style={{ color: '#6b7280' }}>|</span>
-                    <span>{err.message}</span>
+                    {/* Added whiteSpace: 'pre-wrap' to render the newlines from formatSyntaxError */}
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{err.message}</span>
                 </div>
             ))}
         </div>

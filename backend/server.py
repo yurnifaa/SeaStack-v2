@@ -34,7 +34,7 @@ def analyze_code():
     # =================================
     #    --- LEXICAL ANALYSIS ---
     # =================================
-    tokens = [] # Initialize tokens to ensure scope availability
+    tokens = [] 
     try:
         lexer = Lexer(code_string)
         tokens, lex_errors = lexer.tokenize()
@@ -77,63 +77,24 @@ def analyze_code():
         try:
             # Pass the tokens list from the lexer to the parser
             parser = Parser(tokens)
-            syntax_result = parser.parse()
             
-            if syntax_result and isinstance(syntax_result, list):
-                for err in syntax_result:
-                    
-                    if isinstance(err, str):
-                        # 1. Skip the start message
-                        if "Starting Parsing" in err:
-                            continue
-
-                        # 2. Check for Line/Col error pattern
-                        match = re.search(r'Line\s+(\d+),\s+Col\s+(\d+)', err, re.IGNORECASE)
-                        
-                        if match:
-                            line_num = match.group(1)
-                            col_num = match.group(2)
-
-                            if ':' in err:
-                                clean_msg = err.split(':', 1)[1].strip()
-                            else:
-                                clean_msg = err
-                                
-                            response_data['syntax_errors'].append({
-                                "line": line_num,
-                                "col": col_num,
-                                "message": clean_msg
-                            })
-
-                        # 3. HANDLE SUCCESS MESSAGE (Keep it, but format cleanly)
-                        elif "Parsing Completed Successfully" in err:
-                            response_data['syntax_errors'].append({
-                                "line": "", 
-                                "col": "",
-                                "message": err
-                            })
-                            
-                        # 4. Fallback for other strings
-                        else:
-                            response_data['syntax_errors'].append({
-                                "line": "?", "col": "?", "message": err
-                            })
-
-                    elif isinstance(err, dict):
-                         response_data['syntax_errors'].append(err)
-                    else:
-                        response_data['syntax_errors'].append({
-                            "line": getattr(err, 'line', '?'),
-                            "col": getattr(err, 'col', '?'),
-                            "message": getattr(err, 'message', str(err))
-                        })
-
-            elif syntax_result is None:
-                pass 
+            # Now returns a list of raw error DICTIONARIES, not strings
+            syntax_errors = parser.parse() 
+            
+            if syntax_errors:
+                response_data['syntax_errors'].extend(syntax_errors)
+                response_data['success'] = False
+            else:
+                # If list is empty, it means success (no errors returned)
+                pass
 
         except Exception as e:
             response_data['syntax_errors'].append({
-                "line": "-", "col": "-", "message": f"Parser Crashed: {str(e)}"
+                "line": "-", 
+                "col": "-", 
+                "found": "CRASH",
+                "expected": [],
+                "message": f"Parser Crashed: {str(e)}"
             })
             response_data['success'] = False
     

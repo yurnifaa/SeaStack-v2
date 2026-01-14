@@ -18,7 +18,6 @@ class Parser:
         self.tokens = [t for t in tokens if t.type not in ignored_types]
         
         # NORMALIZE IDENTIFIERS
-        # Ensures id1, id2, etc. are treated generically as "id"
         for t in self.tokens:
             if t.type.startswith("id") and t.type[2:].isdigit():
                 t.type = "id"
@@ -27,7 +26,7 @@ class Parser:
         self.pos = 0
         self.current_token = self.tokens[self.pos] if self.tokens else None
         self.errors = []
-        self.logs = []
+        # Removed self.logs as we are now returning raw error objects
 
     # =========================================
     # Utility Methods
@@ -52,8 +51,7 @@ class Parser:
 
     def error(self, message=None, expected=None, found=None):
         """
-        Records a syntax error. 
-        Stops execution immediately by raising an Exception.
+        Raises a structured error dictionary.
         """
         # Determine Location
         if self.current_token:
@@ -65,20 +63,22 @@ class Parser:
             col = "?"
             found_str = "EOF"
 
-        # Construct Message
+        # Format Expected Tokens
+        clean_expected = []
         if expected:
             clean_expected = sorted([str(t) for t in expected if t is not None])
-            expected_str = f"[{', '.join(clean_expected)}]"
-            err_msg = f"[Line {line}, Col {col}] Syntax Error: Unexpected token '{found_str}'. Expected any: {expected_str}"
-        elif message:
-            err_msg = f"[Line {line}, Col {col}] Syntax Error: {message}"
-        else:
-            err_msg = f"[Line {line}, Col {col}] Syntax Error"
+
+        # Create Structured Error Object
+        error_data = {
+            "line": line,
+            "col": col,
+            "found": found_str,
+            "expected": clean_expected,
+            "message": message if message else "Syntax Error"
+        }
         
-        # Log and Raise
-        print(err_msg)
-        self.errors.append(err_msg)
-        raise Exception(err_msg)
+        # Stop execution by raising the dict
+        raise Exception(error_data)
 
     def validate_token(self, non_terminal):
         """
@@ -95,7 +95,6 @@ class Parser:
     def get_production(self, non_terminal):
         """
         Uses PREDICT_SET to return the Production Number based on current token.
-        Returns None if no production matches.
         """
         if not self.current_token:
             return None
@@ -107,31 +106,42 @@ class Parser:
     # Entry Point
     # =========================================
     def parse(self):
-        print("Starting Parsing...")
-        self.logs.append("Starting Parsing...")
-
         try:
             if not self.tokens:
-                raise Exception("Empty program.")
+                raise Exception({
+                    "line": 0, "col": 0, "found": "EMPTY", "expected": [], 
+                    "message": "Empty program."
+                })
 
             self.program()
             
             if self.current_token is not None:
-                self.error(message=f"Unexpected token after end of program: {self.current_token.type}")
-            else:
-                msg = "Parsing Completed Successfully! No Syntax Errors."
-                print(msg)
-                self.logs.append(msg)
+                self.error(
+                    message=f"Unexpected token after end of program",
+                    found=self.current_token.type
+                )
+                
         except Exception as e:
-            if str(e) not in self.logs:
-                self.logs.append(str(e))
+            # Catch the dictionary raised by self.error()
+            if e.args and isinstance(e.args[0], dict):
+                self.errors.append(e.args[0])
+            else:
+                # Fallback for generic Python crashes
+                self.errors.append({
+                    "line": "?",
+                    "col": "?",
+                    "found": "CRASH",
+                    "expected": [],
+                    "message": str(e)
+                })
 
-        return self.logs
+        return self.errors
 
     # =========================================
     # Program Structure & Declarations
     # =========================================
-
+    # ... (Rest of the grammar methods remain identical to your original file) ...
+    
     def program(self):
         # <program>
         production = self.get_production("<program>")
@@ -378,15 +388,11 @@ class Parser:
         production = self.get_production("<more-mem>")
         if production == 39:
             self.mem_dec()
-            self.more_mem() # Recursion missing in original code logic, added here for completeness if grammar implies list
+            self.more_mem() 
         elif production == 40:
             pass # Lambda
         else:
             self.error(expected=list(PREDICT["<more-mem>"].keys()))
-
-    # =========================================
-    # Expressions
-    # =========================================
 
     def var_val(self):
         # <var-val>
@@ -396,7 +402,6 @@ class Parser:
         else:
             self.error(expected=list(PREDICT["<var-val>"].keys()))
         
-
     def expression(self):
         # <expression>
         production = self.get_production("<expression>")
@@ -675,9 +680,7 @@ class Parser:
 
     def rel_op(self):
         # <rel-op>
-        # Note: PREDICT has shared ID 107 for < and <=, relying on lexer to distinguish
         production = self.get_production("<rel-op>")
-        # Handling ambiguity in PREDICT table mapping
         if self.current_token.type == "<":
             self.eat("<")
         elif self.current_token.type == ">":
@@ -751,10 +754,6 @@ class Parser:
             self.eat(")")
         else:
             self.error(expected=list(PREDICT["<scroll-ope>"].keys()))
-
-    # =========================================
-    # Functions (Sub, Return, Non-Return)
-    # =========================================
 
     def sub_func(self):
         # <sub-func>
@@ -851,10 +850,6 @@ class Parser:
         else:
             self.error(expected=list(PREDICT["<nonreturn-back>"].keys()))
 
-    # =========================================
-    # Local Declarations
-    # =========================================
-
     def local_dec(self):
         # <local-dec>
         production = self.get_production("<local-dec>")
@@ -866,8 +861,6 @@ class Parser:
         elif production == 137:
             self.struct()
         else:
-            # IMPORTANT: Functions must have at least one local declaration.
-            # If current token is not a type or struct, this fails, fulfilling the requirement.
             self.error(expected=list(PREDICT["<local-dec>"].keys()))
 
     def loc_dec_tail(self):
@@ -876,7 +869,7 @@ class Parser:
         if production == 138:
             self.local_dec()
         elif production == 139:
-            pass # Lambda (End of declarations, Start of statements)
+            pass # Lambda 
         else:
             self.error(expected=list(PREDICT["<loc-dec-tail>"].keys()))
 
@@ -929,10 +922,6 @@ class Parser:
         else:
             self.error(expected=list(PREDICT["<struct-dec-tail>"].keys()))
 
-    # =========================================
-    # Statements
-    # =========================================
-
     def statements(self):
         # <statements>
         production = self.get_production("<statements>")
@@ -948,10 +937,8 @@ class Parser:
             self.unary_exp()
             self.eat("!!")
         else:
-            # Rule: Functions must have at least one statement.
             self.error(expected=list(PREDICT["<statements>"].keys()))
         
-        # Recursion for multiple statements
         self.stmnt_tail()
 
     def stmnt_tail(self):
@@ -1271,7 +1258,7 @@ class Parser:
             self.eat("=")
             self.neg()
             self.eat("COIN-lit")
-        elif production == 203: pass # Lambda (Empty init allowed)
+        elif production == 203: pass # Lambda
         else:
             self.error(expected=list(PREDICT["<init>"].keys()))
 
