@@ -260,7 +260,7 @@ export default function Home() {
                     {/* --- CONDITIONAL RENDERING FOR STYLING --- */}
                     {err.isStructured ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            {/* 1. Message (RED) - Conditional format based on typeName */}
+                            {/* Message (RED) - Conditional format based on typeName */}
                             <span style={{ color: '#f87171' }}>
                                 {typeName === "Lexical" 
                                     ? `${err.foundToken}.` 
@@ -268,14 +268,14 @@ export default function Home() {
                                 }
                             </span>
                             
-                            {/* 2. Source Line (GREY) - Only render if sourceCode exists */}
+                            {/* Source Line (GREY) - Only render if sourceCode exists */}
                             {err.sourceCode && (
                                 <span style={{ color: '#9ca3af' }}>
                                     &apos;{err.sourceCode}&apos;
                                 </span>
                             )}
                             
-                            {/* 3. Expected (ITALIC + DEFAULT COLOR) */}
+                            {/* Expected */}
                             <span style={{ color: '#e5e7eb', fontStyle: 'italic' }}>
                                 Expected any: &apos;{err.expectedTokens}&apos;
                             </span>
