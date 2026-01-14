@@ -55,42 +55,41 @@ def analyze_code():
                 col = getattr(e, 'col', getattr(e, 'column', '?')) 
                 msg = getattr(e, 'error_msg', str(e))
                 val = getattr(e, 'value', '')
-
-                # --- STRUCTURED ERROR PARSING ---
-                # Default fallback
+               
                 found_str = msg
-                expected_list = ["Valid Token"]
+                expected_list = ["Valid Token"] # Default fallback
 
-                # 1. Handle SCROLL (String) Literals
-                if "SCROLL literal" in msg:
-                    found_str = "Invalid SCROLL literal"
-                    expected_list = ['"'] # Double quote
-                
-                # 2. Handle PARCH (Char) Literals
-                elif "PARCH literal" in msg:
-                    found_str = "Invalid PARCH literal"
-                    expected_list = ["'"] # Single quote
-
-                # 3. Handle Invalid Characters
-                elif "Invalid Character" in msg:
-                    # If we have the value, show it
-                    if val:
-                        found_str = f"Invalid character '{val}'"
+                if "Expected" in msg:
+                    parts = msg.split("Expected")
+                    
+                    # Error Description (Before 'Expected')
+                    raw_found = parts[0].strip(" .:,")
+                    if raw_found:
+                        found_str = raw_found
+                        # If specific value exists, append it for clarity (e.g. "Invalid character '!'")
+                        if "Invalid Character" in found_str and val:
+                             found_str = f"Invalid character '{val}'"
                     else:
-                        found_str = "Invalid character"
-                    expected_list = ["Valid Token"]
+                        found_str = "Invalid Token"
 
-                # 4. Handle Identifier Delimiters
-                elif "Invalid Indentifier" in msg or "Invalid Identifier" in msg:
-                    found_str = "Invalid Identifier"
-                    expected_list = ["Delimiter (Space, Operator, etc.)"]
+                    # PART 2: The "Expected" List (After 'Expected')
+                    if len(parts) > 1:
+                        raw_expected = parts[1].strip(" .:,")
+                        if raw_expected:
+                            # Pass the full string provided by the handler
+                            expected_list = [raw_expected]
+                
+                # Fallback for messages without "Expected" keyword
+                else:
+                    if val:
+                        found_str = f"{msg} '{val}, '"
 
                 response_data['lexical_errors'].append({
                     "line": line,
                     "col": col,
                     "found": found_str,
                     "expected": expected_list,
-                    "message": msg # Keep original for debugging/fallback
+                    "message": msg 
                 })
         
         if not lex_errors:

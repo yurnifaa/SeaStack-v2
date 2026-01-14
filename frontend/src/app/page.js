@@ -198,6 +198,9 @@ export default function Home() {
     };
   };
 
+  // ==========================================
+  // --- ANALYSIS LOGIC (UPDATED) ---
+  // ==========================================
   const performAnalysis = async (targetTab) => {
     setLexicalErrors([]);
     setSyntaxErrors([]);
@@ -213,27 +216,35 @@ export default function Home() {
       if (!res.ok) throw new Error(`Server status: ${res.status}`);
       const result = await res.json();
       
+      // Always set tokens (useful for debugging)
       if (result.tokens) setTokens(result.tokens);
       
-      // --- Process Lexical Errors ---
+      // --- 1. HANDLE LEXICAL ERRORS FIRST ---
       if (result.lexical_errors?.length > 0) {
           const formattedLex = result.lexical_errors.map(formatLexicalError);
           setLexicalErrors(formattedLex);
+          
+          // FORCE VIEW TO LEXICAL TAB
+          // This prevents the user from seeing the Syntax tab if Lexer failed.
+          setActiveTab("lexical");
+          return; 
       }
       
-      // --- Process Syntax Errors ---
+      // --- 2. HANDLE SYNTAX ERRORS (Only if Lexer Passed) ---
       if (result.syntax_errors?.length > 0) {
           const formattedSyn = result.syntax_errors.map(err => formatSyntaxError(err, code));
           setSyntaxErrors(formattedSyn);
       }
 
+      // If we got here, Lexer passed, so we can safely switch to Syntax or Semantic
       setActiveTab(targetTab);
 
     } catch (err) {
       console.error("Connection Error:", err);
       const errorObj = { line: "0", col: "0", message: "Cannot connect to Backend. Is 'server.py' running?", isStructured: false };
-      if (targetTab === "lexical") setLexicalErrors([errorObj]);
-      else setSyntaxErrors([errorObj]);
+      // Fallback: If crash, just show on Lexical tab
+      setLexicalErrors([errorObj]);
+      setActiveTab("lexical");
     }
   };
   
@@ -260,7 +271,7 @@ export default function Home() {
                     {/* --- CONDITIONAL RENDERING FOR STYLING --- */}
                     {err.isStructured ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            {/* Message (RED) - Conditional format based on typeName */}
+                            {/* 1. Message (RED) - Conditional format based on typeName */}
                             <span style={{ color: '#f87171' }}>
                                 {typeName === "Lexical" 
                                     ? `${err.foundToken}.` 
@@ -268,14 +279,14 @@ export default function Home() {
                                 }
                             </span>
                             
-                            {/* Source Line (GREY) - Only render if sourceCode exists */}
+                            {/* 2. Source Line (GREY) - Only render if sourceCode exists */}
                             {err.sourceCode && (
                                 <span style={{ color: '#9ca3af' }}>
                                     &apos;{err.sourceCode}&apos;
                                 </span>
                             )}
                             
-                            {/* Expected */}
+                            {/* 3. Expected (ITALIC + DEFAULT COLOR) */}
                             <span style={{ color: '#e5e7eb', fontStyle: 'italic' }}>
                                 Expected any: &apos;{err.expectedTokens}&apos;
                             </span>
