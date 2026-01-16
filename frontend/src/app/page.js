@@ -56,7 +56,7 @@ export default function Home() {
     }
   };
 
-  // --- 1. File Open Logic ---
+  // --- File Open Logic ---
   const handleFileBtnClick = () => {
     fileInputRef.current.click();
   };
@@ -79,7 +79,7 @@ export default function Home() {
     event.target.value = ''; 
   };
 
-  // --- 2. Save As Logic ---
+  // --- Save As Logic ---
   const handleSaveFile = async () => {
     if ('showSaveFilePicker' in window) {
       try {
@@ -112,7 +112,7 @@ export default function Home() {
     }
   };
 
-  // --- 3. Close Tab Logic ---
+  // --- Close Tab Logic ---
   const handleCloseTab = () => {
     const nextCount = fileCount + 1;
     setFileCount(nextCount);
@@ -124,7 +124,7 @@ export default function Home() {
     setSemanticLogs([]);
   };
 
-  // --- 4. Rename Logic ---
+  // --- Rename Logic ---
   const handleTabDoubleClick = () => {
     setTempName(fileName); 
     setIsRenaming(true);   
@@ -152,7 +152,7 @@ export default function Home() {
   // --- STRUCTURED ERROR FORMATTERS ---
   // ==========================================
 
-  // 1. Syntax Formatter (Includes Source Line)
+  // Syntax Formatter (Includes Source Line)
   const formatSyntaxError = (errObj, sourceCode) => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
         return { ...errObj, isStructured: false };
@@ -177,7 +177,7 @@ export default function Home() {
     };
   };
 
-  // 2. Lexical Formatter (Uses Structured Data from Server)
+  // Lexical Formatter (Uses Structured Data from Server)
   const formatLexicalError = (errObj) => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
         return { ...errObj, isStructured: false };
@@ -199,7 +199,7 @@ export default function Home() {
   };
 
   // ==========================================
-  // --- ANALYSIS LOGIC (UPDATED) ---
+  // --- ANALYSIS LOGIC ---
   // ==========================================
   const performAnalysis = async (targetTab) => {
     setLexicalErrors([]);
@@ -219,7 +219,7 @@ export default function Home() {
       // Always set tokens (useful for debugging)
       if (result.tokens) setTokens(result.tokens);
       
-      // --- 1. HANDLE LEXICAL ERRORS FIRST ---
+      // --- HANDLE LEXICAL ERRORS FIRST ---
       if (result.lexical_errors?.length > 0) {
           const formattedLex = result.lexical_errors.map(formatLexicalError);
           setLexicalErrors(formattedLex);
@@ -230,7 +230,7 @@ export default function Home() {
           return; 
       }
       
-      // --- 2. HANDLE SYNTAX ERRORS (Only if Lexer Passed) ---
+      // --- HANDLE SYNTAX ERRORS (Only if Lexer Passed) ---
       if (result.syntax_errors?.length > 0) {
           const formattedSyn = result.syntax_errors.map(err => formatSyntaxError(err, code));
           setSyntaxErrors(formattedSyn);
@@ -271,7 +271,7 @@ export default function Home() {
                     {/* --- CONDITIONAL RENDERING FOR STYLING --- */}
                     {err.isStructured ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            {/* 1. Message (RED) - Conditional format based on typeName */}
+                            {/* Message (RED) - Conditional format based on typeName */}
                             <span style={{ color: '#f87171' }}>
                                 {typeName === "Lexical" 
                                     ? `${err.foundToken}.` 
@@ -279,14 +279,14 @@ export default function Home() {
                                 }
                             </span>
                             
-                            {/* 2. Source Line (GREY) - Only render if sourceCode exists */}
+                            {/* Source Line (GREY) - Only render if sourceCode exists */}
                             {err.sourceCode && (
                                 <span style={{ color: '#9ca3af' }}>
                                     &apos;{err.sourceCode}&apos;
                                 </span>
                             )}
                             
-                            {/* 3. Expected (ITALIC + DEFAULT COLOR) */}
+                            {/* Expected */}
                             <span style={{ color: '#e5e7eb'}}>
                                 Expected any: &apos;{err.expectedTokens},&apos;
                             </span>
