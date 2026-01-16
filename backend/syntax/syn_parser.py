@@ -50,9 +50,7 @@ class Parser:
             self.error(expected=[token_type])
 
     def error(self, message=None, expected=None, found=None):
-        """
-        Raises a structured error dictionary.
-        """
+    # Raises a structured error dictionary.
         # Determine Location
         if self.current_token:
             line = self.current_token.line
@@ -68,22 +66,32 @@ class Parser:
         if expected:
             clean_expected = sorted([str(t) for t in expected if t is not None])
 
+        # If no custom message is passed, generate one intelligently
+        if message is None:
+            if found_str == "EOF":
+                # Specific check: If we hit EOF but were expecting "AHOY" (among others)
+                if "AHOY" in clean_expected:
+                    message = "Unexpected End of File.\nThe program is missing the required 'AHOY' function at the end."
+                else:
+                    message = f"Unexpected End of File.\nExpected any: {', '.join(clean_expected)}"
+            else:
+                # Generic syntax error for non-EOF tokens
+                message = f"Unexpected token '{found_str}'."
+        
         # Create Structured Error Object
         error_data = {
             "line": line,
             "col": col,
             "found": found_str,
             "expected": clean_expected,
-            "message": message if message else "Syntax Error"
+            "message": message if message else "Unknown Error. This is for unseened errors by the program."
         }
         
         # Stop execution by raising the dict
         raise Exception(error_data)
 
     def validate_token(self, non_terminal):
-        """
-        Uses FIRST_SET to check if the current token is valid for this Non-Terminal.
-        """
+    # Uses FIRST_SET to check if the current token is valid for this Non-Terminal.
         if not self.current_token:
             return False
             
@@ -93,9 +101,7 @@ class Parser:
         return False
 
     def get_production(self, non_terminal):
-        """
-        Uses PREDICT_SET to return the Production Number based on current token.
-        """
+    # Uses PREDICT_SET to return the Production Number based on current token.
         if not self.current_token:
             return None
             

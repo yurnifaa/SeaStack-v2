@@ -287,8 +287,8 @@ export default function Home() {
                             )}
                             
                             {/* 3. Expected (ITALIC + DEFAULT COLOR) */}
-                            <span style={{ color: '#e5e7eb', fontStyle: 'italic' }}>
-                                Expected any: &apos;{err.expectedTokens}&apos;
+                            <span style={{ color: '#e5e7eb'}}>
+                                Expected any: &apos;{err.expectedTokens},&apos;
                             </span>
                         </div>
                     ) : (

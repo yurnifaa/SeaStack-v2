@@ -251,7 +251,7 @@ class IdentifierHandler:
                     self.current_token_text(), # This holds exactly 20 chars
                     self.line,
                     self.col - 1,
-                    "Invalid Identifier. Expected delimiter (whitespace, gen_op, (, ), ], {, }, $, })",
+                    "Invalid Identifier. Expected whitespace, gen_op, (, ), ], {, }, $, }",
                 )
             self.errors.append(error_token)
             return None 
@@ -287,7 +287,7 @@ class IdentifierHandler:
             # The counter will not increment for this invalid token.
             
             # --- FIX: Removed the trailing comma below ---
-            error_msg = "Invalid Identifier. Expected delimiter (whitespace, gen_op, (, ), ], {, }, $, })"
+            error_msg = "Invalid Identifier. Expected whitespace, gen_op, (, ), ], {, }, $, }"
             
             err_token = Token(
                 "ERROR",
