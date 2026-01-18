@@ -152,7 +152,11 @@ export default function Home() {
   // --- STRUCTURED ERROR FORMATTERS ---
   // ==========================================
 
-  // Syntax Formatter (Includes Source Line)
+  // REFACTORED TO MEET STRICT FORMAT:
+  // Line #, Col # | 'ERROR_TYPE' '<found>'.
+  // '<actual_line>'
+  // Expected any: '<expected>'
+
   const formatSyntaxError = (errObj, sourceCode) => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
         return { ...errObj, isStructured: false };
@@ -162,7 +166,9 @@ export default function Home() {
     const lines = sourceCode.split('\n');
     const actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
     
+    const errorType = errObj.error_header || "Syntax Error"; // e.g. "Unexpected Token"
     const found = errObj.found || "unknown";
+    
     const expected = errObj.expected && errObj.expected.length > 0 
         ? errObj.expected.join(", ") 
         : "nothing";
@@ -170,20 +176,21 @@ export default function Home() {
     return {
         line: errObj.line,
         col: errObj.col,
-        foundToken: found,
+        // Visual Construction for UI
+        headerStr: `${errorType} '${found}'`,
         sourceCode: actualLine, 
-        expectedTokens: expected,
+        expectedStr: expected,
         isStructured: true
     };
   };
 
-  // Lexical Formatter (Uses Structured Data from Server)
   const formatLexicalError = (errObj) => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
         return { ...errObj, isStructured: false };
     }
 
-    const found = errObj.found || errObj.message;
+    // "found" comes pre-formatted from backend now as "Invalid character 'x'"
+    const foundStr = errObj.found; 
     const expected = errObj.expected && errObj.expected.length > 0 
         ? errObj.expected.join(", ") 
         : "Valid Token";
@@ -191,9 +198,9 @@ export default function Home() {
     return {
         line: errObj.line,
         col: errObj.col,
-        foundToken: found,
-        sourceCode: null, // Lexical errors don't show source line
-        expectedTokens: expected,
+        headerStr: foundStr,
+        sourceCode: null, // Lexical errors don't show source line per request
+        expectedStr: expected,
         isStructured: true
     };
   };
@@ -268,31 +275,26 @@ export default function Home() {
                     </span>
                     <span style={{ color: '#6b7280', paddingTop: '2px' }}>|</span>
                     
-                    {/* --- CONDITIONAL RENDERING FOR STYLING --- */}
                     {err.isStructured ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            {/* Message (RED) - Conditional format based on typeName */}
-                            <span style={{ color: '#f87171' }}>
-                                {typeName === "Lexical" 
-                                    ? `${err.foundToken}.` 
-                                    : `Unexpected token '${err.foundToken}'.`
-                                }
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {/* 1. Header: TYPE 'found' */}
+                            <span style={{ color: '#f87171', fontWeight: 'bold' }}>
+                                {err.headerStr}
                             </span>
                             
-                            {/* Source Line (GREY) - Only render if sourceCode exists */}
+                            {/* 2. Source Line (If exists) */}
                             {err.sourceCode && (
-                                <span style={{ color: '#9ca3af' }}>
+                                <span style={{ color: '#fbbf24', fontStyle: 'italic' }}>
                                     &apos;{err.sourceCode}&apos;
                                 </span>
                             )}
                             
-                            {/* Expected */}
+                            {/* 3. Expected */}
                             <span style={{ color: '#e5e7eb'}}>
-                                Expected any: &apos;{err.expectedTokens},&apos;
+                                Expected any: &apos;{err.expectedStr}&apos;
                             </span>
                         </div>
                     ) : (
-                         /* Fallback for Backend Crashes */
                         <span style={{ whiteSpace: 'pre-wrap', paddingTop: '2px' }}>{err.message}</span>
                     )}
                 </div>
