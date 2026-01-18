@@ -1,22 +1,32 @@
-# lexer_handlers/symbol_handler.py
 import string
 from backend.lexical.lexer_token import Token
 from backend.lexical.handlers.delimiters import Delimiters
-# IMPORT THE ERROR HANDLER
 from backend.error_msg import ErrorHandler 
+
+# =========================================================================================
+# RESERVED SYMBOLS TD: Reserved SYMBOLS state machine (rs120 - rs196)
+# This class recognizes and tokenizes single-character and multi-character operators/symbols 
+# using the Transition diagram.
+# ========================================================================================= 
 
 class SymbolHandler:
     
     # --- HELPER: DYNAMIC & CLEAN ERROR GENERATION ---
-    def _report_sym_error(self, delim_key, manual_extras=None):
+    def _report_sym_error(self, delim_key=None, manual_extras=None, error_type=None, custom_msg=None, diff_char=None):
+        """
+        Generates a standardized error dictionary for Symbols.
+        """
         if manual_extras is None:
             manual_extras = []
             
-        # 1. Fetch the Set
-        allowed_set = set(Delimiters._get_delimiters().get(delim_key, []))
+        # 1. Fetch the Set from Delimiters
+        allowed_set = set()
+        if delim_key:
+            allowed_set = set(Delimiters._get_delimiters().get(delim_key, []))
+        
         allowed_set.update(manual_extras)
         
-        # 2. USE THE SAME CLEANING LOGIC AS LEXER
+        # 2. CLEANING LOGIC (Condenses 0-9, a-z, whitespace)
         cleaned_list = []
 
         # Condense Ranges
@@ -45,16 +55,26 @@ class SymbolHandler:
             elif char == " ": cleaned_list.append("' '")
             else: cleaned_list.append(char)
         
-        # 3. Generate Error
+        # 3. Determine Error Type
+        if error_type is None:
+            error_type = ErrorHandler.ERR_LEX_INVALID_CHAR
+
+        # 4. Determine text to show (default to current lexeme)
+        text_to_show = diff_char if diff_char else self.current_token_text()
+
+        # 5. Generate Error
         return ErrorHandler.get_lexical_error(
             line=self.line,
             col=self.col - 1,
-            invalid_char=self.current_token_text(),
-            expected_list=sorted(cleaned_list)
+            invalid_char=text_to_show,
+            expected_list=sorted(cleaned_list),
+            header_type=error_type,
+            custom_msg=custom_msg
         )
 
     # =============================================
     # [ARITHMETIC] PLUS '+': +, +#, +=
+    # States: 120 -> 121, 122->123, 124->125
     # =============================================
     def rs120(self):  
         self.advance()
@@ -68,7 +88,8 @@ class SymbolHandler:
     def rs121(self):  
         return Token("+", self.current_token_text(), self.line, self.col - 1)
 
-    def rs122(self):  # INC '+#'
+    # --- INC '+#' ---
+    def rs122(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]):
             return self.rs123()
@@ -76,7 +97,8 @@ class SymbolHandler:
         
     def rs123(self): return Token("+#", self.current_token_text(), self.line, self.col - 1)
     
-    def rs124(self):  # ADD-ASSIGN '+='
+    # --- ADD-ASSIGN '+=' ---
+    def rs124(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs125()
@@ -86,6 +108,7 @@ class SymbolHandler:
     
     # =============================================
     # [ARITHMETIC] SUB '-': -, -#, -=
+    # States: 126 -> 127, 128->129, 130->131
     # =============================================
     def rs126(self): 
         self.advance()
@@ -99,7 +122,8 @@ class SymbolHandler:
     def rs127(self):  
         return Token("-", self.current_token_text(), self.line, self.col - 1)
 
-    def rs128(self): # DEC '-#'
+    # --- DEC '-#' ---
+    def rs128(self): 
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]):
             return self.rs129()
@@ -107,7 +131,8 @@ class SymbolHandler:
         
     def rs129(self): return Token("-#", self.current_token_text(), self.line, self.col - 1)
     
-    def rs130(self):  # SUB-ASSIGN '-='
+    # --- SUB-ASSIGN '-=' ---
+    def rs130(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs131()
@@ -117,6 +142,7 @@ class SymbolHandler:
     
     # =============================================
     # [ARITHMETIC] MULTI '*': *, *=
+    # States: 132 -> 133, 134->135
     # =============================================
     def rs132(self): 
         self.advance()
@@ -129,7 +155,8 @@ class SymbolHandler:
     def rs133(self):  
         return Token("*", self.current_token_text(), self.line, self.col - 1)
 
-    def rs134(self):  # MULTI-ASSIGN '*='
+    # --- MULTI-ASSIGN '*=' ---
+    def rs134(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs135()
@@ -139,6 +166,7 @@ class SymbolHandler:
 
     # =============================================
     # [ARITHMETIC] DIVIDE '/': /, /=
+    # States: 136 -> 137, 138->139
     # =============================================
     def rs136(self): 
         self.advance()
@@ -151,7 +179,8 @@ class SymbolHandler:
     def rs137(self):  
         return Token("/", self.current_token_text(), self.line, self.col - 1)
 
-    def rs138(self):  # DIV-ASSIGN '/='
+    # --- DIV-ASSIGN '/=' ---
+    def rs138(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs139()
@@ -161,6 +190,7 @@ class SymbolHandler:
 
     # =============================================
     # [ARITHMETIC] MOD '%': %, %=
+    # States: 140 -> 141, 142->143
     # =============================================
     def rs140(self): 
         self.advance()
@@ -173,7 +203,8 @@ class SymbolHandler:
     def rs141(self):  
         return Token("%", self.current_token_text(), self.line, self.col - 1)
 
-    def rs142(self):  # MOD-ASSIGN '%='
+    # --- MOD-ASSIGN '%=' ---
+    def rs142(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs143()
@@ -183,6 +214,7 @@ class SymbolHandler:
 
     # =============================================
     # [ARITHMETIC] EXPONENT '^': ^, ^=
+    # States: 144 -> 145, 146->147
     # =============================================
     def rs144(self): 
         self.advance()
@@ -195,7 +227,8 @@ class SymbolHandler:
     def rs145(self):  
         return Token("^", self.current_token_text(), self.line, self.col - 1)
 
-    def rs146(self):  # EXP-ASSIGN '^='
+    # --- EXP-ASSIGN '^=' ---
+    def rs146(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs147()
@@ -205,6 +238,7 @@ class SymbolHandler:
 
     # =============================================
     # [ARITHMETIC] ASSIGN '=': =, ==
+    # States: 148 -> 149, 150->151
     # =============================================
     def rs148(self): 
         self.advance()
@@ -217,7 +251,8 @@ class SymbolHandler:
     def rs149(self):  
         return Token("=", self.current_token_text(), self.line, self.col - 1)
 
-    def rs150(self):  # EQUAL '=='
+    # --- EQUAL '==' ---
+    def rs150(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]):
             return self.rs151()
@@ -227,6 +262,7 @@ class SymbolHandler:
 
     # =============================================
     # [REL-LOG] NOT '!': !, !!, !#, !=
+    # States: 152 -> 153, 154->155, 156->157, 158->159
     # =============================================
     def rs152(self): 
         self.advance()
@@ -241,7 +277,8 @@ class SymbolHandler:
     def rs153(self):  
         return Token("!", self.current_token_text(), self.line, self.col - 1)
 
-    def rs154(self):  # STMT TERM '!!'
+    # --- STMT TERM '!!' ---
+    def rs154(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["TERM_DELIM"]):
             return self.rs155()
@@ -249,7 +286,8 @@ class SymbolHandler:
         
     def rs155(self): return Token("!!", self.current_token_text(), self.line, self.col - 1)
     
-    def rs156(self):  # DOUBLE-NOT '!#'
+    # --- DOUBLE-NOT '!#' ---
+    def rs156(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]):
             return self.rs157()
@@ -257,7 +295,8 @@ class SymbolHandler:
         
     def rs157(self): return Token("!#", self.current_token_text(), self.line, self.col - 1)
     
-    def rs158(self):  # NOT-EQUAL '!='
+    # --- NOT-EQUAL '!=' ---
+    def rs158(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]):
             return self.rs159()
@@ -267,6 +306,7 @@ class SymbolHandler:
     
     # =============================================
     # [REL-LOG] LESS '<': <, <=
+    # States: 160 -> 161, 162->163
     # =============================================
     def rs160(self): 
         self.advance()
@@ -279,7 +319,8 @@ class SymbolHandler:
     def rs161(self):  
         return Token("<", self.current_token_text(), self.line, self.col - 1)
 
-    def rs162(self):  # LESS-EQ '<='
+    # --- LESS-EQ '<=' ---
+    def rs162(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs163()
@@ -289,6 +330,7 @@ class SymbolHandler:
 
     # =============================================
     # [REL-LOG] GREAT '>': >, >=
+    # States: 164 -> 165, 166->167
     # =============================================
     def rs164(self): 
         self.advance()
@@ -301,7 +343,8 @@ class SymbolHandler:
     def rs165(self): 
         return Token(">", self.current_token_text(), self.line, self.col - 1)
 
-    def rs166(self):  # GREAT-E '>='
+    # --- GREAT-E '>=' ---
+    def rs166(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]):
             return self.rs167()
@@ -311,6 +354,7 @@ class SymbolHandler:
 
     # =============================================
     # [REL-LOG] CONCAT '&': &, &&
+    # States: 168 -> 169, 170->171
     # =============================================
     def rs168(self): 
         self.advance()
@@ -323,7 +367,8 @@ class SymbolHandler:
     def rs169(self):  
         return Token("&", self.current_token_text(), self.line, self.col - 1)
 
-    def rs170(self):  # AND '&&'
+    # --- AND '&&' ---
+    def rs170(self):  
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]):
             return self.rs171()
@@ -333,13 +378,17 @@ class SymbolHandler:
 
     # =============================================
     # [REL-LOG] OR '||': ||
+    # States: 172 -> 173 -> 174
     # =============================================
     def rs172(self): 
+        # State 172: Expects the second '|'
         self.advance()
         if self.current_char == "|": return self.rs173()
-        self.errors.append(self._report_sym_error("", ["|"])) # No delimiter set, just '|' expected
+        # Custom Error for Missing Pipe
+        self.errors.append(self._report_sym_error(None, ["|"], custom_msg="Invalid Character. Expected second pipe '|'"))
     
     def rs173(self): 
+        # State 173: Delimiter Check
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]):
             return self.rs174()
@@ -350,6 +399,7 @@ class SymbolHandler:
 
     # =============================================
     # [REL-LOG] COLON ':'
+    # States: 175 -> 176
     # =============================================
     def rs175(self):  
         self.advance()
@@ -361,6 +411,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] ADDR '@'
+    # States: 177 -> 178
     # =============================================
     def rs177(self):  
         self.advance()
@@ -372,6 +423,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] MEM '$'
+    # States: 179 -> 180
     # =============================================
     def rs179(self):  
         self.advance()
@@ -383,6 +435,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] COMMA ','
+    # States: 181 -> 182
     # =============================================
     def rs181(self):  
         self.advance()
@@ -394,6 +447,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] NEWLINE '\n'
+    # States: 183 -> 184
     # =============================================
     def rs183(self):
         self.advance()
@@ -405,6 +459,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] OPEN-CB '{'
+    # States: 185 -> 186
     # =============================================
     def rs185(self):  
         self.advance()
@@ -416,6 +471,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] CLOSED-CB '}'
+    # States: 187 -> 188
     # =============================================
     def rs187(self):  
         self.advance()
@@ -427,6 +483,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] OPEN-P '('
+    # States: 189 -> 190
     # =============================================
     def rs189(self):  
         self.advance()
@@ -438,6 +495,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] CLOSED-P ')'
+    # States: 191 -> 192
     # =============================================
     def rs191(self):  
         self.advance()
@@ -449,6 +507,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] OPEN-SB '['
+    # States: 193 -> 194
     # =============================================
     def rs193(self):  
         self.advance()
@@ -460,6 +519,7 @@ class SymbolHandler:
 
     # =============================================
     # [OTHERS] CLOSED-SB ']'
+    # States: 195 -> 196
     # =============================================
     def rs195(self):  
         self.advance()
