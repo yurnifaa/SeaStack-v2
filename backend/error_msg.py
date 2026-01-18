@@ -1,8 +1,5 @@
 # backend/error_msg.py
 
-from pyparsing import col, line
-
-
 class ErrorHandler:
     # --- ERROR TYPES ---
     TYPE_SYNTAX = "Syntax Error"
@@ -13,21 +10,56 @@ class ErrorHandler:
     ERR_UNEXPECTED_EOF = "Unexpected End of File"
     ERR_MISSING_MAIN = "Missing Main Function"
 
+    # --- LEXICAL SUB-TYPES (NEW) ---
+    ERR_LEX_INVALID_CHAR = "Invalid Character"
+    ERR_LEX_INVALID_DELIM = "Invalid Delimiter"
+    ERR_LEX_LIMIT_EXCEEDED = "Limit Exceeded"
+    ERR_LEX_MALFORMED_LIT = "Malformed Literal"
+    ERR_LEX_UNCLOSED_LIT = "Unclosed Literal"
+
     @staticmethod
-    def get_lexical_error(line, col, invalid_char, expected_list=None):
-        # Generates the standard dictionary for Lexical Errors.
-        # Now supports a list of expected delimiters.
-        # Default fallback if nothing is passed
+    def get_lexical_error(line, col, invalid_char, expected_list=None, header_type=None, custom_msg=None):
+        """
+        Generates the standard dictionary for Lexical Errors with flexible headers.
+        
+        :param line: Line number
+        :param col: Column number
+        :param invalid_char: The text/char that caused the error
+        :param expected_list: List of valid tokens/delimiters expected
+        :param header_type: One of ErrorHandler.ERR_LEX_* constants
+        :param custom_msg: Optional override for the main message
+        """
+        
+        # 1. Default Defaults
         if expected_list is None:
             expected_list = ["Valid Token"]
-            
+        
+        if header_type is None:
+            header_type = ErrorHandler.ERR_LEX_INVALID_CHAR
+
+        # 2. Construct the "Found" Header based on Type
+        # This determines what shows up in BOLD RED in the UI
+        found_msg = f"{header_type} '{invalid_char}'"
+        
+        # Special Case: For limits, we might not want the word 'Limit Exceeded' twice if custom_msg handles it
+        if header_type == ErrorHandler.ERR_LEX_LIMIT_EXCEEDED:
+             # For limits, the "found" message is essentially the header for the UI.
+             # If a custom message is provided (e.g. "COIN-Lit exceeds 16 digits"), use that as the header.
+             if custom_msg:
+                 found_msg = custom_msg
+             else:
+                 found_msg = f"Limit Exceeded '{invalid_char}'"
+
+        # 3. Construct the Detailed Message
+        final_msg = custom_msg if custom_msg else found_msg
+
         return {
             "type": ErrorHandler.TYPE_LEXICAL,
             "line": line,
             "col": col,
-            "found": f"Invalid character '{invalid_char}'",
-            "expected": expected_list, # This sends the list to the frontend
-            "message": f"Invalid character '{invalid_char}'"
+            "found": found_msg,      # UI Header (Red Text)
+            "expected": expected_list, # Expected list
+            "message": final_msg     # Full description
         }
 
     @staticmethod

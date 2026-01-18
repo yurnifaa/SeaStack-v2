@@ -1,77 +1,109 @@
+import string
 from backend.lexical.lexer_token import Token
 from backend.lexical.handlers.delimiters import Delimiters
+from backend.error_msg import ErrorHandler 
 
 class DigitHandler:
     
-    # Error message constant for consistency
-    # lists all chars in DIGIT_DELIM: Whitespace | +-*/% | <>=!&| | ) } ] : ,
-    DELIM_ERR = "whitespace, +, -, *, /, %, <, >, =, !, &, |, ), }, ], :, ,"
+    # --- HELPER: DYNAMIC & CLEAN ERROR GENERATION ---
+    def _report_digit_error(self, delim_key="DIGIT_DELIM", manual_extras=None, error_type=None, custom_msg=None, diff_char=None):
+        """
+        :param delim_key: The key in Delimiters to fetch allowed chars from
+        :param manual_extras: List of extra chars allowed (e.g. ['.'])
+        :param error_type: ErrorHandler.ERR_LEX_* constant
+        :param custom_msg: Specific message override (e.g. for limits)
+        :param diff_char: If we want to report a specific string (like the whole number) instead of current_token_text
+        """
+        if manual_extras is None:
+            manual_extras = []
+            
+        # 1. Fetch the Set
+        allowed_set = set(Delimiters._get_delimiters().get(delim_key, []))
+        allowed_set.update(manual_extras)
+        
+        # 2. CLEANING LOGIC (Condenses 0-9, a-z, whitespace)
+        cleaned_list = []
+
+        # Condense Ranges
+        if set(string.ascii_lowercase).issubset(allowed_set):
+            cleaned_list.append("a-z")
+            allowed_set -= set(string.ascii_lowercase)
+        
+        if set(string.ascii_uppercase).issubset(allowed_set):
+            cleaned_list.append("A-Z")
+            allowed_set -= set(string.ascii_uppercase)
+            
+        if set(string.digits).issubset(allowed_set):
+            cleaned_list.append("0-9")
+            allowed_set -= set(string.digits)
+
+        # Condense Whitespace
+        whitespace_subset = allowed_set.intersection(set(string.whitespace))
+        if whitespace_subset:
+            cleaned_list.append("whitespace")
+            allowed_set -= whitespace_subset
+
+        # Format Remaining
+        for char in sorted(list(allowed_set)):
+            if char == "\n": cleaned_list.append("\\n")
+            elif char == "\t": cleaned_list.append("\\t")
+            elif char == " ": cleaned_list.append("' '")
+            else: cleaned_list.append(char)
+        
+        # 3. Determine Error Type
+        # If not specified, assume it's a Delimiter error (since digits usually fail on delimiters)
+        if error_type is None:
+            error_type = ErrorHandler.ERR_LEX_INVALID_DELIM
+
+        # 4. Determine Invalid Char/Text to show
+        text_to_show = diff_char if diff_char else self.current_token_text()
+
+        # 5. Generate Error
+        return ErrorHandler.get_lexical_error(
+            line=self.line,
+            col=self.col - 1,
+            invalid_char=text_to_show,
+            expected_list=sorted(cleaned_list),
+            header_type=error_type,
+            custom_msg=custom_msg
+        )
 
     # =========================================================================
     # ENTRY POINT: COIN and DIME Transition Diagram
     # =========================================================================
-    def c233(self):         # NULL ENTRY → do not consume → go directly to 230.
+    def c233(self):         # NULL ENTRY
         return self.c234()
     
     # =========================================================================
     # COIN-lit TD: Digit up to 16 digits
     # =========================================================================
     def c234(self):             # Digit 1
-        
-        # ======================================
-        # LEADING ZEROS LOGIC
-        # ======================================
+        # Leading Zero Logic
         if self.current_char == '0':
-            self.advance() # Consume the '0'
-            
-            # If the NEXT character is NON-ZERO, the previous '0' was a leading zero.
+            self.advance()
             if self.current_char is not None and self.current_char.isdigit():
-                self.token_start_pos += 1   # Discard the '0' from the token text
-                return self.c234()          # Recurse: The next digit becomes the new "Digit 1"
-            
-            # If the next character is NOT a digit (a '.', delimiter,  End of File),
-            # then the '0' we just consumed is significant.
-            
+                self.token_start_pos += 1   # Discard leading zero
+                return self.c234()          # Recurse
         else:
             self.advance()
 
-        # --- NON ZERO DIGIT 1 LOGIC ---
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
             return self.c235()
         if self.current_char and self.current_char.isdigit(): 
             return self.c236()
         if self.current_char == ".": return self.s266()
         
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        # ERROR: Expected Digit, Dot, or Delimiter
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
 
-    def c235(self):             # End after 1 digit
-        return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
+    def c235(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
     def c236(self):             # Digit 2
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
-            return self.c237()
-        if self.current_char and self.current_char.isdigit():
-            return self.c238()
+        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c237()
+        if self.current_char and self.current_char.isdigit(): return self.c238()
         if self.current_char == ".": return self.s266()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
 
     def c237(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
     
@@ -80,16 +112,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c239()
         if self.current_char and self.current_char.isdigit(): return self.c240()
         if self.current_char == ".": return self.s266()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
 
     def c239(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -98,15 +121,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c241()
         if self.current_char and self.current_char.isdigit(): return self.c242()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-            "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c241(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -115,15 +130,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c243()
         if self.current_char and self.current_char.isdigit(): return self.c244()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c243(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -132,16 +139,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c245()
         if self.current_char and self.current_char.isdigit(): return self.c246()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
-
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c245(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -150,15 +148,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c247()
         if self.current_char and self.current_char.isdigit(): return self.c248()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c247(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -167,15 +157,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c249()
         if self.current_char and self.current_char.isdigit(): return self.c250()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c249(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -184,15 +166,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c251()
         if self.current_char and self.current_char.isdigit(): return self.c252()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c251(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -201,15 +175,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c253()
         if self.current_char and self.current_char.isdigit(): return self.c254()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c253(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -218,15 +184,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c255()
         if self.current_char and self.current_char.isdigit(): return self.c256()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c255(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -235,15 +193,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c257()
         if self.current_char and self.current_char.isdigit(): return self.c258()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c257(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -252,16 +202,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c259()
         if self.current_char and self.current_char.isdigit(): return self.c260()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
-
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c259(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -270,15 +211,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c261()
         if self.current_char and self.current_char.isdigit(): return self.c262()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c261(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -287,20 +220,12 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c263()
         if self.current_char and self.current_char.isdigit(): return self.c264()
         if self.current_char == ".": return self.s266()
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9", "."]))
     
     def c263(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
     # =========================================================================
-    # COIN-lit TD: 16th Digit
+    # COIN-lit TD: 16th Digit (LIMIT CHECK)
     # =========================================================================    
     def c264(self):             # 16th digit
         self.advance()
@@ -308,16 +233,19 @@ class DigitHandler:
         # If the next char is a digit → EXCEEDS 16 
         if self.current_char == ".": return self.s266()
         if self.current_char and self.current_char.isdigit():
-            # Record error for the first 16 digits
-            self.errors.append(
-                Token(
-                    "ERROR",
-                    self.text[self.token_start_pos:self.pos],  # the first 16 digits
-                    self.line,
-                    self.col - 1, 
-                    "COIN-Lit exceeds 16 digits. Expected delimiter: .)}]:, ",
-                )
+            
+            # --- CUSTOM ERROR: LIMIT REACHED ---
+            # We want the UI to show "COIN-Lit exceeds 16 digits" as the header.
+            full_number = self.text[self.token_start_pos:self.pos] + "..."
+            
+            limit_error = self._report_digit_error(
+                delim_key="DIGIT_DELIM", 
+                manual_extras=[],
+                error_type=ErrorHandler.ERR_LEX_LIMIT_EXCEEDED,
+                custom_msg="COIN-Lit exceeds 16 digits",
+                diff_char=full_number # Send the full number, but the header will use custom_msg
             )
+            self.errors.append(limit_error)
 
             self.token_start_pos = self.pos  # start new token
             return self.state0()  # treat current digit as first digit of new COIN-lit
@@ -325,15 +253,7 @@ class DigitHandler:
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c265()
         
         # Fallthrough Error for 16th digit transition
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid COIN-lit. Expected '.', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["."]))
         
     def c265(self):
         return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
@@ -344,177 +264,76 @@ class DigitHandler:
     def s266(self):  # Checking the Delimiter after the decimal point
         self.advance()
         
-        # Check for valid digit following the dot
         if self.current_char and self.current_char.isdigit(): 
             return self.d267()
             
-        # ERROR: No digit after dot  invalid char after dot (e.g., "123.")
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                "Invalid DIME-lit. Expected digit after decimal point.",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
         
     def d267(self):
         self.advance()
-        
-        # IF Valid Delimiter
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): 
-            return self.d268()
-            
-        # IF Valid Next Digit
-        if self.current_char and self.current_char.isdigit(): 
-            return self.d269()
-            
-        # ERROR: Invalid Character OR Delimiter
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected digit {self.DELIM_ERR}",
-            )
-        )
+        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d268()
+        if self.current_char and self.current_char.isdigit(): return self.d269()
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
     
     def d268(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # =============================================
-    # DIME-lit TD: Digit 2 (AFTER decimal)
-    # =============================================
     def d269(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d270()
         if self.current_char and self.current_char.isdigit(): return self.d271()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected digit {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
     
     def d270(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # =============================================
-    # DIME-lit TD: Digit 3 (AFTER decimal)
-    # =============================================
     def d271(self): 
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d272()
         if self.current_char and self.current_char.isdigit(): return self.d273()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected digit {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
     
     def d272(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # =============================================
-    # DIME-lit TD: Digit 4 (AFTER decimal)
-    # =============================================
     def d273(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d274()
         if self.current_char and self.current_char.isdigit(): return self.d275()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected digit {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
     
     def d274(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # =============================================
-    # DIME-lit TD: Digit 5 (AFTER decimal)
-    # =============================================
     def d275(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d276()
         if self.current_char and self.current_char.isdigit(): return self.d277()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected digit {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
     
     def d276(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # =============================================
-    # DIME-lit TD: Digit 6 (AFTER decimal)
-    # =============================================
     def d277(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d278()
         if self.current_char and self.current_char.isdigit(): return self.d279()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected digit {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
     
     def d278(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # =============================================
-    # DIME-lit TD: Digit 7 (AFTER decimal)
-    # =============================================
     def d279(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d280()
         if self.current_char and self.current_char.isdigit(): return self.d281()
-        
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected digit {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0-9"]))
         return None
     
     def d280(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # =============================================
-    # DIME-lit TD: Digit 8 (AFTER decimal)
-    # =============================================
-    def d281(self):
+    def d281(self): # Digit 8
         self.advance()
         
         # 1. Check for Delimiter (Valid DIME)
@@ -528,27 +347,17 @@ class DigitHandler:
                 return self.d_extra_zeros()
             
             # REJECT non-zeros immediately
-            self.errors.append(
-                Token(
-                    "ERROR",
-                    self.current_token_text(), 
-                    self.line,
-                    self.col - 1, 
-                    f"Invalid DIME-Lit. 8-digit limit reached. Expected '0', {self.DELIM_ERR}",
-                )
+            limit_error = self._report_digit_error(
+                delim_key="DIGIT_DELIM", 
+                manual_extras=["0"],
+                error_type=ErrorHandler.ERR_LEX_LIMIT_EXCEEDED,
+                custom_msg="DIME-Lit exceeds 8 decimal digits"
             )
+            self.errors.append(limit_error)
             return None
 
         # 3. Invalid Delimiter Error
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected '0', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0"]))
         return None
     
     def d282(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
@@ -557,7 +366,6 @@ class DigitHandler:
     # DIME-lit TD: EXTRA/TRAILING Zeroes
     # =============================================
     def d_extra_zeros(self):
-        # Saw a '0' after the 8th digit.
         self.advance() # Consume the zero
         
         # IF Delimiter kasunod? edi Done
@@ -570,25 +378,15 @@ class DigitHandler:
             
         # IF Non-Zero Digit kasunod? edi Error
         if self.current_char and self.current_char.isdigit():
-             self.errors.append(
-                Token(
-                    "ERROR",
-                    self.current_token_text(), 
-                    self.line,
-                    self.col - 1, 
-                    f"Invalid DIME-Lit. 8-digit limit reached. Expected '0', {self.DELIM_ERR}",
-                )
+             limit_error = self._report_digit_error(
+                delim_key="DIGIT_DELIM", 
+                manual_extras=["0"],
+                error_type=ErrorHandler.ERR_LEX_LIMIT_EXCEEDED,
+                custom_msg="DIME-Lit exceeds 8 decimal digits"
             )
+             self.errors.append(limit_error)
              return None
              
         # Invalid Char/Delimiter
-        self.errors.append(
-            Token(
-                "ERROR",
-                self.current_token_text(),
-                self.line,
-                self.col - 1,
-                f"Invalid DIME-lit. Expected '0', {self.DELIM_ERR}",
-            )
-        )
+        self.errors.append(self._report_digit_error("DIGIT_DELIM", ["0"]))
         return None
