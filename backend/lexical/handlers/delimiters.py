@@ -1,7 +1,8 @@
 import string
 
 class Delimiters:
-
+    
+    @staticmethod 
     def _get_delimiters():
 
     # =========================================================================

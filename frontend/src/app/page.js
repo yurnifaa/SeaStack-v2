@@ -152,11 +152,6 @@ export default function Home() {
   // --- STRUCTURED ERROR FORMATTERS ---
   // ==========================================
 
-  // REFACTORED TO MEET STRICT FORMAT:
-  // Line #, Col # | 'ERROR_TYPE' '<found>'.
-  // '<actual_line>'
-  // Expected any: '<expected>'
-
   const formatSyntaxError = (errObj, sourceCode) => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
         return { ...errObj, isStructured: false };
@@ -184,10 +179,16 @@ export default function Home() {
     };
   };
 
-  const formatLexicalError = (errObj) => {
+  // CHANGED: Added sourceCode parameter and logic to extract the line
+  const formatLexicalError = (errObj, sourceCode) => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
         return { ...errObj, isStructured: false };
     }
+
+    const lineNum = parseInt(errObj.line, 10);
+    // Safety check if sourceCode is provided
+    const lines = sourceCode ? sourceCode.split('\n') : [];
+    const actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
 
     // "found" comes pre-formatted from backend now as "Invalid character 'x'"
     const foundStr = errObj.found; 
@@ -199,7 +200,7 @@ export default function Home() {
         line: errObj.line,
         col: errObj.col,
         headerStr: foundStr,
-        sourceCode: null, // Lexical errors don't show source line per request
+        sourceCode: actualLine, // CHANGED: Now populated!
         expectedStr: expected,
         isStructured: true
     };
@@ -228,11 +229,11 @@ export default function Home() {
       
       // --- HANDLE LEXICAL ERRORS FIRST ---
       if (result.lexical_errors?.length > 0) {
-          const formattedLex = result.lexical_errors.map(formatLexicalError);
+          // CHANGED: Pass 'code' to the formatter here
+          const formattedLex = result.lexical_errors.map(err => formatLexicalError(err, code));
           setLexicalErrors(formattedLex);
           
           // FORCE VIEW TO LEXICAL TAB
-          // This prevents the user from seeing the Syntax tab if Lexer failed.
           setActiveTab("lexical");
           return; 
       }
@@ -284,7 +285,8 @@ export default function Home() {
                             
                             {/* Source Line (If exists) */}
                             {err.sourceCode && (
-                                <span style={{ color: '##9ca3af'}}>
+                                // CHANGED: Fixed double hash ## typo below
+                                <span style={{ color: '#9ca3af'}}>
                                     &apos;{err.sourceCode}&apos;
                                 </span>
                             )}

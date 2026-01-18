@@ -9,9 +9,11 @@ from flask_cors import CORS
 
 # --- IMPORTS ---
 try:
-    from lexical.lexer import Lexer
-    from syntax.syn_parser import Parser 
+    # CHANGE THIS: Use 'backend.' prefix
+    from backend.lexical.lexer import Lexer
+    from backend.syntax.syn_parser import Parser 
 except ImportError as e:
+    # If this prints, the server stops. Check your terminal for this message!
     print(f"\n[ERROR] Import Failed! Details: {e}")
     sys.exit(1)
 
