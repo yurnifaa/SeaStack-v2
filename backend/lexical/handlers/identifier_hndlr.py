@@ -1,37 +1,73 @@
+import string
 from backend.lexical.lexer_token import Token
 from backend.lexical.handlers.delimiters import Delimiters
+from backend.error_msg import ErrorHandler 
 
 # =================================================================================================
 # INDENTIFIER TD: Identifiers state machine (rw0 - rw119)
-# This class recognizes and tokenizes lprocess sequences of uppercase letters that start in state0
-# It determines whether these sequences are pre-defined Reserved Words (Keywords) in the language or 
-# if they are Identifiers (variable names, function names, etc.) that the user has defined.
+# This class recognizes and tokenizes sequences of lowercase letters/digits/underscores.
+# It determines whether these are Reserved Words or User-Defined Identifiers.
 # =================================================================================================
 
-# --- Inherited Methods ---
-# _make_keyword: uses a single entry point and relies on helper methods and a lookup table to resolve the token type.
-# Lookup Table: dictionary of all valid, uppercase keywords. The handler's job is to match the consumed text against this table.
-# Token Classification: IF lexeme matches a reserved word in the list, it returns the corresponding Reserved Word Token. 
-#                       ELSE, classifies the lexeme as an Identifier.
-
-# --- Program Flow & its helper method ---
-# 1. _make_keyword() (Scanning the Lexeme) Starts after the Lexer encounters the first uppercase letter (e.g., the 'I' in IF).
-#   - Initialization: Captures the starting position of the token using self.mark_token_start().
-#   - Loop: Enters while loop that runs as long as the current character (self.current_char) is an uppercase letter.
-#           Inside the loop, self.advance() is called repeatedly to consume all subsequent uppercase letters, 
-#           building up the potential keyword lexeme (e.g., consuming 'I' then 'F').
-#   - Lexeme Extraction: Once the loop terminates (bcus next char not uplet), 
-#           lexeme = self.current_token_text() is called to retrieve the full string (e.g., "IF").
-#   - Classification: The handler then calls self._is_reserved_word(lexeme) to check the nature of the scanned text.
-# 2. "LOOK UP TABLE" _is_reserved_word(lexeme)
-#   - Performs the critical distinction between reserved words and identifiers.
-#   - Check Table: It checks if the lexeme (e.g., "IF") is present in the internal set or dictionary of reserved words (self.reserved_words).
-#       - Case A: Reserved Word Match: If found (e.g., "IF" is a reserved word):
-#                 Returns the classification type for that word (e.g., "IF_KW" or just "IF").
-#       - Case B: No Match: If not found (e.g., "MYVAR" is not in the reserved word list):
-#                 Returns the generic classification type for user-defined names (e.g., "IDENTIFIER").
-
 class IdentifierHandler: 
+
+    # --- HELPER: DYNAMIC & CLEAN ERROR GENERATION ---
+    def _report_id_error(self, delim_key="ID_DELIM", manual_extras=None, error_type=None, custom_msg=None, diff_char=None):
+        """
+        Generates a standardized error dictionary for identifiers.
+        """
+        if manual_extras is None:
+            manual_extras = []
+            
+        # 1. Fetch the Set from Delimiters
+        allowed_set = set(Delimiters._get_delimiters().get(delim_key, []))
+        allowed_set.update(manual_extras)
+        
+        # 2. CLEANING LOGIC (Condenses 0-9, a-z, whitespace)
+        cleaned_list = []
+
+        # Condense Ranges
+        if set(string.ascii_lowercase).issubset(allowed_set):
+            cleaned_list.append("a-z")
+            allowed_set -= set(string.ascii_lowercase)
+        
+        if set(string.ascii_uppercase).issubset(allowed_set):
+            cleaned_list.append("A-Z")
+            allowed_set -= set(string.ascii_uppercase)
+            
+        if set(string.digits).issubset(allowed_set):
+            cleaned_list.append("0-9")
+            allowed_set -= set(string.digits)
+
+        # Condense Whitespace
+        whitespace_subset = allowed_set.intersection(set(string.whitespace))
+        if whitespace_subset:
+            cleaned_list.append("whitespace")
+            allowed_set -= whitespace_subset
+
+        # Format Remaining
+        for char in sorted(list(allowed_set)):
+            if char == "\n": cleaned_list.append("\\n")
+            elif char == "\t": cleaned_list.append("\\t")
+            elif char == " ": cleaned_list.append("' '")
+            else: cleaned_list.append(char)
+        
+        # 3. Determine Error Type
+        if error_type is None:
+            error_type = ErrorHandler.ERR_LEX_INVALID_DELIM
+
+        # 4. Determine text to show (default to current lexeme)
+        text_to_show = diff_char if diff_char else self.current_token_text()
+
+        # 5. Generate Error
+        return ErrorHandler.get_lexical_error(
+            line=self.line,
+            col=self.col - 1,
+            invalid_char=text_to_show,
+            expected_list=sorted(cleaned_list),
+            header_type=error_type,
+            custom_msg=custom_msg
+        )
 
     def _is_alphanumeric_or_underscore(self):
         # Checks if the current character is valid for an identifier body
@@ -242,18 +278,20 @@ class IdentifierHandler:
         # Check for the 21st character (Overflow Check)
         if self._is_alphanumeric_or_underscore():
             # --- STOP IMMEDIATELY ---
-            # Do NOT advance. Do NOT consume the 21st character.
-            # We report the error for the current 20 characters, 
-            # allowing the lexer to pick up the 21st char as a new token next time.
+            # We report the error for the current 20 characters + ... to show overflow
+            full_text = self.text[self.token_start_pos:self.pos] + "..."
             
-            error_token = Token(
-                    "ERROR",
-                    self.current_token_text(), # This holds exactly 20 chars
-                    self.line,
-                    self.col - 1,
-                    "Invalid Identifier. Expected whitespace, gen_op, (, ), ], {, }, $, }",
-                )
-            self.errors.append(error_token)
+            # Use the new ErrorHandler with Limit Exceeded type
+            limit_error = self._report_id_error(
+                delim_key="ID_DELIM",
+                error_type=ErrorHandler.ERR_LEX_LIMIT_EXCEEDED,
+                custom_msg="Identifier exceeds 20 characters",
+                diff_char=full_text
+            )
+            self.errors.append(limit_error)
+            
+            # Note: We return None so the Lexer loop continues from the current position,
+            # treating the overflow characters as potentially new tokens or further errors.
             return None 
         
         # Valid identifier of exact length 20
@@ -263,8 +301,7 @@ class IdentifierHandler:
         return self.finalize_id("id")
 
     # =========================================================================================
-    # ACCEPTANCE LOGIC & DELIMITER CHECK: checks if Identifier ends correctly. 
-    #                                     If valid, ONLY THEN check/create the ID number.
+    # ACCEPTANCE LOGIC & DELIMITER CHECK
     # =========================================================================================
     def finalize_id(self, lexeme_type):
         result = self.current_token_text()
@@ -273,29 +310,23 @@ class IdentifierHandler:
         # DELIMITER CHECK FIRST -> only cares about assigning an ID if the token is actually valid.
         if self._is_valid_delimiter("ID_DELIM"):
             
-            # NOW it will Look up/assign an ID number
-            # Since we know it's valid, we can safely add it to our table or look it up.
+            # Check for Reserved Word logic (if handled here or via table)
             if result not in self.identifier_table:
                 self.identifier_table[result] = f"id{len(self.identifier_table) + 1}"
 
             token_type = self.identifier_table[result]
             
-            return Token(token_type, result, line, col - 1) # Added - 1
+            return Token(token_type, result, line, col - 1) 
             
         else:
-            # ERROR CASE -> does NOT touch self.identifier_table here. 
-            # The counter will not increment for this invalid token.
+            # ERROR CASE: Invalid Delimiter
+            # We use the new helper to show exactly what delimiters were allowed (whitespace, operators, etc.)
             
-            # --- FIX: Removed the trailing comma below ---
-            error_msg = "Invalid Identifier. Expected whitespace, gen_op, (, ), ], {, }, $, }"
-            
-            err_token = Token(
-                "ERROR",
-                result,
-                line,
-                col - 1,
-                error_msg
+            error_dict = self._report_id_error(
+                delim_key="ID_DELIM",
+                error_type=ErrorHandler.ERR_LEX_INVALID_DELIM,
+                diff_char=self.current_char if self.current_char else "EOF"
             )
-            self.errors.append(err_token)
+            self.errors.append(error_dict)
             
             return None
