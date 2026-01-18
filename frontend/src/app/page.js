@@ -277,19 +277,19 @@ export default function Home() {
                     
                     {err.isStructured ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {/* 1. Header: TYPE 'found' */}
+                            {/* Header: TYPE 'found' */}
                             <span style={{ color: '#f87171', fontWeight: 'bold' }}>
                                 {err.headerStr}
                             </span>
                             
-                            {/* 2. Source Line (If exists) */}
+                            {/* Source Line (If exists) */}
                             {err.sourceCode && (
-                                <span style={{ color: '#fbbf24', fontStyle: 'italic' }}>
+                                <span style={{ color: '##9ca3af'}}>
                                     &apos;{err.sourceCode}&apos;
                                 </span>
                             )}
                             
-                            {/* 3. Expected */}
+                            {/* Expected */}
                             <span style={{ color: '#e5e7eb'}}>
                                 Expected any: &apos;{err.expectedStr}&apos;
                             </span>
