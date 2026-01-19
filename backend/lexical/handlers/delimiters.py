@@ -40,7 +40,7 @@ class Delimiters:
         BACK_DELIM = WHITESPACE | set("(!")
         BOOL_DELIM = WHITESPACE | set(")]&!=,|")
         
-        PARCH_DELIM = WHITESPACE | set("]:&|!=,")
+        PARCH_DELIM = WHITESPACE | set("]:&|!=,)")
         SCR_DELIM = WHITESPACE | BOOL_DELIM | set("{")
         
         COMMA_DELIM = WHITESPACE | ASSIGN_DELIM | set(['@', '[', '(', "'", '"'])

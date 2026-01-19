@@ -165,7 +165,7 @@ PREDICT = {
     },
     "<gen-ope>": {
         "id": 92,
-        "-": 93, "COIN-lit": 93, "DIME-lit": 93,
+        "-": 93, "COIN-lit": 93, "DIME-lit": 93, "PARCH-lit": 93, "SCROLL-lit": 93,
         "AYE": 94, "NAY": 94, "!": 94, "!#": 94,
         "(": 95
     },
@@ -286,7 +286,7 @@ PREDICT = {
         # Lambda
         "id": 141, "ASK": 141, "ECHO": 141, "LOOK": 141, "CHART": 141, 
         "HOIST": 141, "HEAVE": 141, "HAUL": 141, "+#": 141, "-#": 141,
-        "SAIL": 141, "BACK": 141, "]": 141
+        "SAIL": 141, "BACK": 141, "]": 141, "LAND": 141
     },
     "<struct-dec>": {
         "MAST": 142
@@ -311,7 +311,9 @@ PREDICT = {
         "HOIST": 153,
         "HEAVE": 154,
         "HAUL": 155,
-        "+#": 156, "-#": 156
+        "+#": 156, "-#": 156,
+        "]": 139,
+        "LAND": 139
     },
     "<stmnt-tail>": {
         "id": 157, "ASK": 157, "ECHO": 157, "LOOK": 157, "CHART": 157, 

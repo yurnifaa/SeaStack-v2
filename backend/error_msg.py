@@ -7,10 +7,10 @@ class ErrorHandler:
     
     # --- SYNTAX SUB-TYPES ---
     ERR_UNEXPECTED_TOKEN = "Unexpected Token"
-    ERR_UNEXPECTED_EOF = "Unexpected End of File"
-    ERR_MISSING_MAIN = "Missing Main Function"
+    ERR_UNEXPECTED_EOF = "'[' was not closed"
+    ERR_MISSING_MAIN = "Missing 'AHOY' Function"
 
-    # --- LEXICAL SUB-TYPES (NEW) ---
+    # --- LEXICAL SUB-TYPES ---
     ERR_LEX_INVALID_CHAR = "Invalid Character"
     ERR_LEX_INVALID_DELIM = "Invalid Delimiter"
     ERR_LEX_LIMIT_EXCEEDED = "Limit Exceeded"
