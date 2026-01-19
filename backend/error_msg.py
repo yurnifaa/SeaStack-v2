@@ -17,18 +17,19 @@ class ErrorHandler:
     ERR_LEX_MALFORMED_LIT = "Malformed Literal"
     ERR_LEX_UNCLOSED_LIT = "Unclosed Literal"
 
+# =======================================
+# --- LEXICAL ERROR HANDLER ---
+# =======================================
     @staticmethod
     def get_lexical_error(line, col, invalid_char, expected_list=None, header_type=None, custom_msg=None):
-        """
-        Generates the standard dictionary for Lexical Errors with flexible headers.
-        
-        :param line: Line number
-        :param col: Column number
-        :param invalid_char: The text/char that caused the error
-        :param expected_list: List of valid tokens/delimiters expected
-        :param header_type: One of ErrorHandler.ERR_LEX_* constants
-        :param custom_msg: Optional override for the main message
-        """
+        # Generates the standard dictionary for Lexical Errors with flexible headers.
+        # :param line: Line number
+        # :param col: Column number
+        # :param invalid_char: The text/char that caused the error
+        # :param expected_list: List of valid tokens/delimiters expected
+        # :param header_type: One of ErrorHandler.ERR_LEX_* constants
+        # :param custom_msg: Optional override for the main message
+
         
         # 1. Default Defaults
         if expected_list is None:
@@ -62,6 +63,9 @@ class ErrorHandler:
             "message": final_msg     # Full description
         }
 
+# =======================================
+# --- SYNTAX ERROR HANDLER ---
+# =======================================
     @staticmethod
     def get_syntax_error(token=None, expected_tokens=None, custom_msg_type=None):
         if expected_tokens is None:

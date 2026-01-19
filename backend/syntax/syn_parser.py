@@ -121,7 +121,7 @@ class Parser:
     # =========================================
     # Program Structure & Declarations
     # =========================================
-    
+
     def program(self):
         # <program>
         production = self.get_production("<program>")
@@ -131,7 +131,13 @@ class Parser:
             self.eat("(")
             self.eat(")")
             self.eat("[")
-            self.local_dec()
+            
+            # Local Declarations OPTIONAL
+            # Check if the current token is a valid start for a declaration (COIN, DIME, etc.)
+            if self.current_token.type in FIRST["<local-dec>"]:
+                self.local_dec()
+            
+            # Statements remain mandatory in AHOY unless specified otherwise
             self.statements()
             self.eat("]")
         else:
@@ -735,6 +741,10 @@ class Parser:
         else:
             self.error(expected=list(PREDICT["<scroll-ope>"].keys()))
 
+    # =========================================
+    # Scroll & Functions
+    # =========================================
+
     def sub_func(self):
         # <sub-func>
         production = self.get_production("<sub-func>")
@@ -757,8 +767,16 @@ class Parser:
             self.func_parameters()
             self.eat(")")
             self.eat("[")
-            self.local_dec()
-            self.statements()
+            
+            # [UPDATED RULE 1] Local Declarations are now OPTIONAL
+            if self.current_token.type in FIRST["<local-dec>"]:
+                self.local_dec()
+            
+            # [UPDATED RULE 2] Statements are now OPTIONAL for Returning Functions
+            # Check if current token is a start of a statement (id, ASK, ECHO, etc.)
+            if self.current_token.type in FIRST["<statements>"]:
+                self.statements()
+
             self.eat("BACK")
             self.back_val()
             self.eat("!!")
@@ -812,7 +830,11 @@ class Parser:
             self.func_parameters()
             self.eat(")")
             self.eat("[")
-            self.local_dec()
+            
+            # [UPDATED RULE 1] Local Declarations are now OPTIONAL
+            if self.current_token.type in FIRST["<local-dec>"]:
+                self.local_dec()
+                
             self.statements()
             self.nonreturn_back()
             self.eat("]")
