@@ -1,101 +1,142 @@
-# backend/error_msg.py
-
 class ErrorHandler:
-    # --- ERROR TYPES ---
-    TYPE_SYNTAX = "Syntax Error"
-    TYPE_LEXICAL = "Lexical Error"
-    
-    # --- SYNTAX SUB-TYPES ---
-    ERR_UNEXPECTED_TOKEN = "Unexpected Token"
-    ERR_UNEXPECTED_EOF = "'[' was not closed"
-    ERR_MISSING_MAIN = "Missing 'AHOY' Function"
+    def __init__(self, source_code):
+        """
+        Initializes the ErrorHandler with the full source code to extract lines for errors.
+        :param source_code: String containing the full source code.
+        """
+        self.source_code = source_code
+        self.lines = source_code.split('\n') if source_code else []
 
-    # --- LEXICAL SUB-TYPES ---
-    ERR_LEX_INVALID_CHAR = "Invalid Character"
-    ERR_LEX_INVALID_DELIM = "Invalid Delimiter"
-    ERR_LEX_LIMIT_EXCEEDED = "Limit Exceeded"
-    ERR_LEX_MALFORMED_LIT = "Malformed Literal"
-    ERR_LEX_UNCLOSED_LIT = "Unclosed Literal"
+    def _get_line_content(self, line_num):
+        """Retrieves the actual line of code text (1-based index)."""
+        if isinstance(line_num, int) and 1 <= line_num <= len(self.lines):
+            return self.lines[line_num - 1].strip()
+        return ""
 
-# =======================================
-# --- LEXICAL ERROR HANDLER ---
-# =======================================
-    @staticmethod
-    def get_lexical_error(line, col, invalid_char, expected_list=None, header_type=None, custom_msg=None):
-        # Generates the standard dictionary for Lexical Errors with flexible headers.
-        # :param line: Line number
-        # :param col: Column number
-        # :param invalid_char: The text/char that caused the error
-        # :param expected_list: List of valid tokens/delimiters expected
-        # :param header_type: One of ErrorHandler.ERR_LEX_* constants
-        # :param custom_msg: Optional override for the main message
-
+    def _format_expected_list(self, expected_list):
+        """Formats a list of expected tokens into a readable string with 'or'."""
+        if not expected_list:
+            return ""
+        # Filter None and convert to string
+        clean_list = [str(t) for t in expected_list if t is not None]
+        unique_list = sorted(list(set(clean_list)))
         
-        # 1. Default Defaults
-        if expected_list is None:
-            expected_list = ["Valid Token"]
-        
-        if header_type is None:
-            header_type = ErrorHandler.ERR_LEX_INVALID_CHAR
+        if not unique_list:
+            return ""
+        if len(unique_list) == 1:
+            return unique_list[0]
+        if len(unique_list) == 2:
+            return f"{unique_list[0]} or {unique_list[1]}"
+        return f"{', '.join(unique_list[:-1])}, or {unique_list[-1]}"
 
-        # 2. Construct the "Found" Header based on Type
-        # This determines what shows up in BOLD RED in the UI
-        found_msg = f"{header_type} '{invalid_char}'"
-        
-        # Special Case: For limits, we might not want the word 'Limit Exceeded' twice if custom_msg handles it
-        if header_type == ErrorHandler.ERR_LEX_LIMIT_EXCEEDED:
-             # For limits, the "found" message is essentially the header for the UI.
-             # If a custom message is provided (e.g. "COIN-Lit exceeds 16 digits"), use that as the header.
-             if custom_msg:
-                 found_msg = custom_msg
-             else:
-                 found_msg = f"Limit Exceeded '{invalid_char}'"
-
-        # 3. Construct the Detailed Message
-        final_msg = custom_msg if custom_msg else found_msg
-
+    def _create_error(self, header, message_body, line, col, found_str=None, expected_list=None):
+        """Helper to construct the dictionary expected by the frontend."""
         return {
-            "type": ErrorHandler.TYPE_LEXICAL,
+            "type": "Syntax Error",
+            "error_header": header,
             "line": line,
             "col": col,
-            "found": found_msg,      # UI Header (Red Text)
-            "expected": expected_list, # Expected list
-            "message": final_msg     # Full description
+            "found": found_str if found_str else "Error",
+            "expected": expected_list if expected_list else [],
+            "message": message_body # The strict formatted message
         }
 
-# =======================================
-# --- SYNTAX ERROR HANDLER ---
-# =======================================
-    @staticmethod
-    def get_syntax_error(token=None, expected_tokens=None, custom_msg_type=None):
-        if expected_tokens is None:
-            expected_tokens = []
+    # 1. Missing Start
+    def get_missing_start_error(self):
+        line, col = 1, 1
+        header = "Missing Start"
+        msg = f"Line {line}, Col {col} | Missing start"
         
-        if token:
-            line = token.line
-            col = token.col
-            found_str = token.type
+        return self._create_error(header, msg, line, col)
+
+    # 2. Program_err (Invalid Start)
+    def get_program_start_error(self, token, expected_tokens):
+        line, col = token.line, token.col
+        found = token.type
+        actual_line = self._get_line_content(line)
+        expected_str = self._format_expected_list(expected_tokens)
+        
+        header = "Program Error"
+        msg = (
+            f"Line {line}, Col {col} | Program cannot begin with: '{found}'.\n"
+            f"'{actual_line}'\n"
+            f"Expected any: '{expected_str}'"
+        )
+        return self._create_error(header, msg, line, col, found, expected_tokens)
+
+    # 3. Expected EOF
+    def get_expected_eof_error(self, token):
+        line, col = token.line, token.col
+        found = token.type
+        actual_line = self._get_line_content(line)
+        
+        header = "Unexpected Token"
+        msg = (
+            f"Line {line}, Col {col} | Unexpected token: '{found}' after AHOY.\n"
+            f"'{actual_line}'\n"
+            f"Expected any: 'End Of File/EOF'"
+        )
+        return self._create_error(header, msg, line, col, found, ["End Of File/EOF"])
+
+    # 4. Invalid Token (Production failure)
+    def get_invalid_token_error(self, token, expected_tokens):
+        line, col = token.line, token.col
+        found = token.type
+        actual_line = self._get_line_content(line)
+        expected_str = self._format_expected_list(expected_tokens)
+
+        header = "Invalid Token"
+        msg = (
+            f"Line {line}, Col {col} | Invalid token: {found}.\n"
+            f"'{actual_line}'\n"
+            f"Expected any: '{expected_str}'"
+        )
+        return self._create_error(header, msg, line, col, found, expected_tokens)
+
+    # 5. Missing Token (eat failure)
+    def get_missing_token_error(self, current_token, expected_token_type):
+        # Note: If current_token is None (EOF), we handle gracefully
+        if current_token:
+            line, col = current_token.line, current_token.col
+            found = current_token.type
+            actual_line = self._get_line_content(line)
         else:
-            line = "?"
-            col = "?"
-            found_str = "EOF"
+            line, col = "?", "?"
+            found = "EOF"
+            actual_line = ""
 
-        error_header = ErrorHandler.ERR_UNEXPECTED_TOKEN
+        header = "Missing Token"
+        msg = (
+            f"Line {line}, Col {col} | Missing token after Line {line}, Col {col}: {expected_token_type}.\n"
+            f"'{actual_line}'"
+        )
+        return self._create_error(header, msg, line, col, found, [expected_token_type])
 
-        if found_str == "EOF":
-            if "AHOY" in expected_tokens or custom_msg_type == "MISSING_MAIN":
-                error_header = ErrorHandler.ERR_MISSING_MAIN
-            else:
-                error_header = ErrorHandler.ERR_UNEXPECTED_EOF
+    # 6. Unexpected Token (Generic)
+    def get_unexpected_token_error(self, token, expected_tokens):
+        line, col = token.line, token.col
+        found = token.type
+        actual_line = self._get_line_content(line)
+        expected_str = self._format_expected_list(expected_tokens)
 
-        clean_expected = sorted(list(set([str(t) for t in expected_tokens if t])))
+        header = "Unexpected Token"
+        msg = (
+            f"Line {line}, Col {col} | Unexpected token at Line {line}, Col {col}: {found}.\n"
+            f"'{actual_line}'\n"
+            f"Expected any: '{expected_str}'"
+        )
+        return self._create_error(header, msg, line, col, found, expected_tokens)
 
-        return {
-            "type": ErrorHandler.TYPE_SYNTAX,
-            "error_header": error_header,
-            "line": line,
-            "col": col,
-            "found": found_str,
-            "expected": clean_expected,
-            "message": f"{error_header}: '{found_str}'"
-        }
+    # 7. Custom Error
+    def get_custom_error(self, token, message):
+        if token:
+            line, col = token.line, token.col
+            found = token.type
+        else:
+            line, col = "?", "?"
+            found = "Unknown"
+
+        header = "Syntax Error"
+        msg = f"Line {line}, Col {col} | {message}"
+        
+        return self._create_error(header, msg, line, col, found)

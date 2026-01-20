@@ -9,11 +9,9 @@ from flask_cors import CORS
 
 # --- IMPORTS ---
 try:
-    # CHANGE THIS: Use 'backend.' prefix
     from backend.lexical.lexer import Lexer
     from backend.syntax.syn_parser import Parser 
 except ImportError as e:
-    # If this prints, the server stops. Check your terminal for this message!
     print(f"\n[ERROR] Import Failed! Details: {e}")
     sys.exit(1)
 
@@ -23,7 +21,7 @@ CORS(app)
 @app.route('/api/analyze', methods=['POST'])
 def analyze_code():
     data = request.json
-    code_string = data.get('code', '')
+    code_string = data.get('code', '') # <--- Variable defined here as 'code_string'
 
     response_data = {
         "success": False,
@@ -49,15 +47,12 @@ def analyze_code():
         
         response_data['tokens'] = formatted_tokens
 
-        # 2. Process Lexical Errors (With Crash Prevention)
-        # This loop ensures that even if a 'Token' object sneaks in, 
-        # it gets converted to a Dictionary so JSON doesn't crash.
+        # 2. Process Lexical Errors
         clean_lex_errors = []
         for err in lex_errors:
             if isinstance(err, dict):
                 clean_lex_errors.append(err)
             else:
-                # Fallback: Convert stray Token objects to Dicts
                 clean_lex_errors.append({
                     "line": getattr(err, 'line', '?'),
                     "col": getattr(err, 'col', '?'),
@@ -68,12 +63,10 @@ def analyze_code():
         
         response_data['lexical_errors'] = clean_lex_errors
         
-        # Mark success if no errors found
         if not clean_lex_errors:
             response_data['success'] = True
 
     except Exception as e:
-        # Catch generic crashes in Lexer
         response_data['lexical_errors'].append({
             "line": "-", "col": "-", 
             "found": "CRASH", "expected": [],
@@ -87,23 +80,22 @@ def analyze_code():
     # Only run Syntax Analysis if Lexical Analysis passed
     if not response_data['lexical_errors']:
         try:
-            # Pass the tokens list from the lexer to the parser
-            parser = Parser(tokens)
+            # FIX: Use 'code_string' here, not 'code'
+            parser = Parser(tokens, code_string) 
             
-            # Now returns a list of raw error DICTIONARIES from ErrorHandler
             syntax_errors = parser.parse() 
             
             if syntax_errors:
                 response_data['syntax_errors'].extend(syntax_errors)
                 response_data['success'] = False
             else:
-                # Success remains True from Lexical step
-                pass
+                pass # Success remains True
 
         except Exception as e:
             response_data['syntax_errors'].append({
-                "line": "-", 
-                "col": "-", 
+                "type": "Server Error",
+                "line": "?", 
+                "col": "?", 
                 "found": "CRASH",
                 "expected": [],
                 "message": f"Parser Crashed: {str(e)}"
