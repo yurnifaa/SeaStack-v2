@@ -9,6 +9,36 @@ from backend.lexical.handlers.delimiters import Delimiters
 class ReservedWordHandler:
 
     # =========================================================================================
+    # HELPER: Sanitize Delimiters for Display
+    # Replaces invisible chars ('\n', '\t', etc.) with the word "whitespace"
+    # =========================================================================================
+    def _sanitize_delims(self, delim_set):
+        # Ensure we are working with a list
+        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
+        cleaned_list = []
+        has_whitespace = False
+        
+        for d in delims:
+            # Check for invisible whitespace characters
+            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
+                has_whitespace = True
+            # Check if the string "whitespace" was passed manually
+            elif d == "whitespace":
+                has_whitespace = True
+            else:
+                cleaned_list.append(d)
+        
+        if has_whitespace:
+            cleaned_list.append("whitespace")
+            
+        # Remove duplicates (in case both ' ' and "whitespace" were present)
+        cleaned_list = list(set(cleaned_list))
+        
+        # Sort for clean UI output
+        cleaned_list.sort(key=str)
+        return cleaned_list
+
+    # =========================================================================================
     # Error Reporting Helper
     # =========================================================================================
     def _report_char_error(self, message, expected_list, lex_txt=None):
@@ -24,7 +54,9 @@ class ReservedWordHandler:
             self.col - 1,
             message 
         )
-        err_token.expected = expected_list
+        
+        # --- SANITIZE BEFORE ATTACHING ---
+        err_token.expected = self._sanitize_delims(expected_list)
         
         self.errors.append(err_token)        
         return None

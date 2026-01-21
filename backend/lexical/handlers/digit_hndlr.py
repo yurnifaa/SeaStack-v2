@@ -4,11 +4,40 @@ from backend.lexical.handlers.delimiters import Delimiters
 
 class DigitHandler:
     
-    # --- HELPER: Create Error with Expected List ---
+    # =========================================================================
+    # HELPER: Sanitize Delimiters for Display
+    # Replaces invisible chars ('\n', '\t', etc.) with the word "whitespace"
+    # =========================================================================
+    def _sanitize_delims(self, delim_set):
+        # Ensure we are working with a list
+        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
+        cleaned_list = []
+        has_whitespace = False
+        
+        for d in delims:
+            # Check for invisible whitespace characters
+            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
+                has_whitespace = True
+            # Check if the string "whitespace" was passed manually
+            elif d == "whitespace":
+                has_whitespace = True
+            else:
+                cleaned_list.append(d)
+        
+        if has_whitespace:
+            cleaned_list.append("whitespace")
+            
+        # Remove duplicates and sort
+        cleaned_list = list(set(cleaned_list))
+        cleaned_list.sort(key=str)
+        return cleaned_list
+
+    # =========================================================================
+    # HELPER: Create Error with Expected List
+    # =========================================================================
     def _create_digit_error(self, message):
-        # Retrieve the valid delimiters for Digits to show in the expected list
-        valid_delims = list(Delimiters._get_delimiters()["DIGIT_DELIM"])
-        valid_delims.sort() # Optional: Sort for cleaner UI
+        # Retrieve the valid delimiters for Digits
+        raw_delims = Delimiters._get_delimiters()["DIGIT_DELIM"]
         
         err_token = Token(
             "ERROR",
@@ -17,7 +46,10 @@ class DigitHandler:
             self.col - 1,
             message,
         )
-        err_token.expected = valid_delims
+        
+        # --- SANITIZE BEFORE ATTACHING ---
+        err_token.expected = self._sanitize_delims(raw_delims)
+        
         return err_token
 
     # =========================================================================

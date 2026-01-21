@@ -11,7 +11,7 @@ from backend.lexical.handlers.symbol_hndlr import SymbolHandler
 from backend.lexical.handlers.delimiters import Delimiters
 
 # =========================================================================
-# Lexer Class (uses inheritance to call each handler)
+# Lexer Class
 # =========================================================================
 class Lexer(
     CommentHandler,
@@ -31,18 +31,16 @@ class Lexer(
         self.tokens = []
         self.errors = []
 
-        # --- Token start tracking (Fixed Indentation: Now inside __init__) ---
+        # --- Token start tracking ---
         self.token_start_pos = 0
         self.token_start_line = 1
         self.token_start_col = 1
 
-    # Mark the start of a new token
     def mark_token_start(self):
         self.token_start_pos = self.pos
         self.token_start_line = self.line
         self.token_start_col = self.col
 
-    # Extract the current token lexeme
     def current_token_text(self):
         return self.text[self.token_start_pos:self.pos]
 
@@ -75,7 +73,7 @@ class Lexer(
         self.pos, self.line, self.col, self.current_char = state
 
     # =========================================================================
-    # Delimiter Comparison
+    # Delimiter Comparison & Sanitization
     # =========================================================================
     def _comp_delims(self, delimiter_set): 
         return self.current_char in delimiter_set or self.current_char is None
@@ -91,6 +89,25 @@ class Lexer(
             return char in delims[delim_set_name]
 
         return False
+
+    # --- NEW HELPER: Replaces invisible chars with "whitespace" ---
+    def _sanitize_delims(self, delim_set):
+        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
+        cleaned_list = []
+        has_whitespace = False
+        
+        for d in delims:
+            # Check for space, tab, newline, return, vertical tab, form feed
+            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
+                has_whitespace = True
+            else:
+                cleaned_list.append(d)
+        
+        if has_whitespace:
+            cleaned_list.append("whitespace")
+            
+        cleaned_list.sort(key=str)
+        return cleaned_list
         
     def _add_or_error(self, token_type, token_value, line, col, delim_set_name): 
         if self._is_valid_delimiter(delim_set_name):
@@ -110,9 +127,9 @@ class Lexer(
                 error_msg
             )
             
-            # Fetch valid delimiters dynamically
-            valid_delims = Delimiters._get_delimiters().get(delim_set_name, ["Valid Delimiter"])
-            err_token.expected = valid_delims
+            # Fetch valid delimiters dynamically AND SANITIZE
+            raw_delims = Delimiters._get_delimiters().get(delim_set_name, ["Valid Delimiter"])
+            err_token.expected = self._sanitize_delims(raw_delims)
             
             self.errors.append(err_token)
 
@@ -126,15 +143,11 @@ class Lexer(
         saved_state = self.save()
         char = self.current_char
 
-        # =========================================================================
-        # Reserved Words (rw0-rw119)
-        # =========================================================================
+        # --- Reserved Words ---
         if char.isupper():
             return self._make_keyword()
         
-        # =========================================================================
-        # Symbols / Operators (rs120-rs196)
-        # =========================================================================
+        # --- Symbols / Operators ---
         # Arithmetic
         if char == "+": return self.rs120()
         if char == "-": return self.rs126()
@@ -160,7 +173,7 @@ class Lexer(
         if char == ",": return self.rs181()
         if char == "\n": return self.rs183()
 
-        # Brackets and Parentheses
+        # Brackets
         if char == "{": return self.rs185()
         if char == "}": return self.rs187()
         if char == "(": return self.rs189()
@@ -168,35 +181,25 @@ class Lexer(
         if char == "[": return self.rs193()
         if char == "]": return self.rs195()
         
-        # =========================================================================
-        # Identifiers (i197-i232)
-        # =========================================================================
+        # --- Identifiers ---
         if char.islower():
             self.advance() 
             return self._make_identifier()
 
-        # =========================================================================
-        # Digits (COIN and DIME)
-        # =========================================================================
+        # --- Digits ---
         if char in Delimiters._get_delimiters()["DIGIT"]:
             self.mark_token_start()
-            return self.c233()
+            return self.c237() # Updated start state
 
-        # =========================================================================
-        # PARCH and SCROLL Literals
-        # =========================================================================
+        # --- Literals ---
         if char == "'": return self.p283()
         if char == '"': return self.s287()
 
-        # =========================================================================
-        # Comments
-        # =========================================================================
+        # --- Comments ---
         if char == "~":
             return self.cm293()
 
-        # =========================================================================
-        # Whitespace & Newline
-        # =========================================================================
+        # --- Whitespace ---
         if char.isspace():
             token_type = "newline" if char == "\n" else "whitespace"
             lexeme = char
@@ -204,8 +207,13 @@ class Lexer(
             self.advance()
             return Token(token_type, lexeme, l, c)
 
-        # --- CATCH-ALL for invalid characters ---
-        err_token = Token("ERROR", char, self.line, self.col, f"Invalid Character")
+        # =========================================================================
+        # CATCH-ALL: Clean "Unknown Character" Error
+        # =========================================================================
+        err_msg = f"Unknown Character '{char}'"
+        err_token = Token("ERROR", char, self.line, self.col, err_msg)
+        err_token.expected = None # Suppress expected list for unknowns
+        
         self.errors.append(err_token)
         self.advance()
         return None 

@@ -4,7 +4,37 @@ from backend.lexical.handlers.delimiters import Delimiters
 
 class SymbolHandler:
     
-    # --- HELPER: Create Error with Expected List ---
+    # =========================================================================
+    # HELPER: Sanitize Delimiters for Display
+    # Replaces invisible chars ('\n', '\t', etc.) with the word "whitespace"
+    # =========================================================================
+    def _sanitize_delims(self, delim_set):
+        # Ensure we are working with a list
+        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
+        cleaned_list = []
+        has_whitespace = False
+        
+        for d in delims:
+            # Check for invisible whitespace characters
+            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
+                has_whitespace = True
+            # Check if the string "whitespace" was passed manually
+            elif d == "whitespace":
+                has_whitespace = True
+            else:
+                cleaned_list.append(d)
+        
+        if has_whitespace:
+            cleaned_list.append("whitespace")
+            
+        # Remove duplicates and sort
+        cleaned_list = list(set(cleaned_list))
+        cleaned_list.sort(key=str)
+        return cleaned_list
+
+    # =========================================================================
+    # HELPER: Create Error with Expected List
+    # =========================================================================
     def _create_sym_error(self, message, expected_list):
         err_token = Token(
             "ERROR",
@@ -13,8 +43,10 @@ class SymbolHandler:
             self.col - 1,
             message
         )
-        # Attach the list for the UI
-        err_token.expected = expected_list
+        
+        # --- SANITIZE BEFORE ATTACHING ---
+        err_token.expected = self._sanitize_delims(expected_list)
+        
         return err_token
 
     # =============================================

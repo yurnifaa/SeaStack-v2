@@ -185,28 +185,40 @@ export default function Home() {
 
     // We intentionally DO NOT extract actualLine for Lexical Errors
     
-    const foundStr = errObj.found; 
+    // Retrieve the error message (set by lexer.py) and the token found
+    const message = errObj.message || "";
+    const foundStr = errObj.found || "";
     
-    // 1. Detect if it's an "Unknown Character" error
-    const isUnknown = foundStr.includes("Unknown Character");
+    // 1. Detect if it's an "Unknown Character" error based on the Lexer message
+    const isUnknown = message.includes("Unknown Character");
 
-    // 2. Handle "Expected" String
-    let expected = "";
-    if (errObj.expected && errObj.expected.length > 0) {
-        expected = errObj.expected.join(", ");
-    } else if (!isUnknown) {
-        // If it's NOT an unknown char (e.g. "Invalid character '|'"), 
-        // fallback to "Valid Token" if list is empty (though server usually provides a list)
-        expected = "Valid Token";
+    let headerStr = foundStr;
+    let expectedStr = "";
+
+    if (isUnknown) {
+        // USE THE LEXER MESSAGE as the header (e.g. "Unknown Character ';'")
+        headerStr = message;
+        // Keep expectedStr empty so "Expected any:" does not show
+        expectedStr = "";
+    } else {
+        // Normal Behavior for other errors (e.g. Invalid Identifiers)
+        // You might want to use 'message' here too depending on preference, 
+        // but keeping it 'foundStr' preserves your previous 'Invalid character' logic if handled elsewhere.
+        headerStr = foundStr; 
+
+        if (errObj.expected && errObj.expected.length > 0) {
+            expectedStr = errObj.expected.join(", ");
+        } else {
+            expectedStr = "Valid Token";
+        }
     }
-    // If isUnknown is true, expected remains "" (Hidden)
 
     return {
         line: errObj.line,
         col: errObj.col,
-        headerStr: foundStr,
+        headerStr: headerStr,
         sourceCode: null,      // <--- ALWAYS NULL FOR LEXICAL ERRORS
-        expectedStr: expected, // Hidden for Unknown Char, Visible for Invalid Char
+        expectedStr: expectedStr, 
         isStructured: true
     };
   };
@@ -447,4 +459,4 @@ export default function Home() {
       </svg>
     </div>
   );
-}
+} 
