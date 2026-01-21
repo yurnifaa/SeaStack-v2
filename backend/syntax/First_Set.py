@@ -1,10 +1,10 @@
 # First_Set.py
-# Source: SeaStack Language Specification - VIII. FIRST SET
+# Source: SeaStack Language Specification - VIII. FIRST SET (UPDATED)
 # lambda (epsilon) is represented as None
 
 FIRST = {
-    "<program>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "ABYSS", "LOCKE", "MAST", "AHOY"],
-    "<global-dec>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "ABYSS", "LOCKE", "MAST", None],
+    "<program>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "LOCKE", "MAST", "ABYSS", "AHOY"],
+    "<global-dec>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "LOCKE", "MAST", "ABYSS", None],
     "<d-type>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL"],
     "<dtype-tail>": ["=", ",", "{", "(", "!!"],
     "<var-arr-dec>": ["=", ",", "{", "!!"],
@@ -16,7 +16,7 @@ FIRST = {
     "<arr-val>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "(", "!", "!#"],
     "<arr-val-tail>": [",", None],
     "<arr2-tail>": ["=", None],
-    "<arr2-val>": ["["], 
+    "<arr2-val>": ["["],
     "<arr2-val-tail>": [",", None],
     "<locke-dec>": ["LOCKE"],
     "<struct-def>": ["MAST", None],
@@ -24,9 +24,6 @@ FIRST = {
     "<mem-dec-tail>": [",", None],
     "<more-mem>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", None],
     
-    # Expressions
-    "<var-val>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "(", "!", "!#"],
-    "<expression>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "(", "!", "!#"],
     "<operands>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "(", "!", "!#"],
     "<value>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY"],
     "<id-tail>": ["{", "$", "(", None],
@@ -35,10 +32,7 @@ FIRST = {
     "<arr-elmt-tail>": ["{", None],
     "<str-mem>": ["$"],
     "<func-args>": ["(", None],
-    "<args>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", None],
-    "<args-tail>": [",", None],
     
-    # Literals
     "<literals>": ["-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY"],
     "<digits>": ["-", "COIN-lit", "DIME-lit"],
     "<neg>": ["-", None],
@@ -46,7 +40,6 @@ FIRST = {
     "<bool-lit>": ["AYE", "NAY"],
     "<arr-str>": ["{", "$", None],
     
-    # Operators & Logic
     "<exp-tail>": ["+", "-", "*", "/", "%", "^", "<", ">", "<=", ">=", "||", "&&", "==", "!=", "&", None],
     "<gen-exp>": ["+", "-", "*", "/", "%", "^", "<", ">", "<=", ">=", "||", "&&", "==", "!=", None],
     "<arith>": ["+", "-", "*", "/", "%", "^", None],
@@ -62,31 +55,28 @@ FIRST = {
     "<logeq-op>": ["||", "&&", "==", "!="],
     "<log-op>": ["||", "&&"],
     "<equal-op>": ["==", "!="],
-    
-    # Scroll & Functions
     "<scroll>": ["&", None],
     "<scroll-ope>": ["id", "SCROLL-lit", "("],
+    
     "<sub-func>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "ABYSS", None],
     "<return-func>": ["("],
     "<func-parameters>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", None],
     "<func-tail>": [",", None],
-    "<back-val>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "("],
     "<nonreturn-func>": ["ABYSS"],
     "<nonreturn-back>": ["BACK", None],
     
-    # Local Dec & Structs
-    "<local-dec>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "MAST"],
-    "<loc-dec-tail>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "MAST", None],
+    "<local-dec>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "MAST", None],
     "<struct>": ["MAST", None],
     "<struct-dec>": ["MAST"],
-    "<struct-dec-init>": ["=", ",", None],
+    "<struct-dec-init>": [",", "=", None],
     "<struct-dec-tail>": [",", None],
+    "<str-val>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "(", "!", "!#", "$"],
+    "<str-val-tail>": [",", None],
     
-    # Statements
     "<statements>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"],
     "<stmnt-tail>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", None],
     "<assign-stmnt>": ["id"],
-    "<assign-tail>": ["{", "$", "(", "=", "+=", "-=", "*=", "/=", "%=", "^="],
+    "<assign-tail>": ["{", "$", "=", "+=", "-=", "*=", "/=", "%=", "^=", "("],
     "<assign-body>": ["=", "+=", "-=", "*=", "/=", "%=", "^="],
     "<assign-val>": ["(", "id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#", "["],
     "<arr-assign>": ["(", "id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#", "["],
@@ -95,8 +85,7 @@ FIRST = {
     "<addr>": ["@"],
     "<addr-tail>": [",", None],
     "<echo-stmnt>": ["ECHO"],
-    "<echo-arg>": ["(", "id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#", ",", None],
-    "<echo-arg-tail>": [",", None],
+    "<echo-arg>": [",", None],
     "<look-stmnt>": ["LOOK"],
     "<cond-exp>": ["id", "-", "COIN-lit", "DIME-lit", "AYE", "NAY", "!", "!#", "("],
     "<sail-stmt>": ["SAIL", None],

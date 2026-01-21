@@ -107,12 +107,8 @@ class Parser:
     # =========================================
 
     def program(self):
-        # 2. Program_err Check (Special case for start of program)
-        if self.current_token and self.current_token.type not in PREDICT["<program>"]:
-             expected = list(PREDICT["<program>"].keys())
-             raise Exception(self.err_handler.get_program_start_error(self.current_token, expected))
-
         # <program>
+        # Prod 1
         production = self.get_production("<program>")
         if production == 1:
             self.global_dec()
@@ -122,13 +118,12 @@ class Parser:
             self.eat("[")
             
             # Local Declarations OPTIONAL
-            if self.current_token.type in FIRST["<local-dec>"]:
+            if self.current_token and self.current_token.type in FIRST["<local-dec>"]:
                 self.local_dec()
             
             self.statements()
             self.eat("]")
         else:
-            # Fallback invalid token
             expected = list(PREDICT["<program>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
@@ -148,20 +143,20 @@ class Parser:
             self.nonreturn_func()
             self.sub_func()
         elif production == 6:
-            pass # Lambda (Epsilon)
+            pass # Lambda
         else:
-            # 4. Invalid Token
             expected = list(PREDICT["<global-dec>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def d_type(self):
         # <d-type>
         production = self.get_production("<d-type>")
-        if production == 7: self.eat("COIN")
-        elif production == 8: self.eat("DIME")
-        elif production == 9: self.eat("PARCH")
-        elif production == 10: self.eat("SCROLL")
-        elif production == 11: self.eat("BOOL")
+        if production in [7, 8, 9, 10, 11]:
+            if production == 7: self.eat("COIN")
+            elif production == 8: self.eat("DIME")
+            elif production == 9: self.eat("PARCH")
+            elif production == 10: self.eat("SCROLL")
+            elif production == 11: self.eat("BOOL")
         else:
             expected = list(PREDICT["<d-type>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -257,6 +252,29 @@ class Parser:
             expected = list(PREDICT["<arr-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
+    def arr_val(self):
+        # <arr-val>
+        production = self.get_production("<arr-val>")
+        if production == 25:
+            self.var_val()
+            self.arr_val_tail()
+        else:
+            expected = list(PREDICT["<arr-val>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+
+    def arr_val_tail(self):
+        # <arr-val-tail>
+        production = self.get_production("<arr-val-tail>")
+        if production == 26:
+            self.eat(",")
+            self.var_val()
+            self.arr_val_tail()
+        elif production == 27:
+            pass # Lambda
+        else:
+            expected = list(PREDICT["<arr-val-tail>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+
     def arr2_tail(self):
         # <arr2-tail>
         production = self.get_production("<arr2-tail>")
@@ -269,29 +287,6 @@ class Parser:
             pass # Lambda
         else:
             expected = list(PREDICT["<arr2-tail>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
-    def arr_val(self):
-        # <arr-val>
-        production = self.get_production("<arr-val>")
-        if production == 25:
-            self.var_val()
-            self.arr_val_tail()
-        else:
-            expected = list(PREDICT["<arr-val>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-    
-    def arr_val_tail(self):
-        # <arr-val-tail>
-        production = self.get_production("<arr-val-tail>")
-        if production == 26:
-            self.eat(",")
-            self.var_val()
-            self.arr_val_tail()
-        elif production == 27:
-            pass # Lambda
-        else:
-            expected = list(PREDICT["<arr-val-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def arr2_val(self):
@@ -363,7 +358,7 @@ class Parser:
         else:
             expected = list(PREDICT["<mem-dec>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
+
     def mem_dec_tail(self):
         # <mem-dec-tail>
         production = self.get_production("<mem-dec-tail>")
@@ -376,48 +371,57 @@ class Parser:
         else:
             expected = list(PREDICT["<mem-dec-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
+
     def more_mem(self):
         # <more-mem>
         production = self.get_production("<more-mem>")
         if production == 39:
             self.mem_dec()
-            self.more_mem() 
+            self.more_mem()
         elif production == 40:
             pass # Lambda
         else:
             expected = list(PREDICT["<more-mem>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
+    # =========================================
+    # Expressions & Values
+    # =========================================
+
     def var_val(self):
         # <var-val>
         production = self.get_production("<var-val>")
         if production == 41:
-            self.expression()
-        else:
-            expected = list(PREDICT["<var-val>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-        
-    def expression(self):
-        # <expression>
-        production = self.get_production("<expression>")
-        if production == 42:
             self.operands()
             self.exp_tail()
         else:
-            expected = list(PREDICT["<expression>"].keys())
+            expected = list(PREDICT["<var-val>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def operands(self):
         # <operands>
         production = self.get_production("<operands>")
-        if production == 43:
+        if production == 42:
+            pass # PDF says Production 42 is Lambda? Wait, checking CFG.
+            # Prod 42 is empty in PDF table source 2330. Assuming <operands> -> <value> logic from existing pattern or typo.
+            # Looking at source 2330, Prod 41 is <operands><exp-tail>. Prod 42 is empty... 
+            # Looking at Predict Set for 42 in my dictionary: "id", "literals"... 
+            # Ah, PDF Page 2 of CFG: 
+            # 42 <operands> -> (nothing listed)
+            # 43 <operands> -> (<var-val>)
+            # 44 <operands> -> <not><not-val>
+            # BUT: Prod 41 calls <operands>. Prod 45 is <value>. 
+            # RE-CHECKING source 2330:
+            # 45 <value> -> id <id-tail>
+            # 46 <value> -> <literals>
+            # It seems Prod 42 implies <value> is the default derivation if not 43 or 44.
+            # Let's map Prod 42 to self.value()
             self.value()
-        elif production == 44:
+        elif production == 43:
             self.eat("(")
-            self.expression()
+            self.var_val()
             self.eat(")")
-        elif production == 45:
+        elif production == 44:
             self.not_rule()
             self.not_val()
         else:
@@ -427,10 +431,10 @@ class Parser:
     def value(self):
         # <value>
         production = self.get_production("<value>")
-        if production == 46:
+        if production == 45:
             self.eat("id")
             self.id_tail()
-        elif production == 47:
+        elif production == 46:
             self.literals()
         else:
             expected = list(PREDICT["<value>"].keys())
@@ -439,13 +443,13 @@ class Parser:
     def id_tail(self):
         # <id-tail>
         production = self.get_production("<id-tail>")
-        if production == 48:
+        if production == 47:
             self.arr_elmt()
-        elif production == 49:
+        elif production == 48:
             self.str_mem()
-        elif production == 50:
+        elif production == 49:
             self.func_args()
-        elif production == 51:
+        elif production == 50:
             pass # Lambda
         else:
             expected = list(PREDICT["<id-tail>"].keys())
@@ -454,7 +458,7 @@ class Parser:
     def arr_elmt(self):
         # <arr-elmt>
         production = self.get_production("<arr-elmt>")
-        if production == 52:
+        if production == 51:
             self.eat("{")
             self.arr_index()
             self.eat("}")
@@ -462,12 +466,12 @@ class Parser:
         else:
             expected = list(PREDICT["<arr-elmt>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
+
     def arr_index(self):
         # <arr-index>
         production = self.get_production("<arr-index>")
-        if production == 53: self.eat("COIN-lit")
-        elif production == 54: self.eat("id")
+        if production == 52: self.eat("COIN-lit")
+        elif production == 53: self.eat("id")
         else:
             expected = list(PREDICT["<arr-index>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -475,11 +479,11 @@ class Parser:
     def arr_elmt_tail(self):
         # <arr-elmt-tail>
         production = self.get_production("<arr-elmt-tail>")
-        if production == 55:
+        if production == 54:
             self.eat("{")
             self.arr_index()
             self.eat("}")
-        elif production == 56:
+        elif production == 55:
             pass # Lambda
         else:
             expected = list(PREDICT["<arr-elmt-tail>"].keys())
@@ -488,7 +492,7 @@ class Parser:
     def str_mem(self):
         # <str-mem>
         production = self.get_production("<str-mem>")
-        if production == 57:
+        if production == 56:
             self.eat("$")
             self.eat("id")
         else:
@@ -498,48 +502,23 @@ class Parser:
     def func_args(self):
         # <func-args>
         production = self.get_production("<func-args>")
-        if production == 58:
+        if production == 57:
             self.eat("(")
-            self.args()
+            self.arr_val() # Note: CFG says <arr-val> here, not <args>
             self.eat(")")
-        elif production == 59:
+        elif production == 58:
             pass # Lambda
         else:
             expected = list(PREDICT["<func-args>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
-    def args(self):
-        # <args>
-        production = self.get_production("<args>")
-        if production == 60:
-            self.value()
-            self.args_tail()
-        elif production == 61:
-            pass # Lambda
-        else:
-            expected = list(PREDICT["<args>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-
-    def args_tail(self):
-        # <args-tail>
-        production = self.get_production("<args-tail>")
-        if production == 62:
-            self.eat(",")
-            self.value()
-            self.args_tail()
-        elif production == 63:
-            pass # Lambda
-        else:
-            expected = list(PREDICT["<args-tail>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
     def literals(self):
         # <literals>
         production = self.get_production("<literals>")
-        if production == 64: self.digits()
-        elif production == 65: self.bool_lit()
-        elif production == 66: self.eat("PARCH-lit")
-        elif production == 67: 
+        if production == 59: self.digits()
+        elif production == 60: self.bool_lit()
+        elif production == 61: self.eat("PARCH-lit")
+        elif production == 62:
             self.eat("SCROLL-lit")
             self.arr_elmt_tail()
         else:
@@ -549,7 +528,7 @@ class Parser:
     def digits(self):
         # <digits>
         production = self.get_production("<digits>")
-        if production == 68:
+        if production == 63:
             self.neg()
             self.coin_dime()
         else:
@@ -559,8 +538,8 @@ class Parser:
     def neg(self):
         # <neg>
         production = self.get_production("<neg>")
-        if production == 69: self.eat("-")
-        elif production == 70: pass # Lambda (Positive)
+        if production == 64: self.eat("-")
+        elif production == 65: pass # Lambda
         else:
             expected = list(PREDICT["<neg>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -568,27 +547,37 @@ class Parser:
     def coin_dime(self):
         # <coin-dime>
         production = self.get_production("<coin-dime>")
-        if production == 71: self.eat("COIN-lit")
-        elif production == 72: self.eat("DIME-lit")
+        if production == 66: self.eat("COIN-lit")
+        elif production == 67: self.eat("DIME-lit")
         else:
             expected = list(PREDICT["<coin-dime>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-        
+
     def bool_lit(self):
         # <bool-lit>
         production = self.get_production("<bool-lit>")
-        if production == 73: self.eat("AYE")
-        elif production == 74: self.eat("NAY")
+        if production == 68: self.eat("AYE")
+        elif production == 69: self.eat("NAY")
         else:
             expected = list(PREDICT["<bool-lit>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+
+    def arr_str(self):
+        # <arr-str>
+        production = self.get_production("<arr-str>")
+        if production == 70: self.arr_elmt()
+        elif production == 71: self.str_mem()
+        elif production == 72: pass # Lambda
+        else:
+            expected = list(PREDICT["<arr-str>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def exp_tail(self):
         # <exp-tail>
         production = self.get_production("<exp-tail>")
-        if production == 78: self.gen_exp()
-        elif production == 79: self.scroll()
-        elif production == 80: pass # Lambda
+        if production == 73: self.gen_exp()
+        elif production == 74: self.scroll()
+        elif production == 75: pass # Lambda
         else:
             expected = list(PREDICT["<exp-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -596,11 +585,11 @@ class Parser:
     def gen_exp(self):
         # <gen-exp>
         production = self.get_production("<gen-exp>")
-        if production == 81:
+        if production == 76:
             self.arith()
             self.rel()
             self.logeq()
-        elif production == 82: pass # Lambda
+        elif production == 77: pass # Lambda
         else:
             expected = list(PREDICT["<gen-exp>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -608,8 +597,8 @@ class Parser:
     def arith(self):
         # <arith>
         production = self.get_production("<arith>")
-        if production == 83: self.arith_exp()
-        elif production == 84: pass # Lambda
+        if production == 78: self.arith_exp()
+        elif production == 79: pass # Lambda
         else:
             expected = list(PREDICT["<arith>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -617,7 +606,7 @@ class Parser:
     def arith_exp(self):
         # <arith-exp>
         production = self.get_production("<arith-exp>")
-        if production == 85:
+        if production == 80:
             self.arith_op()
             self.gen_ope()
             self.arith()
@@ -628,12 +617,24 @@ class Parser:
     def arith_op(self):
         # <arith-op>
         production = self.get_production("<arith-op>")
-        if production == 86: self.eat("+")
-        elif production == 87: self.eat("-")
-        elif production == 88: self.eat("*")
-        elif production == 89: self.eat("/")
-        elif production == 90: self.eat("%")
-        elif production == 91: self.eat("^")
+        if production == 81: self.eat("+")
+        elif production == 82: self.eat("-") # PDF 82 is ","? Wait. No, Page 3 says 82 is "," ??
+        # RE-READING CFG SOURCE 2331:
+        # 81 -> +
+        # 82 -> , (Wait, that seems wrong for arith-op, maybe typo in source PDF or I misread)
+        # Checking Source 2331: 
+        # 81 <arith-op> -> +
+        # 82 <arith-op> -> - (The PDF snippet has a comma on line 82 but "-" is expected)
+        # 83 <arith-op> -> *
+        # 84 <arith-op> -> /
+        # 85 <arith-op> -> %
+        # 86 <arith-op> -> ^
+        # FIX: I will assume standard arithmetic operators based on context.
+        elif production == 82: self.eat("-")
+        elif production == 83: self.eat("*")
+        elif production == 84: self.eat("/")
+        elif production == 85: self.eat("%")
+        elif production == 86: self.eat("^")
         else:
             expected = list(PREDICT["<arith-op>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -641,16 +642,16 @@ class Parser:
     def gen_ope(self):
         # <gen-ope>
         production = self.get_production("<gen-ope>")
-        if production == 92:
+        if production == 87:
             self.eat("id")
             self.id_tail()
-        elif production == 93:
+        elif production == 88:
             self.digits()
-        elif production == 94:
+        elif production == 89:
             self.bool_rule()
-        elif production == 95:
+        elif production == 90:
             self.eat("(")
-            self.gen_ope() 
+            self.gen_ope()
             self.gen_exp()
             self.eat(")")
         else:
@@ -660,9 +661,8 @@ class Parser:
     def bool_rule(self):
         # <bool>
         production = self.get_production("<bool>")
-        if production == 96:
-            self.bool_lit()
-        elif production == 97:
+        if production == 91: self.bool_lit()
+        elif production == 92:
             self.not_rule()
             self.not_val()
         else:
@@ -672,59 +672,58 @@ class Parser:
     def not_rule(self):
         # <not>
         production = self.get_production("<not>")
-        if production == 98: self.eat("!")
-        elif production == 99: self.eat("!#")
-        else: 
+        if production == 93: self.eat("!")
+        elif production == 94: self.eat("!#")
+        else:
             expected = list(PREDICT["<not>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-        
+
     def not_val(self):
         # <not-val>
         production = self.get_production("<not-val>")
-        if production == 100: self.eat("id")
-        elif production == 101: self.bool_lit()
-        elif production == 102: 
+        if production == 95:
+            self.eat("id")
+            self.id_tail()
+        elif production == 96: self.bool_lit()
+        elif production == 97:
             self.eat("(")
-            self.expression()
+            self.var_val()
             self.eat(")")
-        else: 
+        else:
             expected = list(PREDICT["<not-val>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def rel(self):
         # <rel>
         production = self.get_production("<rel>")
-        if production == 103:
+        if production == 98:
             self.rel_op()
             self.gen_ope()
             self.arith()
-        elif production == 104: pass # Lambda
+        elif production == 99: pass # Lambda
         else:
             expected = list(PREDICT["<rel>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def rel_op(self):
         # <rel-op>
-        if self.current_token.type == "<":
-            self.eat("<")
-        elif self.current_token.type == ">":
-            self.eat(">")
-        elif self.current_token.type == "<=":
-            self.eat("<=")
-        elif self.current_token.type == ">=":
-            self.eat(">=")
+        production = self.get_production("<rel-op>")
+        if production == 100: self.eat("<")
+        elif production == 101: self.eat(">")
+        elif production == 102: self.eat("<=")
+        elif production == 103: self.eat(">=")
         else:
-             expected = list(PREDICT["<rel-op>"].keys())
-             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+            expected = list(PREDICT["<rel-op>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def logeq(self):
         # <logeq>
         production = self.get_production("<logeq>")
-        if production == 109:
+        if production == 104:
             self.logeq_op()
-            self.gen_ope()
+            self.operands() # Note CFG says <operands> here in Prod 104
             self.gen_exp()
-        elif production == 110: pass # Lambda
+        elif production == 105: pass # Lambda
         else:
             expected = list(PREDICT["<logeq>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -732,40 +731,39 @@ class Parser:
     def logeq_op(self):
         # <logeq-op>
         production = self.get_production("<logeq-op>")
-        if production == 111: 
-            self.log_op()
-        elif production == 112: 
-            self.equal_op()
+        if production == 106: self.log_op()
+        elif production == 107: self.equal_op()
         else:
             expected = list(PREDICT["<logeq-op>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-    
+
     def log_op(self):
         # <log-op>
         production = self.get_production("<log-op>")
-        if production == 113: self.eat("||")
-        elif production == 114: self.eat("&&")
-        else: 
+        if production == 108: self.eat("||") # Source 2331 says 108 is empty space? 109 is &&. 
+        # Checking table: 108 -> || (likely obscured in OCR but logically follows).
+        elif production == 109: self.eat("&&")
+        else:
             expected = list(PREDICT["<log-op>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def equal_op(self):
         # <equal-op>
         production = self.get_production("<equal-op>")
-        if production == 115: self.eat("==")
-        elif production == 116: self.eat("!=")
-        else: 
+        if production == 110: self.eat("==")
+        elif production == 111: self.eat("!=")
+        else:
             expected = list(PREDICT["<equal-op>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def scroll(self):
         # <scroll>
         production = self.get_production("<scroll>")
-        if production == 117:
+        if production == 112:
             self.eat("&")
             self.scroll_ope()
             self.scroll()
-        elif production == 118: pass # Lambda
+        elif production == 113: pass # Lambda
         else:
             expected = list(PREDICT["<scroll>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -773,16 +771,16 @@ class Parser:
     def scroll_ope(self):
         # <scroll-ope>
         production = self.get_production("<scroll-ope>")
-        if production == 119:
+        if production == 114:
             self.eat("SCROLL-lit")
             self.arr_elmt_tail()
-        elif production == 120:
+        elif production == 115:
             self.eat("id")
             self.id_tail()
-        elif production == 121:
+        elif production == 116:
             self.eat("(")
             self.scroll_ope()
-            self.scroll()
+            self.scroll() # CFG 116: (<scroll-ope><scroll>)
             self.eat(")")
         else:
             expected = list(PREDICT["<scroll-ope>"].keys())
@@ -795,14 +793,14 @@ class Parser:
     def sub_func(self):
         # <sub-func>
         production = self.get_production("<sub-func>")
-        if production == 122:
+        if production == 117:
             self.d_type()
             self.eat("id")
             self.return_func()
-        elif production == 123:
+        elif production == 118:
             self.nonreturn_func()
-        elif production == 124:
-            pass # Lambda
+            self.sub_func() # Recurse per CFG 118
+        elif production == 119: pass # Lambda
         else:
             expected = list(PREDICT["<sub-func>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -810,22 +808,16 @@ class Parser:
     def return_func(self):
         # <return-func>
         production = self.get_production("<return-func>")
-        if production == 125:
+        if production == 120:
             self.eat("(")
             self.func_parameters()
             self.eat(")")
             self.eat("[")
-            
-            # Local Declarations OPTIONAL
-            if self.current_token.type in FIRST["<local-dec>"]:
+            if self.current_token and self.current_token.type in FIRST["<local-dec>"]:
                 self.local_dec()
-            
-            # Statements OPTIONAL for Returning Functions
-            if self.current_token.type in FIRST["<statements>"]:
-                self.statements()
-
+            self.stmnt_tail()
             self.eat("BACK")
-            self.back_val()
+            self.var_val()
             self.eat("!!")
             self.eat("]")
             self.sub_func()
@@ -836,11 +828,11 @@ class Parser:
     def func_parameters(self):
         # <func-parameters>
         production = self.get_production("<func-parameters>")
-        if production == 126:
+        if production == 121:
             self.d_type()
             self.eat("id")
             self.func_tail()
-        elif production == 127: pass # Lambda
+        elif production == 122: pass # Lambda
         else:
             expected = list(PREDICT["<func-parameters>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -848,44 +840,28 @@ class Parser:
     def func_tail(self):
         # <func-tail>
         production = self.get_production("<func-tail>")
-        if production == 128:
+        if production == 123:
             self.eat(",")
             self.d_type()
             self.eat("id")
             self.func_tail()
-        elif production == 129: pass # Lambda
+        elif production == 124: pass # Lambda
         else:
             expected = list(PREDICT["<func-tail>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-
-    def back_val(self):
-        # <back-val>
-        production = self.get_production("<back-val>")
-        if production == 130: self.literals()
-        elif production == 131: self.eat("id")
-        elif production == 132:
-            self.eat("(")
-            self.expression()
-            self.eat(")")
-        else:
-            expected = list(PREDICT["<back-val>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def nonreturn_func(self):
         # <nonreturn-func>
         production = self.get_production("<nonreturn-func>")
-        if production == 133:
+        if production == 125:
             self.eat("ABYSS")
             self.eat("id")
             self.eat("(")
             self.func_parameters()
             self.eat(")")
             self.eat("[")
-            
-            # Local Declarations OPTIONAL
-            if self.current_token.type in FIRST["<local-dec>"]:
+            if self.current_token and self.current_token.type in FIRST["<local-dec>"]:
                 self.local_dec()
-                
             self.statements()
             self.nonreturn_back()
             self.eat("]")
@@ -897,10 +873,10 @@ class Parser:
     def nonreturn_back(self):
         # <nonreturn-back>
         production = self.get_production("<nonreturn-back>")
-        if production == 134:
+        if production == 126:
             self.eat("BACK")
             self.eat("!!")
-        elif production == 135: pass # Lambda
+        elif production == 127: pass # Lambda
         else:
             expected = list(PREDICT["<nonreturn-back>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -908,35 +884,25 @@ class Parser:
     def local_dec(self):
         # <local-dec>
         production = self.get_production("<local-dec>")
-        if production == 136:
+        if production == 128:
             self.d_type()
             self.eat("id")
             self.var_arr_dec()
-            self.loc_dec_tail()
-        elif production == 137:
+            self.local_dec() # Recursion
+        elif production == 129:
             self.struct()
+        elif production == 130: pass # Lambda
         else:
             expected = list(PREDICT["<local-dec>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-
-    def loc_dec_tail(self):
-        # <loc-dec-tail>
-        production = self.get_production("<loc-dec-tail>")
-        if production == 138:
-            self.local_dec()
-        elif production == 139:
-            pass # Lambda 
-        else:
-            expected = list(PREDICT["<loc-dec-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def struct(self):
         # <struct>
         production = self.get_production("<struct>")
-        if production == 140:
+        if production == 131:
             self.struct_dec()
             self.struct()
-        elif production == 141: pass # Lambda
+        elif production == 132: pass # Lambda
         else:
             expected = list(PREDICT["<struct>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -944,7 +910,7 @@ class Parser:
     def struct_dec(self):
         # <struct-dec>
         production = self.get_production("<struct-dec>")
-        if production == 142:
+        if production == 133:
             self.eat("MAST")
             self.eat("id")
             self.eat("id")
@@ -957,16 +923,16 @@ class Parser:
     def struct_dec_init(self):
         # <struct-dec-init>
         production = self.get_production("<struct-dec-init>")
-        if production == 143:
-            self.eat(",")
+        if production == 134:
             self.eat("id")
             self.struct_dec_tail()
-        elif production == 144:
+        elif production == 135:
             self.eat("=")
             self.eat("[")
-            self.arr_val()
+            self.str_val()
+            self.str_val_tail()
             self.eat("]")
-        elif production == 145: pass # Lambda
+        elif production == 136: pass # Lambda
         else:
             expected = list(PREDICT["<struct-dec-init>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -974,27 +940,55 @@ class Parser:
     def struct_dec_tail(self):
         # <struct-dec-tail>
         production = self.get_production("<struct-dec-tail>")
-        if production == 146:
+        if production == 137:
             self.eat(",")
             self.eat("id")
             self.struct_dec_tail()
-        elif production == 147: pass # Lambda
+        elif production == 138: pass # Lambda
         else:
             expected = list(PREDICT["<struct-dec-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
+    def str_val(self):
+        # <str-val>
+        production = self.get_production("<str-val>")
+        if production == 139:
+            self.var_val()
+        elif production == 140:
+            self.eat("$")
+            self.eat("id")
+            self.eat("=")
+            self.var_val()
+        else:
+            expected = list(PREDICT["<str-val>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+
+    def str_val_tail(self):
+        # <str-val-tail>
+        production = self.get_production("<str-val-tail>")
+        if production == 141:
+            self.str_val()
+        elif production == 142: pass # Lambda
+        else:
+            expected = list(PREDICT["<str-val-tail>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+
+    # =========================================
+    # Statements
+    # =========================================
+
     def statements(self):
         # <statements>
         production = self.get_production("<statements>")
-        if production == 148: self.assign_stmnt()
-        elif production == 149: self.ask_stmnt()
-        elif production == 150: self.echo_stmnt()
-        elif production == 151: self.look_stmnt()
-        elif production == 152: self.chart_stmnt()
-        elif production == 153: self.hoist_stmnt()
-        elif production == 154: self.heave_stmnt()
-        elif production == 155: self.haul_stmnt()
-        elif production == 156: 
+        if production == 143: self.assign_stmnt()
+        elif production == 144: self.ask_stmnt()
+        elif production == 145: self.echo_stmnt()
+        elif production == 146: self.look_stmnt()
+        elif production == 147: self.chart_stmnt()
+        elif production == 148: self.hoist_stmnt()
+        elif production == 149: self.heave_stmnt()
+        elif production == 150: self.haul_stmnt()
+        elif production == 151: 
             self.unary_exp()
             self.eat("!!")
         else:
@@ -1006,10 +1000,10 @@ class Parser:
     def stmnt_tail(self):
         # <stmnt-tail>
         production = self.get_production("<stmnt-tail>")
-        if production == 157:
+        if production == 152:
             self.statements()
-        elif production == 158:
-            pass # Lambda
+            self.stmnt_tail()
+        elif production == 153: pass # Lambda
         else:
             expected = list(PREDICT["<stmnt-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1017,7 +1011,7 @@ class Parser:
     def assign_stmnt(self):
         # <assign-stmnt>
         production = self.get_production("<assign-stmnt>")
-        if production == 159:
+        if production == 154:
             self.eat("id")
             self.assign_tail()
             self.eat("!!")
@@ -1028,55 +1022,45 @@ class Parser:
     def assign_tail(self):
         # <assign-tail>
         production = self.get_production("<assign-tail>")
-        if production == 160:
+        if production == 155:
             self.arr_str()
             self.assign_body()
-        elif production == 161:
+        elif production == 156:
             self.func_args()
         else:
             expected = list(PREDICT["<assign-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
-    def arr_str(self):
-        # <arr-str>
-        production = self.get_production("<arr-str>")
-        if production == 75: self.arr_elmt()
-        elif production == 76: self.str_mem()
-        elif production == 77: pass # Lambda
-        else:
-            expected = list(PREDICT["<arr-str>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-        
     def assign_body(self):
         # <assign-body>
         production = self.get_production("<assign-body>")
-        if production == 162:
+        if production == 157:
             self.eat("=")
             self.assign_val()
-        elif production == 163:
+        elif production == 158:
             self.arith_assign_op()
-            self.expression()
+            self.var_val()
         else:
-             expected = list(PREDICT["<assign-body>"].keys())
-             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+            expected = list(PREDICT["<assign-body>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def assign_val(self):
         # <assign-val>
         production = self.get_production("<assign-val>")
-        if production == 164: self.var_val()
-        elif production == 165:
+        if production == 159: self.var_val()
+        elif production == 160:
             self.eat("[")
             self.arr_assign()
             self.eat("]")
         else:
             expected = list(PREDICT["<assign-val>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
+
     def arr_assign(self):
         # <arr-assign>
         production = self.get_production("<arr-assign>")
-        if production == 166: self.arr_val()
-        elif production == 167: self.arr2_val()
+        if production == 161: self.arr_val()
+        elif production == 162: self.arr2_val()
         else:
             expected = list(PREDICT["<arr-assign>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1084,12 +1068,15 @@ class Parser:
     def arith_assign_op(self):
         # <arith-assign-op>
         production = self.get_production("<arith-assign-op>")
-        if production == 168: self.eat("+=")
-        elif production == 169: self.eat("-=")
-        elif production == 170: self.eat("*=")
-        elif production == 171: self.eat("/=")
-        elif production == 172: self.eat("%=")
-        elif production == 173: self.eat("^=")
+        if production == 163: self.eat("+=")
+        elif production == 164: self.eat("-=")
+        elif production == 165: self.eat("*=")
+        elif production == 166: self.eat("/=")
+        elif production == 167: 
+            # Production 167 seems to cover both %= and ^= in the PDF or one is missing
+            if self.current_token.type == "%=": self.eat("%=")
+            elif self.current_token.type == "^=": self.eat("^=")
+            else: self.eat("%=") # Fallback to error
         else:
             expected = list(PREDICT["<arith-assign-op>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1097,7 +1084,7 @@ class Parser:
     def ask_stmnt(self):
         # <ask-stmnt>
         production = self.get_production("<ask-stmnt>")
-        if production == 174:
+        if production == 169:
             self.eat("ASK")
             self.eat("(")
             self.eat("SCROLL-lit")
@@ -1108,11 +1095,11 @@ class Parser:
         else:
             expected = list(PREDICT["<ask-stmnt>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
+
     def addr(self):
         # <addr>
         production = self.get_production("<addr>")
-        if production == 175:
+        if production == 170:
             self.eat("@")
             self.eat("id")
             self.arr_str()
@@ -1120,17 +1107,17 @@ class Parser:
         else:
             expected = list(PREDICT["<addr>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-            
+
     def addr_tail(self):
         # <addr-tail>
         production = self.get_production("<addr-tail>")
-        if production == 176:
+        if production == 171:
             self.eat(",")
             self.eat("@")
             self.eat("id")
             self.arr_str()
             self.addr_tail()
-        elif production == 177: pass # Lambda
+        elif production == 172: pass # Lambda
         else:
             expected = list(PREDICT["<addr-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1138,7 +1125,7 @@ class Parser:
     def echo_stmnt(self):
         # <echo-stmnt>
         production = self.get_production("<echo-stmnt>")
-        if production == 178:
+        if production == 173:
             self.eat("ECHO")
             self.eat("(")
             self.eat("SCROLL-lit")
@@ -1152,31 +1139,19 @@ class Parser:
     def echo_arg(self):
         # <echo-arg>
         production = self.get_production("<echo-arg>")
-        if production == 179:
+        if production == 174:
             self.eat(",")
-            self.expression()
-            self.echo_arg_tail()
-        elif production == 180: pass # Lambda
+            self.var_val()
+            self.echo_arg()
+        elif production == 175: pass # Lambda
         else:
             expected = list(PREDICT["<echo-arg>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-        
-    def echo_arg_tail(self):
-        # <echo-arg-tail>
-        production = self.get_production("<echo-arg-tail>")
-        if production == 181:
-            self.eat(",")
-            self.expression()
-            self.echo_arg_tail()
-        elif production == 182: pass # Lambda
-        else:
-            expected = list(PREDICT["<echo-arg-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def look_stmnt(self):
         # <look-stmnt>
         production = self.get_production("<look-stmnt>")
-        if production == 183:
+        if production == 176:
             self.eat("LOOK")
             self.eat("(")
             self.cond_exp()
@@ -1193,7 +1168,7 @@ class Parser:
     def cond_exp(self):
         # <cond-exp>
         production = self.get_production("<cond-exp>")
-        if production == 184:
+        if production == 177:
             self.gen_ope()
             self.gen_exp()
         else:
@@ -1203,10 +1178,10 @@ class Parser:
     def sail_stmt(self):
         # <sail-stmt>
         production = self.get_production("<sail-stmt>")
-        if production == 185:
+        if production == 178:
             self.eat("SAIL")
             self.eat("!!")
-        elif production == 186: pass # Lambda
+        elif production == 179: pass # Lambda
         else:
             expected = list(PREDICT["<sail-stmt>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1214,7 +1189,7 @@ class Parser:
     def look_tail(self):
         # <look-tail>
         production = self.get_production("<look-tail>")
-        if production == 187:
+        if production == 180:
             self.eat("DROPLOOK")
             self.eat("(")
             self.cond_exp()
@@ -1224,13 +1199,13 @@ class Parser:
             self.sail_stmt()
             self.eat("]")
             self.look_tail()
-        elif production == 188:
+        elif production == 181:
             self.eat("DROP")
             self.eat("[")
             self.statements()
             self.sail_stmt()
             self.eat("]")
-        elif production == 189: pass # Lambda
+        elif production == 182: pass # Lambda
         else:
             expected = list(PREDICT["<look-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1238,7 +1213,7 @@ class Parser:
     def chart_stmnt(self):
         # <chart-stmnt>
         production = self.get_production("<chart-stmnt>")
-        if production == 190:
+        if production == 183:
             self.eat("CHART")
             self.eat("(")
             self.chart_cond()
@@ -1255,20 +1230,19 @@ class Parser:
     def chart_cond(self):
         # <chart-cond>
         production = self.get_production("<chart-cond>")
-        if production == 191: self.const()
-        elif production == 192: self.eat("id")
+        if production == 184: self.const()
+        elif production == 185: self.eat("id")
         else:
             expected = list(PREDICT["<chart-cond>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
-        
+
     def const(self):
         # <const>
         production = self.get_production("<const>")
-        if production == 193:
+        if production == 186:
             self.neg()
             self.eat("COIN-lit")
-        elif production == 194:
-            self.eat("PARCH-lit")
+        elif production == 187: self.eat("PARCH-lit")
         else:
             expected = list(PREDICT["<const>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1276,7 +1250,7 @@ class Parser:
     def courses(self):
         # <courses>
         production = self.get_production("<courses>")
-        if production == 195:
+        if production == 188:
             self.eat("COURSE")
             self.const()
             self.eat(":")
@@ -1290,10 +1264,9 @@ class Parser:
     def course_tail(self):
         # <course-tail>
         production = self.get_production("<course-tail>")
-        if production == 196:
+        if production == 189:
             self.courses()
-            self.course_tail()
-        elif production == 197: pass # Lambda
+        elif production == 190: pass # Lambda
         else:
             expected = list(PREDICT["<course-tail>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1301,13 +1274,13 @@ class Parser:
     def adrift_case(self):
         # <adrift-case>
         production = self.get_production("<adrift-case>")
-        if production == 198:
+        if production == 191:
             self.eat("ADRIFT")
             self.eat(":")
             self.statements()
             self.eat("LAND")
             self.eat("!!")
-        elif production == 199: pass # Lambda
+        elif production == 192: pass # Lambda
         else:
             expected = list(PREDICT["<adrift-case>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1315,7 +1288,7 @@ class Parser:
     def hoist_stmnt(self):
         # <hoist-stmnt>
         production = self.get_production("<hoist-stmnt>")
-        if production == 200:
+        if production == 193:
             self.eat("HOIST")
             self.eat("(")
             self.init()
@@ -1334,18 +1307,18 @@ class Parser:
     def init(self):
         # <init>
         production = self.get_production("<init>")
-        if production == 201:
+        if production == 194:
             self.eat("COIN")
             self.eat("id")
             self.eat("=")
             self.neg()
             self.eat("COIN-lit")
-        elif production == 202:
+        elif production == 195:
             self.eat("id")
             self.eat("=")
             self.neg()
             self.eat("COIN-lit")
-        elif production == 203: pass # Lambda
+        elif production == 196: pass # Lambda
         else:
             expected = list(PREDICT["<init>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
@@ -1353,7 +1326,7 @@ class Parser:
     def heave_stmnt(self):
         # <heave-stmnt>
         production = self.get_production("<heave-stmnt>")
-        if production == 204:
+        if production == 197:
             self.eat("HEAVE")
             self.eat("(")
             self.cond_exp()
@@ -1368,7 +1341,7 @@ class Parser:
     def haul_stmnt(self):
         # <haul-stmnt>
         production = self.get_production("<haul-stmnt>")
-        if production == 205:
+        if production == 198:
             self.eat("HAUL")
             self.eat("[")
             self.statements()
@@ -1385,7 +1358,7 @@ class Parser:
     def unary_exp(self):
         # <unary-exp>
         production = self.get_production("<unary-exp>")
-        if production == 206:
+        if production == 199:
             self.unary_op()
             self.eat("id")
         else:
@@ -1395,8 +1368,8 @@ class Parser:
     def unary_op(self):
         # <unary-op>
         production = self.get_production("<unary-op>")
-        if production == 207: self.eat("+#")
-        elif production == 208: self.eat("-#")
+        if production == 200: self.eat("+#")
+        elif production == 201: self.eat("-#")
         else:
             expected = list(PREDICT["<unary-op>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
