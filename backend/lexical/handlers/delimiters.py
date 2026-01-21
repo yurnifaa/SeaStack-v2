@@ -33,9 +33,9 @@ class Delimiters:
 
         GEN_OP_DELIM = WHITESPACE | ALPHANUMERIC | set("-(")
         LOG_OP_DELIM = WHITESPACE | GEN_OP_DELIM | set(['A', 'N', "'", '"'])
-        ASSIGN_DELIM = LOG_OP_DELIM | set(['[', "'", '"'])
+        ASSIGN_DELIM = LOG_OP_DELIM | set(['[', "'", '"', '!'])
         MOD_DELIM = GEN_OP_DELIM | set("BCDPS")
-        NOT_DELIM = LOWLET | set("AN(")
+        NOT_DELIM = LOWLET | set("AN(\n")
 
         BACK_DELIM = WHITESPACE | set("(!")
         BOOL_DELIM = WHITESPACE | set(")]&!=,|")
@@ -46,13 +46,13 @@ class Delimiters:
         COMMA_DELIM = WHITESPACE | ASSIGN_DELIM | set(['@', '[', '(', "'", '"'])
         CONCAT_DELIM = WHITESPACE | LOWLET | set('"(')
         
-        CLOSECB_DELIM = WHITESPACE | GEN_OP | set("])]{&")
+        CLOSECB_DELIM = WHITESPACE | GEN_OP | set("]){&")
         OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', '-'])
         CLOSEP_DELIM = WHITESPACE | GEN_OP | set(")[],")
 
-        OPENSB_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'N', "'", '"', '[', '-'])
-        CLOSESB_DELIM = WHITESPACE | set("ABCDEHLS]!,")
-
+        OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set("['\"-")
+        CLOSESB_DELIM = WHITESPACE | set("\n") | UPLET | set("]!,")
+        
         COLON_DELIM = WHITESPACE | set("\n") | UPLET
         TERM_DELIM = WHITESPACE | set("\n") 
 
