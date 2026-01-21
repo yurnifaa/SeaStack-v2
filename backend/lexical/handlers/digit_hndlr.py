@@ -12,6 +12,9 @@ class DigitHandler:
         "<", ">", "=", "!", "&", "|", 
         ")", "}", "]", ":", ","
     ]
+    
+    # Instance variable to store DIME token value before trailing zeros
+    final_dime_value = None
 
     # =========================================================================
     # HELPER: Create Error with Expected List
@@ -43,7 +46,10 @@ class DigitHandler:
             self.advance() 
             if self.current_char is not None and self.current_char.isdigit():
                 self.token_start_pos += 1   
-                return self.c234()          
+                return self.c234()
+            # Handle leading zero followed by decimal point (e.g., 0.1234567800)
+            elif self.current_char == ".":
+                return self.s266()
         else:
             self.advance()
 
@@ -55,6 +61,7 @@ class DigitHandler:
             f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR_MSG}",
             ["digit", "."] + self.DELIM_LIST
         ))
+        return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
     def c235(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -68,6 +75,7 @@ class DigitHandler:
             f"Invalid COIN-lit. Expected digit, '.', {self.DELIM_ERR_MSG}",
             ["digit", "."] + self.DELIM_LIST
         ))
+        return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
     def c237(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
     
@@ -287,7 +295,7 @@ class DigitHandler:
             "Invalid DIME-lit. Expected digit after decimal point.",
             ["digit"]
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
         
     def d267(self):
         self.advance()
@@ -298,7 +306,7 @@ class DigitHandler:
             f"Invalid DIME-lit. Expected digit {self.DELIM_ERR_MSG}",
             ["digit"] + self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d268(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -314,7 +322,7 @@ class DigitHandler:
             f"Invalid DIME-lit. Expected digit {self.DELIM_ERR_MSG}",
             ["digit"] + self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d270(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -327,7 +335,7 @@ class DigitHandler:
             f"Invalid DIME-lit. Expected digit {self.DELIM_ERR_MSG}",
             ["digit"] + self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d272(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -340,7 +348,7 @@ class DigitHandler:
             f"Invalid DIME-lit. Expected digit {self.DELIM_ERR_MSG}",
             ["digit"] + self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d274(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -353,7 +361,7 @@ class DigitHandler:
             f"Invalid DIME-lit. Expected digit {self.DELIM_ERR_MSG}",
             ["digit"] + self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d276(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -366,7 +374,7 @@ class DigitHandler:
             f"Invalid DIME-lit. Expected digit {self.DELIM_ERR_MSG}",
             ["digit"] + self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d278(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -379,7 +387,7 @@ class DigitHandler:
             f"Invalid DIME-lit. Expected digit {self.DELIM_ERR_MSG}",
             ["digit"] + self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d280(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -392,52 +400,51 @@ class DigitHandler:
         
         # Check for Excess Digits
         if self.current_char and self.current_char.isdigit():
-            # ALLOW trailing zeros
+            # Save token value BEFORE processing trailing zeros
             if self.current_char == '0':
-                return self.d_extra_zeros()
+                self.final_dime_value = self.current_token_text()
+                return self.d_ignore_trailing_zeros()
             
             # REJECT non-zeros immediately
             self.errors.append(self._create_digit_error(
-                f"Invalid DIME-Lit. 8-digit limit reached. Expected '0', {self.DELIM_ERR_MSG}",
-                ["0"] + self.DELIM_LIST
+                f"Invalid DIME-Lit. 8-digit limit reached. Expected delimiter, {self.DELIM_ERR_MSG}",
+                self.DELIM_LIST
             ))
-            return None
+            return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
         # Invalid Delimiter Error
         self.errors.append(self._create_digit_error(
-            f"Invalid DIME-lit. Expected '0', {self.DELIM_ERR_MSG}",
-            ["0"] + self.DELIM_LIST
+            f"Invalid DIME-lit. Expected delimiter, {self.DELIM_ERR_MSG}",
+            self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
     
     def d282(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
-    # DIME-lit TD: EXTRA/TRAILING Zeroes
+    # DIME-lit TD: IGNORE TRAILING Zeroes (NOT TOKENIZED)
     # =============================================
-    def d_extra_zeros(self):
-        # Saw a '0' after the 8th digit.
-        self.advance() 
-        
-        # IF Delimiter kasunod? edi Done
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): 
-            return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
-        
-        # IF More Zeros kasunod? edi Keep going
-        if self.current_char == '0':
-            return self.d_extra_zeros()
+    def d_ignore_trailing_zeros(self):
+        # Loop through all trailing zeros, advancing without including them in token
+        while self.current_char == '0':
+            self.advance()
             
-        # IF Non-Zero Digit kasunod? edi Error
+        # After zeros, it should be followed by a valid delimiter
+        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): 
+            # Return token using saved value (without trailing zeros)
+            return Token("DIME-lit", self.final_dime_value, self.line, self.col - 1)
+            
+        # Error: Non-zero digit after 8-digit limit
         if self.current_char and self.current_char.isdigit():
-             self.errors.append(self._create_digit_error(
-                f"Invalid DIME-Lit. 8-digit limit reached. Expected '0', {self.DELIM_ERR_MSG}",
-                ["0"] + self.DELIM_LIST
+            self.errors.append(self._create_digit_error(
+                f"Invalid DIME-Lit. 8-digit limit reached. Expected delimiter, {self.DELIM_ERR_MSG}",
+                self.DELIM_LIST
             ))
-             return None
+            return Token("DIME-lit", self.final_dime_value, self.line, self.col - 1)
              
-        # Invalid Char/Delimiter
+        # Fallback error for invalid delimiters
         self.errors.append(self._create_digit_error(
-            f"Invalid DIME-lit. Expected '0', {self.DELIM_ERR_MSG}",
-            ["0"] + self.DELIM_LIST
+            f"Invalid DIME-lit. Expected delimiter, {self.DELIM_ERR_MSG}",
+            self.DELIM_LIST
         ))
-        return None
+        return Token("DIME-lit", self.final_dime_value, self.line, self.col - 1)

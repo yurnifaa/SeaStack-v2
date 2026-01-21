@@ -180,7 +180,6 @@ class Lexer(
         # =========================================================================
         if char in Delimiters._get_delimiters()["DIGIT"]:
             self.mark_token_start()
-            self.advance() # Keep this advance! It prevents the infinite loop.
             return self.c233()
 
         # =========================================================================
