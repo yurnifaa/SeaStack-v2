@@ -128,9 +128,9 @@ class ReservedWordHandler:
     def rw11(self): # On 'T' (ADRIFT)
         self.advance() 
         char = self.current_char
-        if char is None or char.isspace() or char == ':':
+        if char is None or char == ':':
             return self.rw12()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or ':')", ["whitespace", ":"])
+        self._report_char_error("Invalid Reserved Word. Expected delimiter (':')", [":"])
 
     def rw12(self): 
         return Token("ADRIFT", self.current_token_text(), self.token_start_line, self.token_start_col)
@@ -329,7 +329,7 @@ class ReservedWordHandler:
         char = self.current_char
         if char is None or char.isspace() or char == ':':
             return self.rw46()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or ':')", ["whitespace", ":"])
+        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
     def rw46(self): 
         return Token("COURSE", self.current_token_text(), self.token_start_line, self.token_start_col)
@@ -568,7 +568,7 @@ class ReservedWordHandler:
         char = self.current_char
         if char is None or char == '!':
             return self.rw85()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '!')", ["whitespace", "!"])
+        self._report_char_error("Invalid Reserved Word. Expected delimiter ('!')", ["!"])
 
     def rw85(self): 
         return Token("LAND", self.current_token_text(), self.token_start_line, self.token_start_col)
@@ -739,7 +739,7 @@ class ReservedWordHandler:
         char = self.current_char
         if char is None or char == '!':
             return self.rw113()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '!')", ["whitespace", "!"])
+        self._report_char_error("Invalid Reserved Word. Expected delimiter ('!')", ["!"])
 
     def rw113(self): 
         return Token("SAIL", self.current_token_text(), self.token_start_line, self.token_start_col)
