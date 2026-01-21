@@ -1,24 +1,22 @@
 from backend.lexical.lexer_token import Token
-from backend.lexical.handlers.delimiters import Delimiters
-from backend.error_msg import ErrorHandler 
 
 class CommentHandler:
 
     # =========================================================================
-    # HELPER FUNC: Report Errors using ErrorHandler
+    # HELPER FUNC: HARD syntax errors (like '~)a' or '~( ~(').
     # =========================================================================
-    def _report_comment_error(self, message, error_type=None):
-        if error_type is None:
-            error_type = ErrorHandler.ERR_LEX_INVALID_CHAR
-
-        error_dict = ErrorHandler.get_lexical_error(
-            line=self.token_start_line,
-            col=self.token_start_col,
-            invalid_char=self.current_token_text(),
-            header_type=error_type,
-            custom_msg=message
+    def _report_comment_error(self, message, expected_list):
+        err_token = Token(
+            "ERROR",
+            self.current_token_text(), # Show the partial comment
+            self.token_start_line,
+            self.token_start_col,
+            message
         )
-        self.errors.append(error_dict)
+        # ATTACH EXPECTED LIST
+        err_token.expected = expected_list
+        
+        self.errors.append(err_token)
         return None
 
     # =========================================================================
@@ -34,7 +32,7 @@ class CommentHandler:
     def cm294(self):
         char = self.current_char
 
-        if char is None:            # Case: "~" (EOF immediately)
+        if char is None:            # Case: "~"
             return self.cm295()
         
         if char == "\n":            # Case: "~" followed immediately by a newline
@@ -55,15 +53,17 @@ class CommentHandler:
                 self.restore(saved_state)
                 
                 # Now, re-parse as a single-line comment.
+                # The current_char is '(', which cm296 will simply treat as text.
                 return self.cm296()
             else:
+                # It was either a valid token or a hard syntax error (None)
                 return multi_comment_result
         
         if char == "~":             # Case: "~~" Hard error
             self.advance()
             return self._report_comment_error(
-                "Invalid Comment. '~~' is not allowed. Did you mean '~('?", 
-                ErrorHandler.ERR_LEX_INVALID_CHAR
+                "Invalid Comment. Expected '(' for multi-line or text for single-line.", 
+                ["(", "text", "whitespace"]
             )
             
         # Default: It's a single-line comment
@@ -84,17 +84,8 @@ class CommentHandler:
     # =========================================================================
     # State cm296: Consumes all characters in a single-line comment
     # =========================================================================
-        ascii_set = Delimiters._get_delimiters()["ASCII"]
-
+        # Single-line comments should consume ANY character until newline.
         while self.current_char is not None and self.current_char != "\n":
-            
-            # Optional: Strict Character Check (Consistency with Literals)
-            if self.current_char not in ascii_set:
-                 return self._report_comment_error(
-                     f"Invalid character inside comment: '{self.current_char}'", 
-                     ErrorHandler.ERR_LEX_INVALID_CHAR
-                 )
-
             self.advance()
         
         if self.current_char == "\n":
@@ -108,13 +99,15 @@ class CommentHandler:
     # =========================================================================
 
         if self.current_char is None:
-            return "ROLLBACK"                # Soft failure -> Becomes single line
+            return "ROLLBACK"                # Soft failure
         
         if self.current_char == ")":
             self.advance()                   # Consume ')'
             return self.cm299()              # Check for '~'
         
         if self.current_char == "~":
+            # Return ROLLBACK instead of None.
+            # This allows cm294 to catch it and say "Oh, this isn't multi-line, treat as single line."
             return "ROLLBACK"
 
         # Any other character, loop in cm298
@@ -125,30 +118,18 @@ class CommentHandler:
     # =========================================================================
     # State cm298: Looping inside a multi-line comment.
     # =========================================================================
-        ascii_set = Delimiters._get_delimiters()["ASCII"]
-
         while self.current_char is not None:
-            # 1. Check for Exit Sequence Start
             if self.current_char == ")":
                 self.advance()              # Consume ')'
                 return self.cm299()         # Go to check for '~'
             
-            # 2. Check for Nested/Invalid Tilde
             if self.current_char == "~":    
+                # Return ROLLBACK instead of None.
+                # If we see a nested '~', we assume the user meant a single-line comment containing '~'.
                 return "ROLLBACK"
             
-            # 3. Check Validity (using Delimiters)
-            if self.current_char not in ascii_set and self.current_char != '\n':
-                 # Note: If we error here, we technically can't "ROLLBACK" cleanly 
-                 # because it's a hard invalid char. But for safety in comments, 
-                 # we might just flag it or let it slide. 
-                 # Strict Lexer = Flag it.
-                 return self._report_comment_error(
-                     f"Invalid character inside comment: '{self.current_char}'", 
-                     ErrorHandler.ERR_LEX_INVALID_CHAR
-                 )
-
-            self.advance()
+            else:
+                self.advance()
         
         # EOF reached
         return "ROLLBACK" # Soft failure

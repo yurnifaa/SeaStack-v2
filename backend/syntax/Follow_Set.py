@@ -93,7 +93,7 @@ FOLLOW = {
     "<const>": [":", ")"],
     "<courses>": ["COURSE", "ADRIFT", "]"],
     "<course-tail>": ["ADRIFT", "]"],
-    "<adrift-case>": ["]"],
+    "<adrift-crse>": ["]"],
     "<hoist-stmnt>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "SAIL", "+#", "-#", "BACK", "]", "LAND"],
     "<init>": ["!!"],
     "<heave-stmnt>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "SAIL", "+#", "-#", "BACK", "]", "LAND"],
