@@ -1,9 +1,9 @@
+# lexer_handlers/resword_handler.py
 from backend.lexical.lexer_token import Token
 from backend.lexical.handlers.delimiters import Delimiters
-import string
 
 # =================================================================================================
-# RESERVED WORDS TD: Reserved words state machine (i193 - i231)
+# RESERVED WORDS TD: Reserved words state machine (rw0 - rw119)
 # =================================================================================================
 
 class ReservedWordHandler:
@@ -59,7 +59,7 @@ class ReservedWordHandler:
         return None
     
     # =========================================================================================
-    # RESERVED WORDS "A"": ABYSS, ADRIFT, AHOY, ASK, AYE
+    # RESERVED WORDS "A"
     # =========================================================================================
     def rw1(self): # On 'A'
         self.advance() # Consume 'A'
@@ -73,6 +73,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'B', 'D', 'H', 'S', or 'Y'", ["B", "D", "H", "S", "Y"])
         return None
 
+    # --- ABYSS ---
     def rw2(self): # On 'B' (AB)
         self.advance() 
         if self.current_char == 'Y': return self.rw3()
@@ -93,14 +94,15 @@ class ReservedWordHandler:
         
     def rw5(self): # On 'S' (ABYSS)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw6()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
     def rw6(self): 
         return Token("ABYSS", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- ADRIFT ---
     def rw7(self): # On 'D' (AD)
         self.advance() 
         if self.current_char == 'R': return self.rw8()
@@ -127,14 +129,15 @@ class ReservedWordHandler:
 
     def rw11(self): # On 'T' (ADRIFT)
         self.advance() 
-        char = self.current_char
-        if char is None or char == ':':
+        # DIAGRAM: :
+        if self.current_char == ':':
             return self.rw12()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (':')", [":"])
 
     def rw12(self): 
         return Token("ADRIFT", self.current_token_text(), self.token_start_line, self.token_start_col)
         
+    # --- AHOY ---
     def rw13(self): # On 'H' (AH)
         self.advance() 
         if self.current_char == 'O': return self.rw14()
@@ -149,14 +152,16 @@ class ReservedWordHandler:
 
     def rw15(self): # On 'Y' (AHOY)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw16()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
         
     def rw16(self): 
         return Token("AHOY", self.current_token_text(), self.token_start_line, self.token_start_col)
         
+    # --- ASK ---
     def rw17(self): # On 'S' (AS)
         self.advance() 
         if self.current_char == 'K': return self.rw18()
@@ -165,14 +170,16 @@ class ReservedWordHandler:
         
     def rw18(self): # On 'K' (ASK)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw19()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
         
     def rw19(self): 
         return Token("ASK", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- AYE ---
     def rw20(self): # On 'Y' (AY)
         self.advance() 
         if self.current_char == 'E': return self.rw21()
@@ -181,15 +188,19 @@ class ReservedWordHandler:
 
     def rw21(self): # On 'E' (AYE)
         self.advance() 
+        # DIAGRAM: bool_delim
         if self._comp_delims(Delimiters._get_delimiters()["BOOL_DELIM"]):
             return self.rw22()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter", ["whitespace", ")", "]", "&", "!", "=", ",", "|"])
+        
+        # Extract bool_delim chars for error message
+        bool_delims = list(Delimiters._get_delimiters()["BOOL_DELIM"])
+        self._report_char_error("Invalid Reserved Word. Expected bool_delim", bool_delims)
 
     def rw22(self): 
         return Token("AYE", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "B": BACK, BOOL
+    # RESERVED WORDS "B"
     # =========================================================================================
     def rw23(self): # On 'B'
         self.advance() 
@@ -199,6 +210,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'A' or 'O'", ["A", "O"])
         return None
 
+    # --- BACK ---
     def rw24(self): # On 'A' (BA)
         self.advance() 
         if self.current_char == 'C': return self.rw25()
@@ -213,14 +225,16 @@ class ReservedWordHandler:
 
     def rw26(self): # On 'K' (BACK)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(' or char == '!':
+        # DIAGRAM: whitespace, (, !
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set(['(', '!'])
+        if self._comp_delims(valid):
             return self.rw27()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace, '(', or '!')", ["whitespace", "(", "!"])
 
     def rw27(self): 
         return Token("BACK", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- BOOL ---
     def rw28(self): # On 'O' (BO)
         self.advance() 
         if self.current_char == 'O': return self.rw29()
@@ -235,8 +249,8 @@ class ReservedWordHandler:
 
     def rw30(self): # On 'L' (BOOL)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw31()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
@@ -244,7 +258,7 @@ class ReservedWordHandler:
         return Token("BOOL", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "C": CHART, COIN, COURSE
+    # RESERVED WORDS "C"
     # =========================================================================================
     def rw32(self): # On 'C'
         self.advance() 
@@ -254,6 +268,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'H' or 'O'", ["H", "O"])
         return None
 
+    # --- CHART ---
     def rw33(self): # On 'H' (CH)
         self.advance() 
         if self.current_char == 'A': return self.rw34()
@@ -274,14 +289,16 @@ class ReservedWordHandler:
 
     def rw36(self): # On 'T' (CHART)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw37()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
 
     def rw37(self): 
         return Token("CHART", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- COIN ---
     def rw38(self): # On 'O' (CO)
         self.advance() 
         char = self.current_char
@@ -298,14 +315,15 @@ class ReservedWordHandler:
 
     def rw40(self): # On 'N' (COIN)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw41()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
     def rw41(self): 
         return Token("COIN", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- COURSE ---
     def rw42(self): # On 'U' (COU)
         self.advance() 
         if self.current_char == 'R': return self.rw43()
@@ -326,8 +344,8 @@ class ReservedWordHandler:
 
     def rw45(self): # On 'E' (COURSE)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == ':':
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw46()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
@@ -335,7 +353,7 @@ class ReservedWordHandler:
         return Token("COURSE", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "D": DIME, DROP, DROPLOOK
+    # RESERVED WORDS "D"
     # =========================================================================================
     def rw47(self): # On 'D'
         self.advance() 
@@ -345,6 +363,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'I' or 'R'", ["I", "R"])
         return None
 
+    # --- DIME ---
     def rw48(self): # On 'I' (DI)
         self.advance() 
         if self.current_char == 'M': return self.rw49()
@@ -359,14 +378,15 @@ class ReservedWordHandler:
 
     def rw50(self): # On 'E' (DIME)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw51()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
     def rw51(self): 
         return Token("DIME", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- DROP / DROPLOOK ---
     def rw52(self): # On 'R' (DR)
         self.advance() 
         if self.current_char == 'O': return self.rw53()
@@ -381,11 +401,15 @@ class ReservedWordHandler:
 
     def rw54(self): # On 'P' (DROP)
         self.advance() 
+        
+        # Check for L (Branch to DROPLOOK)
         if self.current_char == 'L': return self.rw56()
         
-        char = self.current_char
-        if char is None or char.isspace() or char == '[':
+        # DIAGRAM: whitespace, [
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('[')
+        if self._comp_delims(valid):
             return self.rw55()
+            
         self._report_char_error("Invalid Reserved Word. Expected 'L' or delimiter (whitespace or '[')", ["L", "whitespace", "["])
 
     def rw55(self): 
@@ -411,8 +435,9 @@ class ReservedWordHandler:
 
     def rw59(self): # On 'K' (DROPLOOK)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw60()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
 
@@ -420,7 +445,7 @@ class ReservedWordHandler:
         return Token("DROPLOOK", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "E": ECHO
+    # RESERVED WORDS "E"
     # =========================================================================================
     def rw61(self): # On 'E'
         self.advance() 
@@ -428,6 +453,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'C'", ["C"])
         return None
 
+    # --- ECHO ---
     def rw62(self): # On 'C' (EC)
         self.advance() 
         if self.current_char == 'H': return self.rw63()
@@ -442,8 +468,9 @@ class ReservedWordHandler:
 
     def rw64(self): # On 'O' (ECHO)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw65()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
 
@@ -451,7 +478,7 @@ class ReservedWordHandler:
         return Token("ECHO", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "H": HAUL, HEAVE, HOIST
+    # RESERVED WORDS "H"
     # =========================================================================================
     def rw66(self): # On 'H'
         self.advance() 
@@ -462,6 +489,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'A', 'E', or 'O'", ["A", "E", "O"])
         return None
 
+    # --- HAUL ---
     def rw67(self): # On 'A' (HA)
         self.advance() 
         if self.current_char == 'U': return self.rw68()
@@ -476,14 +504,16 @@ class ReservedWordHandler:
 
     def rw69(self): # On 'L' (HAUL)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '[':
+        # DIAGRAM: whitespace, [
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('[')
+        if self._comp_delims(valid):
             return self.rw70()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '[')", ["whitespace", "["])
 
     def rw70(self): 
         return Token("HAUL", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- HEAVE ---
     def rw71(self): # On 'E' (HE)
         self.advance() 
         if self.current_char == 'A': return self.rw72()
@@ -504,14 +534,16 @@ class ReservedWordHandler:
 
     def rw74(self): # On 'E' (HEAVE)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw75()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
 
     def rw75(self): 
         return Token("HEAVE", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- HOIST ---
     def rw76(self): # On 'O' (HO)
         self.advance() 
         if self.current_char == 'I': return self.rw77()
@@ -532,8 +564,9 @@ class ReservedWordHandler:
 
     def rw79(self): # On 'T' (HOIST)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw80()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
 
@@ -541,7 +574,7 @@ class ReservedWordHandler:
         return Token("HOIST", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "L": LAND, LOCKE, LOOK
+    # RESERVED WORDS "L"
     # =========================================================================================
     def rw81(self): # On 'L'
         self.advance() 
@@ -551,6 +584,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'A' or 'O'", ["A", "O"])
         return None
 
+    # --- LAND ---
     def rw82(self): # On 'A' (LA)
         self.advance() 
         if self.current_char == 'N': return self.rw83()
@@ -565,14 +599,15 @@ class ReservedWordHandler:
 
     def rw84(self): # On 'D' (LAND)
         self.advance() 
-        char = self.current_char
-        if char is None or char == '!':
+        # DIAGRAM: !
+        if self.current_char == '!':
             return self.rw85()
         self._report_char_error("Invalid Reserved Word. Expected delimiter ('!')", ["!"])
 
     def rw85(self): 
         return Token("LAND", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- LOCKE / LOOK ---
     def rw86(self): # On 'O' (LO)
         self.advance() 
         char = self.current_char
@@ -595,8 +630,8 @@ class ReservedWordHandler:
 
     def rw89(self): # On 'E' (LOCKE)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw90()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
@@ -611,8 +646,9 @@ class ReservedWordHandler:
 
     def rw92(self): # On 'K' (LOOK)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace() or char == '(':
+        # DIAGRAM: whitespace, (
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(')
+        if self._comp_delims(valid):
             return self.rw93()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '(')", ["whitespace", "("])
 
@@ -620,7 +656,7 @@ class ReservedWordHandler:
         return Token("LOOK", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "M": MAST
+    # RESERVED WORDS "M"
     # =========================================================================================
     def rw94(self): # On 'M'
         self.advance() 
@@ -628,6 +664,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'A'", ["A"])
         return None
 
+    # --- MAST ---
     def rw95(self): # On 'A' (MA)
         self.advance() 
         if self.current_char == 'S': return self.rw96()
@@ -642,8 +679,8 @@ class ReservedWordHandler:
 
     def rw97(self): # On 'T' (MAST)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw98()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
@@ -651,7 +688,7 @@ class ReservedWordHandler:
         return Token("MAST", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "N": NAY
+    # RESERVED WORDS "N"
     # =========================================================================================
     def rw99(self): # On 'N'
         self.advance() 
@@ -659,6 +696,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'A'", ["A"])
         return None
 
+    # --- NAY ---
     def rw100(self): # On 'A' (NA)
         self.advance() 
         if self.current_char == 'Y': return self.rw101()
@@ -667,15 +705,18 @@ class ReservedWordHandler:
 
     def rw101(self): # On 'Y' (NAY)
         self.advance() 
+        # DIAGRAM: bool_delim
         if self._comp_delims(Delimiters._get_delimiters()["BOOL_DELIM"]):
             return self.rw102()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter", ["whitespace", ")", "]", "&", "!", "=", ",", "|"])
+        
+        bool_delims = list(Delimiters._get_delimiters()["BOOL_DELIM"])
+        self._report_char_error("Invalid Reserved Word. Expected bool_delim", bool_delims)
 
     def rw102(self): 
         return Token("NAY", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "P": PARCH
+    # RESERVED WORDS "P"
     # =========================================================================================
     def rw103(self): # On 'P'
         self.advance() 
@@ -683,6 +724,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'A'", ["A"])
         return None
 
+    # --- PARCH ---
     def rw104(self): # On 'A' (PA)
         self.advance() 
         if self.current_char == 'R': return self.rw105()
@@ -703,8 +745,8 @@ class ReservedWordHandler:
 
     def rw107(self): # On 'H' (PARCH)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw108()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 
@@ -712,7 +754,7 @@ class ReservedWordHandler:
         return Token("PARCH", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # =========================================================================================
-    # RESERVED WORDS "S": SAIL, SCROLL
+    # RESERVED WORDS "S"
     # =========================================================================================
     def rw109(self): # On 'S'
         self.advance() 
@@ -722,6 +764,7 @@ class ReservedWordHandler:
         self._report_char_error("Invalid Reserved Word. Expected 'A' or 'C'", ["A", "C"])
         return None
 
+    # --- SAIL ---
     def rw110(self): # On 'A' (SA)
         self.advance() 
         if self.current_char == 'I': return self.rw111()
@@ -736,14 +779,15 @@ class ReservedWordHandler:
 
     def rw112(self): # On 'L' (SAIL)
         self.advance() 
-        char = self.current_char
-        if char is None or char == '!':
+        # DIAGRAM: !
+        if self.current_char == '!':
             return self.rw113()
         self._report_char_error("Invalid Reserved Word. Expected delimiter ('!')", ["!"])
 
     def rw113(self): 
         return Token("SAIL", self.current_token_text(), self.token_start_line, self.token_start_col)
 
+    # --- SCROLL ---
     def rw114(self): # On 'C' (SC)
         self.advance() 
         if self.current_char == 'R': return self.rw115()
@@ -770,8 +814,8 @@ class ReservedWordHandler:
 
     def rw118(self): # On 'L' (SCROLL)
         self.advance() 
-        char = self.current_char
-        if char is None or char.isspace():
+        # DIAGRAM: whitespace
+        if self._comp_delims(Delimiters._get_delimiters()["WHITESPACE"]):
             return self.rw119()
         self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace)", ["whitespace"])
 

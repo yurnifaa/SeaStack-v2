@@ -1,78 +1,62 @@
+# lexer_handlers/comment_handler.py
 from backend.lexical.lexer_token import Token
 
 class CommentHandler:
 
     # =========================================================================
-    # HELPER FUNC: HARD syntax errors (like '~)a' or '~( ~(').
+    # HELPER: Syntax Errors
     # =========================================================================
     def _report_comment_error(self, message, expected_list):
         err_token = Token(
             "ERROR",
-            self.current_token_text(), # Show the partial comment
+            self.current_token_text(),
             self.token_start_line,
             self.token_start_col,
             message
         )
-        # ATTACH EXPECTED LIST
         err_token.expected = expected_list
-        
         self.errors.append(err_token)
         return None
 
     # =========================================================================
-    # START STATE (cm293)
+    # ENTRY POINT (State 0 -> 295)
     # =========================================================================
     def cm293(self):
-        self.advance()              # Consume the initial '~'
-        return self.cm294()
-
-    # =========================================================================
-    # State cm294: Controller state. Decides single-line or multi-line.
-    # =========================================================================
-    def cm294(self):
-        char = self.current_char
-
-        if char is None:            # Case: "~"
-            return self.cm295()
-        
-        if char == "\n":            # Case: "~" followed immediately by a newline
-            self.advance()          # Consume the newline
-            return self.cm295()
-        
-        if char == "(":             # Case: "~(" Uses a Try-and-Rollback Logic
-            # Save state before trying multi-line
-            saved_state = self.save()
-            self.advance() # Consume '('
-            
-            # Attempt to parse the multi-line comment
-            multi_comment_result = self.cm297()
-            
-            # Check the result
-            if multi_comment_result == "ROLLBACK":
-                # Rollback to state before '(' was consumed
-                self.restore(saved_state)
-                
-                # Now, re-parse as a single-line comment.
-                # The current_char is '(', which cm296 will simply treat as text.
-                return self.cm296()
-            else:
-                # It was either a valid token or a hard syntax error (None)
-                return multi_comment_result
-        
-        if char == "~":             # Case: "~~" Hard error
+        # State 0: Expects '~'
+        if self.current_char == '~':
             self.advance()
-            return self._report_comment_error(
-                "Invalid Comment. Expected '(' for multi-line or text for single-line.", 
-                ["(", "text", "whitespace"]
-            )
-            
-        # Default: It's a single-line comment
-        return self.cm296()
+            return self.cm295()
+        return None # Should be handled by lexer dispatch
 
+    # =========================================================================
+    # STATE 295: Decision Point
+    # =========================================================================
     def cm295(self):
+        char = self.current_char
+        
+        # Path 1: newline -> State 296 (Empty Single Line)
+        if char == '\n':
+            return self.cm296()
+            
+        # Path 2: '(' -> State 298 (Start Multi-line)
+        if char == '(':
+            return self.cm298()
+            
+        # Path 3: ASCII except newline and ~ -> State 297 (Single Line Text)
+        if char is not None and char != '~':
+            return self.cm297()
+            
+        # Error: Likely found '~' (forbidden) or EOF
+        return self._report_comment_error(
+            "Invalid Comment Start. Expected '(', newline, or text (except '~').", 
+            ["(", "newline", "text"]
+        )
+
     # =========================================================================
-    # State cm295: Final state for a single-line comment.
+    # STATE 296: Single-Line Final (Accepting)
     # =========================================================================
+    def cm296(self):
+        self.advance() # Consume the newline (transition logic)
         return Token(
             "single-comment", 
             self.current_token_text(), 
@@ -80,79 +64,107 @@ class CommentHandler:
             self.token_start_col
         )
 
-    def cm296(self):
     # =========================================================================
-    # State cm296: Consumes all characters in a single-line comment
+    # STATE 297: Single-Line Body Loop
     # =========================================================================
-        # Single-line comments should consume ANY character until newline.
-        while self.current_char is not None and self.current_char != "\n":
-            self.advance()
-        
-        if self.current_char == "\n":
-            self.advance() # Consume the newline
-            
-        return self.cm295() # Go to the final state
-
     def cm297(self):
-    # =========================================================================
-    # State cm297: Inside a multi-line comment, after "~(".
-    # =========================================================================
-
-        if self.current_char is None:
-            return "ROLLBACK"                # Soft failure
+        self.advance() # Consume the char that brought us here
         
-        if self.current_char == ")":
-            self.advance()                   # Consume ')'
-            return self.cm299()              # Check for '~'
-        
-        if self.current_char == "~":
-            # Return ROLLBACK instead of None.
-            # This allows cm294 to catch it and say "Oh, this isn't multi-line, treat as single line."
-            return "ROLLBACK"
+        # Self-Loop: ASCII except newline
+        while self.current_char is not None and self.current_char != '\n':
+            self.advance()
+            
+        # Transition: newline -> 296
+        if self.current_char == '\n':
+            return self.cm296()
+            
+        return self._report_comment_error(
+            "Unterminated Single-line Comment. Expected newline.", 
+            ["newline"]
+        )
 
-        # Any other character, loop in cm298
-        self.advance()
-        return self.cm298()
-
+    # =========================================================================
+    # STATE 298: Multi-Line Start (After '~(')
+    # =========================================================================
     def cm298(self):
-    # =========================================================================
-    # State cm298: Looping inside a multi-line comment.
-    # =========================================================================
-        while self.current_char is not None:
-            if self.current_char == ")":
-                self.advance()              # Consume ')'
-                return self.cm299()         # Go to check for '~'
-            
-            if self.current_char == "~":    
-                # Return ROLLBACK instead of None.
-                # If we see a nested '~', we assume the user meant a single-line comment containing '~'.
-                return "ROLLBACK"
-            
-            else:
-                self.advance()
+        self.advance() # Consume '('
         
-        # EOF reached
-        return "ROLLBACK" # Soft failure
+        char = self.current_char
+        
+        # Transition: ) -> 300 (Empty body case '~()~')
+        if char == ')':
+            return self.cm300()
+            
+        # Transition: ASCII except ) -> 299
+        if char is not None:
+            return self.cm299()
+            
+        return self._report_comment_error(
+            "Invalid Multi-line Comment. Unexpected end of file.", 
+            ["text", ")"]
+        )
 
+    # =========================================================================
+    # STATE 299: Multi-Line Body Loop
+    # =========================================================================
     def cm299(self):
-    # =========================================================================
-    # State cm299: After a ")", checking for the final "~".
-    # =========================================================================
-        if self.current_char is None:
-            return "ROLLBACK"               # Soft failure
+        self.advance() # Consume previous char
+        
+        # Self-Loop: ASCII except )
+        while self.current_char is not None and self.current_char != ')':
+            self.advance()
             
-        if self.current_char == "~":        # Success!
-            self.advance()                  # Consume the '~'
-            return self.cm300()             # Go to final multi-line state
-        
-        # If we see something else (e.g. ")a"), it's not a valid closing sequence.
-        return "ROLLBACK"
-        
+        # Transition: ) -> 300
+        if self.current_char == ')':
+            return self.cm300()
+            
+        return self._report_comment_error(
+            "Unterminated Multi-line Comment. Expected ')'.", 
+            [")"]
+        )
 
+    # =========================================================================
+    # STATE 300: Check Closing Tilde (After ')')
+    # =========================================================================
     def cm300(self):
+        self.advance() # Consume ')'
+        
+        char = self.current_char
+        
+        # Transition: ~ -> 301
+        if char == '~':
+            return self.cm301()
+            
+        # Transition: ASCII except ~ -> 299 (False alarm, go back to body)
+        # We found a ')', but it wasn't followed by '~', so it's just text.
+        if char is not None:
+            return self.cm299()
+            
+        return self._report_comment_error(
+            "Unterminated Multi-line Comment. Expected '~' or text.", 
+            ["~", "text"]
+        )
+
     # =========================================================================
-    # State cm300: Final State for multi-line comment.
+    # STATE 301: Check Final Newline (After '...)~')
     # =========================================================================
+    def cm301(self):
+        self.advance() # Consume '~'
+        
+        # Transition: newline -> 302
+        if self.current_char == '\n':
+            return self.cm302()
+            
+        return self._report_comment_error(
+            "Invalid Comment Termination. Expected newline after '~'.", 
+            ["newline"]
+        )
+
+    # =========================================================================
+    # STATE 302: Multi-Line Final (Accepting)
+    # =========================================================================
+    def cm302(self):
+        self.advance() # Consume newline
         return Token(
             "multi-comment", 
             self.current_token_text(), 
