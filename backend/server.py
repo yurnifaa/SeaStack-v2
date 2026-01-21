@@ -21,7 +21,7 @@ CORS(app)
 @app.route('/api/analyze', methods=['POST'])
 def analyze_code():
     data = request.json
-    code_string = data.get('code', '')
+    code_string = data.get('code', '') 
 
     response_data = {
         "success": False,
@@ -38,7 +38,7 @@ def analyze_code():
         lexer = Lexer(code_string)
         tokens, lex_errors = lexer.tokenize()
         
-        # Format Valid Tokens for UI Table
+        # 1. Format Valid Tokens for UI Table
         formatted_tokens = []
         for t in tokens:
             t_type = getattr(t, 'type', str(t))
@@ -47,33 +47,31 @@ def analyze_code():
         
         response_data['tokens'] = formatted_tokens
 
-        # Process Lexical Errors (WITH SMART PARSING)
+        # 2. Process Lexical Errors
         clean_lex_errors = []
         for err in lex_errors:
             if isinstance(err, dict):
                 clean_lex_errors.append(err)
             else:
+                # -- Smart Header Logic --
                 err_msg = getattr(err, 'error_msg', str(err))
+                err_val = getattr(err, 'value', '?')
                 
-                expected_list = getattr(err, 'expected', [])
-                
-                if not expected_list:
-                    if "Expected" in err_msg:
-                        try:
-                            part_after = err_msg.split("Expected")[1]
-                            part_after = part_after.lstrip(" :")
-                            extracted_items = [item.strip() for item in part_after.split(',')]
-                            expected_list = extracted_items
-                        except:
-                            expected_list = ["Valid Token"] # Fail safe
-                    else:
-                        expected_list = ["Valid Token"]
+                # Check if it's our specific "Unknown Character" error
+                if err_msg == "Unknown Character":
+                    found_str = f"Unknown Character '{err_val}'"
+                    # CRITICAL: Send empty list so frontend knows to hide the "Expected" line
+                    expected_list = [] 
+                else:
+                    found_str = f"Invalid character '{err_val}'"
+                    # Default to "Valid Token" for other errors
+                    expected_list = getattr(err, 'expected', ["Valid Token"])
 
                 clean_lex_errors.append({
                     "line": getattr(err, 'line', '?'),
                     "col": getattr(err, 'col', '?'),
-                    "found": f"Invalid character '{getattr(err, 'value', '?')}'",
-                    "expected": expected_list,  # Use our smart list
+                    "found": found_str,
+                    "expected": expected_list, 
                     "message": err_msg
                 })
         
@@ -93,35 +91,9 @@ def analyze_code():
     # =================================
     #    --- SYNTAX ANALYSIS ---
     # =================================
-    if not response_data['lexical_errors']:
-        try:
-            parser = Parser(tokens, code_string) 
-            syntax_errors = parser.parse() 
-            
-            if syntax_errors:
-                response_data['syntax_errors'].extend(syntax_errors)
-                response_data['success'] = False
-            else:
-                pass 
-
-        except Exception as e:
-            response_data['syntax_errors'].append({
-                "type": "Server Error",
-                "line": "?", "col": "?", 
-                "found": "CRASH", "expected": [],
-                "message": f"Parser Crashed: {str(e)}"
-            })
-            response_data['success'] = False
-    
-    return jsonify(response_data)
-
-    # =================================
-    #    --- SYNTAX ANALYSIS ---
-    # =================================
     # Only run Syntax Analysis if Lexical Analysis passed
     if not response_data['lexical_errors']:
         try:
-            # FIX: Use 'code_string' here, not 'code'
             parser = Parser(tokens, code_string) 
             
             syntax_errors = parser.parse() 

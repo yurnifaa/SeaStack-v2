@@ -161,7 +161,7 @@ export default function Home() {
     const lines = sourceCode.split('\n');
     const actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
     
-    const errorType = errObj.error_header || "Syntax Error"; // e.g. "Unexpected Token"
+    const errorType = errObj.error_header || "Syntax Error"; 
     const found = errObj.found || "unknown";
     
     const expected = errObj.expected && errObj.expected.length > 0 
@@ -171,37 +171,42 @@ export default function Home() {
     return {
         line: errObj.line,
         col: errObj.col,
-        // Visual Construction for UI
         headerStr: `${errorType} '${found}'`,
-        sourceCode: actualLine, 
+        sourceCode: actualLine, // Syntax errors STILL SHOW the line
         expectedStr: expected,
         isStructured: true
     };
   };
 
-  // CHANGED: Added sourceCode parameter and logic to extract the line
   const formatLexicalError = (errObj, sourceCode) => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
         return { ...errObj, isStructured: false };
     }
 
-    const lineNum = parseInt(errObj.line, 10);
-    // Safety check if sourceCode is provided
-    const lines = sourceCode ? sourceCode.split('\n') : [];
-    const actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
-
-    // "found" comes pre-formatted from backend now as "Invalid character 'x'"
+    // We intentionally DO NOT extract actualLine for Lexical Errors
+    
     const foundStr = errObj.found; 
-    const expected = errObj.expected && errObj.expected.length > 0 
-        ? errObj.expected.join(", ") 
-        : "Valid Token";
+    
+    // 1. Detect if it's an "Unknown Character" error
+    const isUnknown = foundStr.includes("Unknown Character");
+
+    // 2. Handle "Expected" String
+    let expected = "";
+    if (errObj.expected && errObj.expected.length > 0) {
+        expected = errObj.expected.join(", ");
+    } else if (!isUnknown) {
+        // If it's NOT an unknown char (e.g. "Invalid character '|'"), 
+        // fallback to "Valid Token" if list is empty (though server usually provides a list)
+        expected = "Valid Token";
+    }
+    // If isUnknown is true, expected remains "" (Hidden)
 
     return {
         line: errObj.line,
         col: errObj.col,
         headerStr: foundStr,
-        sourceCode: actualLine, // CHANGED: Now populated!
-        expectedStr: expected,
+        sourceCode: null,      // <--- ALWAYS NULL FOR LEXICAL ERRORS
+        expectedStr: expected, // Hidden for Unknown Char, Visible for Invalid Char
         isStructured: true
     };
   };
@@ -224,33 +229,27 @@ export default function Home() {
       if (!res.ok) throw new Error(`Server status: ${res.status}`);
       const result = await res.json();
       
-      // Always set tokens (useful for debugging)
       if (result.tokens) setTokens(result.tokens);
       
-      // --- HANDLE LEXICAL ERRORS FIRST ---
+      // --- HANDLE LEXICAL ERRORS ---
       if (result.lexical_errors?.length > 0) {
-          // CHANGED: Pass 'code' to the formatter here
           const formattedLex = result.lexical_errors.map(err => formatLexicalError(err, code));
           setLexicalErrors(formattedLex);
-          
-          // FORCE VIEW TO LEXICAL TAB
           setActiveTab("lexical");
           return; 
       }
       
-      // --- HANDLE SYNTAX ERRORS (Only if Lexer Passed) ---
+      // --- HANDLE SYNTAX ERRORS ---
       if (result.syntax_errors?.length > 0) {
           const formattedSyn = result.syntax_errors.map(err => formatSyntaxError(err, code));
           setSyntaxErrors(formattedSyn);
       }
 
-      // If we got here, Lexer passed, so we can safely switch to Syntax or Semantic
       setActiveTab(targetTab);
 
     } catch (err) {
       console.error("Connection Error:", err);
       const errorObj = { line: "0", col: "0", message: "Cannot connect to Backend. Is 'server.py' running?", isStructured: false };
-      // Fallback: If crash, just show on Lexical tab
       setLexicalErrors([errorObj]);
       setActiveTab("lexical");
     }
@@ -283,18 +282,19 @@ export default function Home() {
                                 {err.headerStr}
                             </span>
                             
-                            {/* Source Line (If exists) */}
+                            {/* Source Line (Render only if present - hidden for Lexical) */}
                             {err.sourceCode && (
-                                // CHANGED: Fixed double hash ## typo below
                                 <span style={{ color: '#9ca3af'}}>
                                     &apos;{err.sourceCode}&apos;
                                 </span>
                             )}
                             
-                            {/* Expected */}
-                            <span style={{ color: '#e5e7eb'}}>
-                                Expected any: &apos;{err.expectedStr}&apos;
-                            </span>
+                            {/* Expected (Render only if string is not empty) */}
+                            {err.expectedStr && (
+                                <span style={{ color: '#e5e7eb'}}>
+                                    Expected any: &apos;{err.expectedStr}&apos;
+                                </span>
+                            )}
                         </div>
                     ) : (
                         <span style={{ whiteSpace: 'pre-wrap', paddingTop: '2px' }}>{err.message}</span>
@@ -423,7 +423,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* --- SVG Filter for Gooey Effect (Hidden but active) --- */}
       <svg
         style={{ display: 'block', height: 0, width: 0, position: 'absolute' }}
         version="1.1"

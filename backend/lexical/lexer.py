@@ -31,7 +31,7 @@ class Lexer(
         self.tokens = []
         self.errors = []
 
-        # --- Token start tracking (Fixed Indentation: Now inside __init__) ---
+    # --- Token start tracking (for lexeme extraction) ---
         self.token_start_pos = 0
         self.token_start_line = 1
         self.token_start_col = 1
@@ -49,7 +49,7 @@ class Lexer(
     # =========================================================================
     # Helper Methods
     # =========================================================================
-    def advance(self):          
+    def advance(self):          # FOR STATE MOVEMENT: Moves the position forward after recognizing the previous one and updates line/column counts
         if self.current_char == "\n":
             self.line += 1
             self.col = 1
@@ -62,34 +62,37 @@ class Lexer(
         else:
             self.current_char = None
 
-    def peek(self):             
+    def peek(self):             # Looks at the next character without changing the position
         peek_pos = self.pos + 1
         if peek_pos < len(self.text):
             return self.text[peek_pos]
         return None
 
-    def save(self): 
+    def save(self): #Saves the current lexer position state for backtracking
         return (self.pos, self.line, self.col, self.current_char)
 
-    def restore(self, state): 
+    def restore(self, state): #Restores the lexer state from a saved point
         self.pos, self.line, self.col, self.current_char = state
 
     # =========================================================================
     # Delimiter Comparison
     # =========================================================================
-    def _comp_delims(self, delimiter_set): 
-        return self.current_char in delimiter_set or self.current_char is None
+    def _comp_delims(self, delimiter_set):  #Checks if the current character is within the provided delimiter set
+            return self.current_char in delimiter_set or self.current_char is None
 
-    def _is_valid_delimiter(self, delim_set_name):  
+    def _is_valid_delimiter(self, delim_set_name):  #Checks if the current character is a valid delimiter for the preceding token type
         char = self.current_char
         delims = Delimiters._get_delimiters()
 
+        # Universal delimiters: End of File or whitespace
         if char is None or char.isspace():
             return True
 
+        # Check against named set
         if delim_set_name in delims:
             return char in delims[delim_set_name]
 
+        # Fallback for generic/unlisted symbols
         return False
         
     def _add_or_error(self, token_type, token_value, line, col, delim_set_name): 
@@ -110,14 +113,14 @@ class Lexer(
                 error_msg
             )
             
-            # Fetch valid delimiters dynamically
             valid_delims = Delimiters._get_delimiters().get(delim_set_name, ["Valid Delimiter"])
+            
             err_token.expected = valid_delims
             
             self.errors.append(err_token)
 
     # ============================================================================================================
-    # 3. Transition Diagram State 0 
+    # 3. Transition Diagram State 0 (Looks at the current character and branches out to its designated state)
     # ============================================================================================================
     def state0(self):
         if self.current_char is None:
@@ -126,15 +129,17 @@ class Lexer(
         saved_state = self.save()
         char = self.current_char
 
-        # =========================================================================
-        # Reserved Words (rw0-rw119)
-        # =========================================================================
+    # =========================================================================
+    # Reserved Words (rw0-rw119)
+    # =========================================================================
         if char.isupper():
             return self._make_keyword()
         
-        # =========================================================================
-        # Symbols / Operators (rs120-rs196)
-        # =========================================================================
+    # =========================================================================
+    # Symbols / Operators (rs120-rs196)
+    # =========================================================================
+        delims = Delimiters._get_delimiters()
+        
         # Arithmetic
         if char == "+": return self.rs120()
         if char == "-": return self.rs126()
@@ -168,59 +173,68 @@ class Lexer(
         if char == "[": return self.rs193()
         if char == "]": return self.rs195()
         
-        # =========================================================================
-        # Identifiers (i197-i232)
-        # =========================================================================
+    # =========================================================================
+    # Identifiers (i197-i232)
+    # =========================================================================
         if char.islower():
             self.advance() 
             return self._make_identifier()
 
-        # =========================================================================
-        # Digits (COIN and DIME)
-        # =========================================================================
+    # =========================================================================
+    # Digits (COIN and DIME) (c233-c265/d266-d282)
+    # =========================================================================
         if char in Delimiters._get_delimiters()["DIGIT"]:
             self.mark_token_start()
-            return self.c233()
+            # FIX: Must advance to consume the first digit, otherwise Infinite Loop!
+            self.advance() 
+            return self.c233()  # NULL ENTRY
 
-        # =========================================================================
-        # PARCH and SCROLL Literals
-        # =========================================================================
-        if char == "'": return self.p283()
-        if char == '"': return self.s287()
+    # =========================================================================
+    # PARCH and SCROLL Literals (p283-p286/s287-s290)
+    # =========================================================================
+        if char == "'": return self.p283()  # PARCH literal
+        if char == '"': return self.s287()  # SCROLL literal
 
-        # =========================================================================
-        # Comments
-        # =========================================================================
+    # =========================================================================
+    # Comments (cm293-cm300)
+    # =========================================================================
         if char == "~":
             return self.cm293()
 
-        # =========================================================================
-        # Whitespace & Newline
-        # =========================================================================
+    # =========================================================================
+    # Whitespace & Newline
+    # =========================================================================
         if char.isspace():
+            # Identify type
             token_type = "newline" if char == "\n" else "whitespace"
             lexeme = char
+            
             l, c = self.line, self.col
+            
             self.advance()
+            
+            # Return token instead of None
             return Token(token_type, lexeme, l, c)
 
-        # --- CATCH-ALL for invalid characters ---
-        err_token = Token("ERROR", char, self.line, self.col, f"Invalid Character")
+        # --- CATCH-ALL for UNKNOWN characters ---
+        # If we get here, no handler recognized the character.
+        err_token = Token("ERROR", char, self.line, self.col, "Unknown Character")
         self.errors.append(err_token)
         self.advance()
-        return None 
+        return None # Return None so it's not tokenized
     
     # ============================================================================================
-    # 1. PUBLIC MAIN METHOD
+    # 1. PUBLIC MAIN METHOD (Tokenizes the entire input using the state0 Transition Diagram)
     # ============================================================================================
     def tokenize(self):                 
-        while self.current_char is not None: 
-            self.mark_token_start()          
+        while self.current_char is not None: #1. Initialize Loop as long the current character is not at the end of the file
+            self.mark_token_start()          #2. saves the current position of the character before starting to scan a new token
             
-            tok = self.state0()              
+            tok = self.state0()              #3. Decision Point: where the current character determines which state to pasok into
             if tok:                          
-                if isinstance(tok, list):    
-                    self.tokens.extend(tok)  
-                else:                        
-                    self.tokens.append(tok)
-        return self.tokens, self.errors
+                if isinstance(tok, list):    #4. IF token was recognized, it's added in self.token
+                    self.tokens.extend(tok)  #5. IF state0 returns NONE,
+                else:                        #   - its a comment
+                    self.tokens.append(tok)  #   - INVALID Character
+        return self.tokens, self.errors      #6. Keeps looping starting the process of the next character
+                                             #7. IF EOF na, the loop terminates and the method returns the list of valid tokens and errors
