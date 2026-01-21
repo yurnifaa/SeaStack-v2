@@ -386,11 +386,11 @@ class DigitHandler:
     def d281(self):
         self.advance()
         
-        # 1. Check for Delimiter (Valid DIME)
+        # Check for Delimiter (Valid DIME)
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): 
             return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
         
-        # 2. Check for Excess Digits
+        # Check for Excess Digits
         if self.current_char and self.current_char.isdigit():
             # ALLOW trailing zeros
             if self.current_char == '0':
@@ -403,7 +403,7 @@ class DigitHandler:
             ))
             return None
 
-        # 3. Invalid Delimiter Error
+        # Invalid Delimiter Error
         self.errors.append(self._create_digit_error(
             f"Invalid DIME-lit. Expected '0', {self.DELIM_ERR_MSG}",
             ["0"] + self.DELIM_LIST

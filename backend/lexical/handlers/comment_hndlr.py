@@ -40,16 +40,16 @@ class CommentHandler:
             return self.cm295()
         
         if char == "(":             # Case: "~(" Uses a Try-and-Rollback Logic
-            # 1. Save state before trying multi-line
+            # Save state before trying multi-line
             saved_state = self.save()
             self.advance() # Consume '('
             
-            # 2. Attempt to parse the multi-line comment
+            # Attempt to parse the multi-line comment
             multi_comment_result = self.cm297()
             
-            # 3. Check the result
+            # Check the result
             if multi_comment_result == "ROLLBACK":
-                # 4. Rollback to state before '(' was consumed
+                # Rollback to state before '(' was consumed
                 self.restore(saved_state)
                 
                 # Now, re-parse as a single-line comment.

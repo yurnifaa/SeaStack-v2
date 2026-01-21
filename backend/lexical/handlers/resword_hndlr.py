@@ -9,13 +9,11 @@ import string
 class ReservedWordHandler:
 
     # =========================================================================================
-    # Error Reporting Helper (UPDATED)
+    # Error Reporting Helper
     # =========================================================================================
     def _report_char_error(self, message, expected_list, lex_txt=None):
-        # 1. Use the passed text if available, otherwise check current token
         error_text = lex_txt if lex_txt else self.current_token_text()
         
-        # 2. Fallback to current_char if still empty
         if not error_text and self.current_char:
             error_text = self.current_char
 
@@ -26,7 +24,6 @@ class ReservedWordHandler:
             self.col - 1,
             message 
         )
-        # 3. ATTACH EXPECTED LIST FOR UI
         err_token.expected = expected_list
         
         self.errors.append(err_token)        

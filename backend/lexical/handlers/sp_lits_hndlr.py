@@ -22,7 +22,6 @@ class LiteralHandler:
         return Delimiters._get_delimiters()["SCR_DELIM"]
 
     # --- Error Utility : Logs error and returns empty list (hides from table) ---
-    # UPDATED: Now accepts expected_list
     def _error_token(self, message, expected_list, current_text=""):
         error_char = self.current_char if self.current_char is not None else ""        
         err_col = max(1, self.col - 1)
