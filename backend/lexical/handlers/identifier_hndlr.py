@@ -1,238 +1,239 @@
+# lexer_handlers/identifier_handler.py
 from backend.lexical.lexer_token import Token
 from backend.lexical.handlers.delimiters import Delimiters
 
 # =================================================================================================
-# INDENTIFIER TD: Identifiers state machine (rw0 - rw119)
+# IDENTIFIER TD: Identifiers state machine (i197 - i236)
 # =================================================================================================
 
 class IdentifierHandler: 
     
-    DELIM_LIST = [
-        "whitespace", 
-        "+", "-", "*", "/", "%", "^", 
-        "<", ">", "=", "!", "&", "|", 
-        "(", ")", "{", "}", "]", "$", ","
-    ]
-
+    # --- HELPER: Check for Alphanumeric or Underscore ---
     def _is_alphanumeric_or_underscore(self):
-        # Checks if the current character is valid for an identifier body
         char = self.current_char
-        return char is not None and (char.islower() or char.isdigit() or char == "_")
+        return char is not None and (char.isalnum() or char == "_")
+
+    # --- HELPER: Create Error with Expected List ---
+    def _create_id_error(self, message):
+        # Retrieve the valid delimiters for ID to show in the expected list
+        # Converting set to list for display purposes
+        valid_delims = list(Delimiters._get_delimiters()["ID_DELIM"])
+        # Optional: Sort them for cleaner UI output
+        valid_delims.sort() 
+        
+        err_token = Token(
+            "ERROR",
+            self.current_token_text(),
+            self.line,
+            self.col - 1,
+            message
+        )
+        err_token.expected = valid_delims
+        return err_token
 
     # =========================================================================
-    # IDENTIFIER TD: ASCII Character up to 20 Char
+    # START: ENTRY POINT (Matches diagram start)
     # =========================================================================
     def _make_identifier(self):                                 
-        if self.current_char is None:                           
-            return self.i194()                                  
-        return self.i193()
+        # The lexer likely detected a lowercase letter to get here.
+        # We start verifying the *next* character or delimiter (State 197).
+        return self.i197()
 
-    # State i193 (Character 1 / New Start) 
-    def i193(self):
-        if self._is_alphanumeric_or_underscore():
-            self.advance()
-            return self.i195()
-        return self.i194()
-
-    def i194(self): return self.finalize_id("id")
-
-    # State i195 (Character 2) 
-    def i195(self):
-        if self._is_alphanumeric_or_underscore():
-            self.advance()
-            return self.i197()
-        return self.i196()
-
-    def i196(self): return self.finalize_id("id")
-
-    # State i197 (Character 3) 
+    # State 197 (Char 1 processed) -> Expects Char 2 or Delimiter
     def i197(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i199()
         return self.i198()
 
-    def i198(self): return self.finalize_id("id")
-    
-    # State i199 (Character 4)
+    def i198(self): return self.finalize_id()
+
+    # State 199 (Char 2 processed) -> Expects Char 3 or Delimiter
     def i199(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i201()
         return self.i200()
 
-    def i200(self): return self.finalize_id("id")
+    def i200(self): return self.finalize_id()
 
-    # State i201 (Character 5) 
+    # State 201 (Char 3 processed) -> Expects Char 4 or Delimiter
     def i201(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i203()
         return self.i202()
 
-    def i202(self): return self.finalize_id("id")
-
-    # State i203 (Character 6)
+    def i202(self): return self.finalize_id()
+    
+    # State 203 (Char 4 processed) -> Expects Char 5 or Delimiter
     def i203(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i205()
         return self.i204()
 
-    def i204(self): return self.finalize_id("id")
+    def i204(self): return self.finalize_id()
 
-    # State i205 (Character 7) 
+    # State 205 (Char 5 processed) -> Expects Char 6 or Delimiter
     def i205(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i207()
         return self.i206()
 
-    def i206(self): return self.finalize_id("id")
+    def i206(self): return self.finalize_id()
 
-    # State i207 (Character 8) 
+    # State 207 (Char 6 processed) -> Expects Char 7 or Delimiter
     def i207(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i209()
         return self.i208()
 
-    def i208(self): return self.finalize_id("id")
+    def i208(self): return self.finalize_id()
 
-    # State i209 (Character 9)
+    # State 209 (Char 7 processed) -> Expects Char 8 or Delimiter
     def i209(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i211()
         return self.i210()
 
-    def i210(self): return self.finalize_id("id")
+    def i210(self): return self.finalize_id()
 
-    # State i211 (Character 10)
+    # State 211 (Char 8 processed) -> Expects Char 9 or Delimiter
     def i211(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i213()
         return self.i212()
 
-    def i212(self): return self.finalize_id("id")
+    def i212(self): return self.finalize_id()
 
-    # State i213 (Character 11) 
+    # State 213 (Char 9 processed) -> Expects Char 10 or Delimiter
     def i213(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i215()
         return self.i214()
 
-    def i214(self): return self.finalize_id("id")
+    def i214(self): return self.finalize_id()
 
-    # State i215 (Character 12)
+    # State 215 (Char 10 processed) -> Expects Char 11 or Delimiter
     def i215(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i217()
         return self.i216()
 
-    def i216(self): return self.finalize_id("id")
+    def i216(self): return self.finalize_id()
 
-    # State i217 (Character 13)
+    # State 217 (Char 11 processed) -> Expects Char 12 or Delimiter
     def i217(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i219()
         return self.i218()
 
-    def i218(self): return self.finalize_id("id")
+    def i218(self): return self.finalize_id()
     
-    # State i219 (Character 14)
+    # State 219 (Char 12 processed) -> Expects Char 13 or Delimiter
     def i219(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i221()
         return self.i220()
 
-    def i220(self): return self.finalize_id("id")
+    def i220(self): return self.finalize_id()
 
-    # State i221 (Character 15)
+    # State 221 (Char 13 processed) -> Expects Char 14 or Delimiter
     def i221(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i223()
         return self.i222()
 
-    def i222(self): return self.finalize_id("id")
+    def i222(self): return self.finalize_id()
 
-    # State i223 (Character 16)
+    # State 223 (Char 14 processed) -> Expects Char 15 or Delimiter
     def i223(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i225()
         return self.i224()
 
-    def i224(self): return self.finalize_id("id")
+    def i224(self): return self.finalize_id()
 
-    # State i225 (Character 17)
+    # State 225 (Char 15 processed) -> Expects Char 16 or Delimiter
     def i225(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i227()
         return self.i226()
 
-    def i226(self): return self.finalize_id("id")
+    def i226(self): return self.finalize_id()
 
-    # State i227 (Character 18)
+    # State 227 (Char 16 processed) -> Expects Char 17 or Delimiter
     def i227(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i229()
         return self.i228()
 
-    def i228(self): return self.finalize_id("id")
+    def i228(self): return self.finalize_id()
         
-    # State i229 (Character 19) 
+    # State 229 (Char 17 processed) -> Expects Char 18 or Delimiter
     def i229(self):
         if self._is_alphanumeric_or_underscore():
             self.advance()
             return self.i231()
         return self.i230()
 
-    def i230(self): return self.finalize_id("id")
+    def i230(self): return self.finalize_id()
 
-    # State i231 (Character 20 - Max Length) 
+    # State 231 (Char 18 processed) -> Expects Char 19 or Delimiter
     def i231(self):
-        # Check for the 21st character (Overflow Check)
         if self._is_alphanumeric_or_underscore():
-            # --- OVERFLOW ERROR ---
-            error_token = Token(
-                    "ERROR",
-                    self.current_token_text(), 
-                    self.line,
-                    self.col - 1,
-                    "Invalid Identifier. Limit (20) exceeded. Expected delimiter.",
-                )
-            # ATTACH EXPECTED LIST
-            error_token.expected = self.DELIM_LIST
-            
-            self.errors.append(error_token)
-            return None 
-        
-        # Valid identifier of exact length 20
+            self.advance()
+            return self.i233()
         return self.i232()
 
-    def i232(self):
-        return self.finalize_id("id")
+    def i232(self): return self.finalize_id()
+
+    # State 233 (Char 19 processed) -> Expects Char 20 or Delimiter
+    def i233(self):
+        if self._is_alphanumeric_or_underscore():
+            self.advance()
+            return self.i235()
+        return self.i234()
+    
+    def i234(self): return self.finalize_id()
+
+    # State 235 (Char 20 processed - MAX LENGTH) -> Expects Delimiter ONLY
+    def i235(self):
+        # If there is ANOTHER alphanumeric character/underscore, we have exceeded the limit (20)
+        if self._is_alphanumeric_or_underscore():
+            msg = "Invalid Identifier. Limit (20) exceeded. Expected delimiter."
+            self.errors.append(self._create_id_error(msg))
+            return None 
+        
+        # Otherwise, check for delimiter at State 236
+        return self.i236()
+
+    def i236(self): return self.finalize_id()
 
     # =========================================================================================
     # ACCEPTANCE LOGIC & DELIMITER CHECK
     # =========================================================================================
-    def finalize_id(self, lexeme_type):
+    def finalize_id(self):
         result = self.current_token_text()
         line, col = self.line, self.col
 
-        # DELIMITER CHECK FIRST
-        if self._is_valid_delimiter("ID_DELIM"):
+        # CHECK 1: Is it a valid delimiter based on ID_DELIM in delimiters.py?
+        if self._comp_delims(Delimiters._get_delimiters()["ID_DELIM"]):
             
-            # Lookup/assign an ID number
+            # Lookup/assign an ID number if it's new
             if result not in self.identifier_table:
                 self.identifier_table[result] = f"id{len(self.identifier_table) + 1}"
 
@@ -240,20 +241,6 @@ class IdentifierHandler:
             return Token(token_type, result, line, col - 1) 
             
         else:
-            # --- INVALID DELIMITER ERROR ---
-            error_msg = "Invalid Identifier. Expected delimiter."
-            
-            err_token = Token(
-                "ERROR",
-                result,
-                line,
-                col - 1,
-                error_msg
-            )
-            
-            # ATTACH EXPECTED LIST
-            err_token.expected = self.DELIM_LIST
-            
-            self.errors.append(err_token)
-            
+            # CHECK 2: Invalid Delimiter Error
+            self.errors.append(self._create_id_error("Invalid Identifier. Expected delimiter."))
             return None

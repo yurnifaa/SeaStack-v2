@@ -35,10 +35,10 @@ class SymbolHandler:
     # --- INC '+#' ---
     def rs122(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs123()
+        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs123()
         
-        msg = "Invalid Character. Expected: lowercase letter (a-z)"
-        self.errors.append(self._create_sym_error(msg, ["lowercase letter"]))
+        msg = "Invalid Character. Expected: lowercase letter (a-z) or digit"
+        self.errors.append(self._create_sym_error(msg, ["alphanumeric"]))
         
     def rs123(self): return Token("+#", self.current_token_text(), self.line, self.col - 1)
     
@@ -71,10 +71,11 @@ class SymbolHandler:
     # --- DEC '-#' ---
     def rs128(self): 
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs129()
+        # DIAGRAM UPDATE: Diagram 128->129 requires 'alphanumeric', not just 'lowlet'
+        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs129()
         
-        msg = "Invalid Character. Expected: lowercase letter (a-z)"
-        self.errors.append(self._create_sym_error(msg, ["lowercase letter"]))
+        msg = "Invalid Character. Expected: alphanumeric"
+        self.errors.append(self._create_sym_error(msg, ["alphanumeric"]))
         
     def rs129(self): return Token("-#", self.current_token_text(), self.line, self.col - 1)
     
@@ -233,10 +234,14 @@ class SymbolHandler:
     # --- STMT TERM '!!' ---
     def rs154(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["TERM_DELIM"]): return self.rs155()
+        # DIAGRAM UPDATE: 154->155 accepts "whitespace, newline, ]"
+        # TERM_DELIM is whitespace + newline. We combine it with ']'
+        valid_delims = Delimiters._get_delimiters()["TERM_DELIM"] | set("]")
         
-        msg = "Invalid Character. Expected delimiter: \\n or whitespace"
-        self.errors.append(self._create_sym_error(msg, ["newline", "whitespace"]))
+        if self._comp_delims(valid_delims): return self.rs155()
+        
+        msg = "Invalid Character. Expected delimiter: \\n, whitespace, or ]"
+        self.errors.append(self._create_sym_error(msg, ["newline", "whitespace", "]"]))
         
     def rs155(self): return Token("!!", self.current_token_text(), self.line, self.col - 1)
     
@@ -329,10 +334,11 @@ class SymbolHandler:
     # --- AND '&&' ---
     def rs170(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs171()
+        # DIAGRAM UPDATE: 170->171 uses "gen_op_delim"
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs171()
 
-        msg = "Invalid Character. Expected delimiter: [ ' \" ( - A N or alphanumeric/whitespace"
-        exp = ["[", "'", '"', "(", "-", "A", "N", "alphanumeric", "whitespace"]
+        msg = "Invalid Character. Expected delimiter: whitespace, alphanumeric, -, ("
+        exp = ["whitespace", "alphanumeric", "-", "("]
         self.errors.append(self._create_sym_error(msg, exp))
     
     def rs171(self): return Token("&&", self.current_token_text(), self.line, self.col - 1)
@@ -364,10 +370,13 @@ class SymbolHandler:
     # =============================================
     def rs175(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["COLON_DELIM"]): return self.rs176()
+        # DIAGRAM UPDATE: 175->176 uses "whitespace, newline". 
+        # COLON_DELIM in delimiters.py includes UPLET, but diagram does not. 
+        # We must use TERM_DELIM (which is whitespace + newline) to match diagram.
+        if self._comp_delims(Delimiters._get_delimiters()["TERM_DELIM"]): return self.rs176()
 
-        msg = "Invalid Character. Expected delimiter: \\n, whitespace, or Reserved Word (A B C D E H L M N P S)"
-        exp = ["newline", "whitespace", "A", "B", "C", "D", "E", "H", "L", "M", "N", "P", "S"]
+        msg = "Invalid Character. Expected delimiter: \\n or whitespace"
+        exp = ["newline", "whitespace"]
         self.errors.append(self._create_sym_error(msg, exp))
     
     def rs176(self): return Token(":", self.current_token_text(), self.line, self.col - 1)
@@ -426,6 +435,9 @@ class SymbolHandler:
     # =============================================
     def rs185(self):  
         self.advance()
+        # NOTE: Diagram 185->186 says "opencb_delim". 
+        # This key is MISSING in the provided delimiters.py.
+        # Fallback: using ALPHANUMERIC (as per previous logic).
         if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs186()
 
         msg = "Invalid Character. Expected: lowercase letter or digit"
