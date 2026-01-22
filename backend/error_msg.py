@@ -45,9 +45,15 @@ class ErrorHandler:
         return self._create_error(header, msg, line, col)
 
     def get_program_start_error(self, token, expected_tokens):
-        line, col = token.line, token.col
-        found = token.type
-        actual_line = self._get_line_content(line)
+        if token:
+            line, col = token.line, token.col
+            found = token.type
+            actual_line = self._get_line_content(line)
+        else:
+            line, col = "?" , "?"
+            found = "EOF"
+            actual_line = ""
+        
         expected_str = self._format_expected_list(expected_tokens)
         
         header = "Program Error"
@@ -59,9 +65,15 @@ class ErrorHandler:
         return self._create_error(header, msg, line, col, found, expected_tokens)
 
     def get_expected_eof_error(self, token):
-        line, col = token.line, token.col
-        found = token.type
-        actual_line = self._get_line_content(line)
+        
+        if token:
+            line, col = token.line, token.col
+            found = token.type
+            actual_line = self._get_line_content(line)
+        else:
+            line, col = "?" , "?"
+            found = "Unknown"
+            actual_line = ""
         
         header = "Unexpected Token"
         msg = (
@@ -72,9 +84,18 @@ class ErrorHandler:
         return self._create_error(header, msg, line, col, found, ["End Of File/EOF"])
 
     def get_invalid_token_error(self, token, expected_tokens):
-        line, col = token.line, token.col
-        found = token.type
-        actual_line = self._get_line_content(line)
+        # FIX: Handle None (EOF) gracefully to prevent crash
+        if token:
+            line, col = token.line, token.col
+            found = token.type
+            actual_line = self._get_line_content(line)
+        else:
+            # If token is None, we hit the end of the file unexpectedly
+            line = len(self.lines) if self.lines else 1
+            col = "End" 
+            found = "End of File"
+            actual_line = self.lines[-1].strip() if self.lines else ""
+
         expected_str = self._format_expected_list(expected_tokens)
 
         header = "Invalid Token"
@@ -103,10 +124,15 @@ class ErrorHandler:
         return self._create_error(header, msg, line, col, found, [expected_token_type])
 
     def get_unexpected_token_error(self, token, expected_tokens):
-        line, col = token.line, token.col
-        found = token.type
-        actual_line = self._get_line_content(line)
-        expected_str = self._format_expected_list(expected_tokens)
+        if token:
+            line, col = token.line, token.col
+            found = token.type
+            actual_line = self._get_line_content(line)
+        else:
+            line = len(self.lines) if self.lines else 1
+            col = "End"
+            found = "End of File"
+            actual_line = self.lines[-1].strip() if self.lines else ""
 
         header = "Unexpected Token"
         msg = (
