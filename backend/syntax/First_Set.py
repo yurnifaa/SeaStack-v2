@@ -32,6 +32,7 @@ FIRST = {
     "<arr-elmt-tail>": ["{", None],
     "<str-mem>": ["$"],
     "<func-args>": ["(", None],
+    "<args>": ["id", "-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "(", "!", "!#"],
     
     "<literals>": ["-", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY"],
     "<digits>": ["-", "COIN-lit", "DIME-lit"],

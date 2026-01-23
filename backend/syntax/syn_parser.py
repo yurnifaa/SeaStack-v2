@@ -97,7 +97,7 @@ class Parser:
                     "col": "?",
                     "found": "CRASH",
                     "expected": [],
-                    "message": f"Parser Crash: {str(e)}"
+                    "message": f"{str(e)}"
                 })
 
         return self.errors
@@ -402,20 +402,7 @@ class Parser:
         # <operands>
         production = self.get_production("<operands>")
         if production == 42:
-            pass # PDF says Production 42 is Lambda? Wait, checking CFG.
-            # Prod 42 is empty in PDF table source 2330. Assuming <operands> -> <value> logic from existing pattern or typo.
-            # Looking at source 2330, Prod 41 is <operands><exp-tail>. Prod 42 is empty... 
-            # Looking at Predict Set for 42 in my dictionary: "id", "literals"... 
-            # Ah, PDF Page 2 of CFG: 
-            # 42 <operands> -> (nothing listed)
-            # 43 <operands> -> (<var-val>)
-            # 44 <operands> -> <not><not-val>
-            # BUT: Prod 41 calls <operands>. Prod 45 is <value>. 
-            # RE-CHECKING source 2330:
-            # 45 <value> -> id <id-tail>
-            # 46 <value> -> <literals>
-            # It seems Prod 42 implies <value> is the default derivation if not 43 or 44.
-            # Let's map Prod 42 to self.value()
+            pass 
             self.value()
         elif production == 43:
             self.eat("(")
@@ -504,12 +491,23 @@ class Parser:
         production = self.get_production("<func-args>")
         if production == 57:
             self.eat("(")
-            self.arr_val() # Note: CFG says <arr-val> here, not <args>
+            self.args()
             self.eat(")")
         elif production == 58:
             pass # Lambda
         else:
             expected = list(PREDICT["<func-args>"].keys())
+            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+        
+    def args(self):
+        # <args>
+        production = self.get_production("<args>")
+        if production == 202:
+            self.arr_val()
+        elif production == 203:
+            pass # Lambda
+        else:
+            expected = list(PREDICT["<args>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
     def literals(self):

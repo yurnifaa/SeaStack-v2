@@ -8,7 +8,6 @@ class ErrorHandler:
     @staticmethod
     def _format_list_static(expected_list):
         if not expected_list: return ""
-        # Filter None, convert to string, remove duplicates, and sort
         clean = sorted(list(set([str(t) for t in expected_list if t is not None])))
         
         if not clean: return ""
@@ -40,9 +39,8 @@ class ErrorHandler:
 
     def get_missing_start_error(self):
         line, col = 1, 1
-        header = "Missing Start"
-        msg = f"Line {line}, Col {col} | Missing start"
-        return self._create_error(header, msg, line, col)
+        msg = f"Missing Start"
+        return Exception(msg)
 
     def get_program_start_error(self, token, expected_tokens):
         line, col = token.line, token.col
@@ -67,9 +65,9 @@ class ErrorHandler:
         msg = (
             f"Line {line}, Col {col} | Unexpected token: '{found}' after AHOY.\n"
             f"'{actual_line}'\n"
-            f"Expected any: 'End Of File/EOF'"
+            f"Expected any: 'End Of File'"
         )
-        return self._create_error(header, msg, line, col, found, ["End Of File/EOF"])
+        return self._create_error(header, msg, line, col, found, ["End Of File"])
 
     def get_invalid_token_error(self, token, expected_tokens):
         line, col = token.line, token.col
@@ -95,7 +93,7 @@ class ErrorHandler:
             found = "EOF"
             actual_line = ""
 
-        header = "Missing Token"
+        header = "Missplaced Token"
         msg = (
             f"Line {line}, Col {col} | Missing token after Line {line}, Col {col}: {expected_token_type}.\n"
             f"'{actual_line}'"
@@ -103,9 +101,15 @@ class ErrorHandler:
         return self._create_error(header, msg, line, col, found, [expected_token_type])
 
     def get_unexpected_token_error(self, token, expected_tokens):
-        line, col = token.line, token.col
-        found = token.type
-        actual_line = self._get_line_content(line)
+        if token:
+            line, col = token.line, token.col
+            found = token.type
+            actual_line = self._get_line_content(line)
+        else:
+            line, col = "?", "?" # Or the last known line
+            found = "End of File"
+            actual_line = ""
+
         expected_str = self._format_expected_list(expected_tokens)
 
         header = "Unexpected Token"

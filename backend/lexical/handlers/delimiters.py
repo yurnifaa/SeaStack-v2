@@ -47,7 +47,7 @@ class Delimiters:
         CONCAT_DELIM = WHITESPACE | LOWLET | set('"(')
         
         CLOSECB_DELIM = WHITESPACE | GEN_OP | set("]){&")
-        OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', '-'])
+        OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', "'", '-'])
         CLOSEP_DELIM = WHITESPACE | GEN_OP | set(")[],")
 
         OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set(['[', "'", '"', '-'])
