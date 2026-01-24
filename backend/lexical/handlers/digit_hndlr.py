@@ -66,8 +66,14 @@ class DigitHandler:
     
     # --- Digit 1 (State 237) ---
     def c237(self):
-        # Leading Zero Check (if applicable to your language rules)
-        # If strict "0" vs "0..." handling is needed, add it here.
+        # Leading Zero Logic
+        if self.current_char == '0':
+            self.advance()
+            # If followed by another digit, discard current '0' and repeat in 237
+            if self.current_char and self.current_char.isdigit():
+                self.token_start_pos += 1   # Resets the lexeme start point
+                return self.c237()          # Recursive call
+            
         # Assuming standard digit processing based on diagram flow:
         self.advance() 
 
@@ -360,8 +366,15 @@ class DigitHandler:
     # --- DIME Digit 8 (State 284) - MAX LENGTH DIME ---
     def d284(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d285()
         
+        significant_end = self.pos
+
+        # 1. Handle Trailing Zeros directly in a loop
+        while self.current_char == '0':
+            self.advance()
+
+        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d285(significant_end)
+
         # If another digit appears, Limit Exceeded
         if self.current_char is not None and self.current_char.isdigit(): 
              self.errors.append(self._create_digit_error("Invalid DIME-lit. Limit (8) exceeded. Expected delimiter."))
@@ -370,4 +383,6 @@ class DigitHandler:
         self.errors.append(self._create_digit_error("Invalid DIME-lit. Expected delimiter."))
         return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
-    def d285(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
+    def d285(self, lexeme_end): 
+        result_lexeme = self.text[self.token_start_pos : lexeme_end]
+        return Token("DIME-lit", result_lexeme, self.line, self.col - 1)
