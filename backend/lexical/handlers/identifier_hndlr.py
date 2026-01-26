@@ -222,41 +222,46 @@ class IdentifierHandler:
 
     def i232(self): return self.finalize_id()
 
-    # State 233 (Check 20th char) -> 234 (Accept 19 chars) -- WAIT, LOGIC CHECK
-    # We entered i233 because we found a 19th valid char.
-    # We are now looking at the 20th char slot.
+    # =========================================================================
+    # STATE 233: The Boundary Check (19th -> 20th Character)
+    # =========================================================================
     def i233(self):
         if self._is_valid_id_char():
-            # Found 20th char. Consume it.
             self.advance()
-            
-            # NOW CHECK FOR OVERFLOW (21st char)
-            # It MUST be a delimiter. It CANNOT be a valid ID char.
             if self._is_valid_id_char():
-                msg = "Invalid Identifier. Limit (20) exceeded."
+                
+                # OPTIONAL: You might want to consume the rest of the invalid word 
+                # so the lexer doesn't try to tokenize the tail as a new ID.
+                # while self._is_valid_id_char():
+                #     self.advance()
+                msg = "Invalid Identifier. Exceeds 20 characters."
                 self.errors.append(self._create_id_error(msg))
                 return None 
-            
-            # If 21st is not an ID char, we fall through to i234 (Accept 20)
             return self.i234()
             
-        # If 20th char was not valid (it was a delimiter), we accept the 19 chars we have.
         return self.i234() 
     
-    # State 234 (Final Accept State for 19 or 20 chars)
-    def i234(self): return self.finalize_id()
+    # State 234 (Final Accept State)
+    def i234(self): 
+        return self.finalize_id()
 
-    # =========================================================================================
+    # =========================================================================
     # ACCEPTANCE LOGIC & DELIMITER CHECK
-    # =========================================================================================
+    # =========================================================================
     def finalize_id(self):
         result = self.current_token_text()
         line, col = self.line, self.col
 
-        # CHECK 1: Is it a valid delimiter?
+        # CHECK 1: Delimiter Validation
+        # Per Regular Definition, id_delim includes:
+        # whitespace, gen_op, (, ), }, {, }, $, ,
         if self._comp_delims(Delimiters._get_delimiters()["ID_DELIM"]):
             
             # Lookup/assign an ID number if it's new
+            # Note: SeaStack reserved words must not be used as identifiers [cite: 2390]
+            # Ensure your Lexer checks reserved words BEFORE entering this handler
+            # or checks against a reserved word list here.
+            
             if result not in self.identifier_table:
                 self.identifier_table[result] = f"id{len(self.identifier_table) + 1}"
 
@@ -265,5 +270,7 @@ class IdentifierHandler:
             
         else:
             # CHECK 2: Invalid Delimiter Error
-            self.errors.append(self._create_id_error("Invalid Identifier. Expected delimiter."))
+            # This handles cases where the identifier ends with an illegal character 
+            # (e.g., '@' or '#') that is not a valid delimiter.
+            self.errors.append(self._create_id_error(f"Invalid Identifier. Unexpected character '{self.current_char}'."))
             return None
