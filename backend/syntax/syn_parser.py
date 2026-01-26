@@ -125,7 +125,8 @@ class Parser:
             self.eat("]")
         else:
             expected = list(PREDICT["<program>"].keys())
-            raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+            # [UPDATED] Use specific Program Start Error
+            raise Exception(self.err_handler.get_program_start_error(self.current_token, expected))
 
     def global_dec(self):
         # <global-dec>
@@ -616,19 +617,7 @@ class Parser:
         # <arith-op>
         production = self.get_production("<arith-op>")
         if production == 81: self.eat("+")
-        elif production == 82: self.eat("-") # PDF 82 is ","? Wait. No, Page 3 says 82 is "," ??
-        # RE-READING CFG SOURCE 2331:
-        # 81 -> +
-        # 82 -> , (Wait, that seems wrong for arith-op, maybe typo in source PDF or I misread)
-        # Checking Source 2331: 
-        # 81 <arith-op> -> +
-        # 82 <arith-op> -> - (The PDF snippet has a comma on line 82 but "-" is expected)
-        # 83 <arith-op> -> *
-        # 84 <arith-op> -> /
-        # 85 <arith-op> -> %
-        # 86 <arith-op> -> ^
-        # FIX: I will assume standard arithmetic operators based on context.
-        elif production == 82: self.eat("-")
+        elif production == 82: self.eat("-") 
         elif production == 83: self.eat("*")
         elif production == 84: self.eat("/")
         elif production == 85: self.eat("%")
@@ -719,7 +708,7 @@ class Parser:
         production = self.get_production("<logeq>")
         if production == 104:
             self.logeq_op()
-            self.operands() # Note CFG says <operands> here in Prod 104
+            self.operands() 
             self.gen_exp()
         elif production == 105: pass # Lambda
         else:
@@ -738,8 +727,7 @@ class Parser:
     def log_op(self):
         # <log-op>
         production = self.get_production("<log-op>")
-        if production == 108: self.eat("||") # Source 2331 says 108 is empty space? 109 is &&. 
-        # Checking table: 108 -> || (likely obscured in OCR but logically follows).
+        if production == 108: self.eat("||") 
         elif production == 109: self.eat("&&")
         else:
             expected = list(PREDICT["<log-op>"].keys())
@@ -778,7 +766,7 @@ class Parser:
         elif production == 116:
             self.eat("(")
             self.scroll_ope()
-            self.scroll() # CFG 116: (<scroll-ope><scroll>)
+            self.scroll() 
             self.eat(")")
         else:
             expected = list(PREDICT["<scroll-ope>"].keys())
@@ -797,7 +785,7 @@ class Parser:
             self.return_func()
         elif production == 118:
             self.nonreturn_func()
-            self.sub_func() # Recurse per CFG 118
+            self.sub_func() 
         elif production == 119: pass # Lambda
         else:
             expected = list(PREDICT["<sub-func>"].keys())
@@ -886,7 +874,7 @@ class Parser:
             self.d_type()
             self.eat("id")
             self.var_arr_dec()
-            self.local_dec() # Recursion
+            self.local_dec() 
         elif production == 129:
             self.struct()
         elif production == 130: pass # Lambda
@@ -1071,10 +1059,9 @@ class Parser:
         elif production == 165: self.eat("*=")
         elif production == 166: self.eat("/=")
         elif production == 167: 
-            # Production 167 seems to cover both %= and ^= in the PDF or one is missing
             if self.current_token.type == "%=": self.eat("%=")
             elif self.current_token.type == "^=": self.eat("^=")
-            else: self.eat("%=") # Fallback to error
+            else: self.eat("%=") 
         else:
             expected = list(PREDICT["<arith-assign-op>"].keys())
             raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))

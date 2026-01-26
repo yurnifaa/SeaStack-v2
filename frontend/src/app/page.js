@@ -183,27 +183,18 @@ export default function Home() {
         return { ...errObj, isStructured: false };
     }
 
-    // We intentionally DO NOT extract actualLine for Lexical Errors
-    
-    // Retrieve the error message (set by lexer.py) and the token found
     const message = errObj.message || "";
     const foundStr = errObj.found || "";
     
-    // 1. Detect if it's an "Unknown Character" error based on the Lexer message
     const isUnknown = message.includes("Unknown Character");
 
     let headerStr = foundStr;
     let expectedStr = "";
 
     if (isUnknown) {
-        // USE THE LEXER MESSAGE as the header (e.g. "Unknown Character ';'")
         headerStr = message;
-        // Keep expectedStr empty so "Expected any:" does not show
         expectedStr = "";
     } else {
-        // Normal Behavior for other errors (e.g. Invalid Identifiers)
-        // You might want to use 'message' here too depending on preference, 
-        // but keeping it 'foundStr' preserves your previous 'Invalid character' logic if handled elsewhere.
         headerStr = foundStr; 
 
         if (errObj.expected && errObj.expected.length > 0) {
@@ -217,7 +208,7 @@ export default function Home() {
         line: errObj.line,
         col: errObj.col,
         headerStr: headerStr,
-        sourceCode: null,      // <--- ALWAYS NULL FOR LEXICAL ERRORS
+        sourceCode: null,
         expectedStr: expectedStr, 
         isStructured: true
     };
@@ -304,7 +295,7 @@ export default function Home() {
                             {/* Expected (Render only if string is not empty) */}
                             {err.expectedStr && (
                                 <span style={{ color: '#e5e7eb'}}>
-                                    Expected any: &apos;{err.expectedStr}&apos;
+                                    Expected: &apos;{err.expectedStr}&apos;
                                 </span>
                             )}
                         </div>

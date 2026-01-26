@@ -195,7 +195,7 @@ class Lexer(
 
         # --- Comments (Start at State 293) ---
         if char == "~":
-            return self.cm293() # State 293 is Comment [cite: 3897]
+            return self.cm294() # State 293 is Comment [cite: 3897]
 
         # --- Whitespace ---
         if char.isspace():

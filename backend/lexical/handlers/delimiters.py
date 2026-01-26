@@ -50,7 +50,7 @@ class Delimiters:
         OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', "'", '-'])
         CLOSEP_DELIM = WHITESPACE | GEN_OP | set(")[],")
 
-        OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set(['[', "'", '"', '-'])
+        OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set(['(', '[', '!', "'", '"', '-'])
         CLOSESB_DELIM = WHITESPACE | set("\n") | set(['A', 'B', 'C', 'D', 'E', 'H', 'L', 'S', ']', '!', '}'])
         
         COLON_DELIM = WHITESPACE | set("\n") | LOWLET | set(['A', 'C', 'E', 'H', 'L', '+', '-'])
