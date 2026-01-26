@@ -161,10 +161,10 @@ class ReservedWordHandler:
 
     def rw11(self): # On 'T' (ADRIFT)
         self.advance() 
-        # DIAGRAM: :
-        if self.current_char == ':':
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set(':')
+        if self._comp_delims(valid):
             return self.rw12()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter (':')", [":"])
+        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or ':')", ["whitespace", ":"])
 
     def rw12(self): 
         return Token("ADRIFT", self.current_token_text(), self.token_start_line, self.token_start_col)
@@ -631,10 +631,10 @@ class ReservedWordHandler:
 
     def rw84(self): # On 'D' (LAND)
         self.advance() 
-        # DIAGRAM: !
-        if self.current_char == '!':
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('!')
+        if self._comp_delims(valid):
             return self.rw85()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter ('!')", ["!"])
+        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '!')", ["whitespace", "!"])
 
     def rw85(self): 
         return Token("LAND", self.current_token_text(), self.token_start_line, self.token_start_col)
@@ -811,10 +811,10 @@ class ReservedWordHandler:
 
     def rw112(self): # On 'L' (SAIL)
         self.advance() 
-        # DIAGRAM: !
-        if self.current_char == '!':
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('!')
+        if self._comp_delims(valid):
             return self.rw113()
-        self._report_char_error("Invalid Reserved Word. Expected delimiter ('!')", ["!"])
+        self._report_char_error("Invalid Reserved Word. Expected delimiter (whitespace or '!')", ["whitespace", "!"])
 
     def rw113(self): 
         return Token("SAIL", self.current_token_text(), self.token_start_line, self.token_start_col)

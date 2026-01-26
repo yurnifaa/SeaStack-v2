@@ -147,77 +147,71 @@ class Lexer(
         if char.isupper():
             return self._make_keyword()
         
-        # --- Symbols / Operators ---
-        # Arithmetic
-        if char == "+": return self.rs120()
-        if char == "-": return self.rs126()
-        if char == "*": return self.rs132()
-        if char == "/": return self.rs136()
-        if char == "%": return self.rs140()
-        if char == "^": return self.rs144()
+        # --- Symbols / Operators (Transition Section VI) ---
+        if char == "+": return self.rs120() # State 120 is '+'
+        if char == "-": return self.rs126() # State 126 is '-'
+        if char == "*": return self.rs132() # State 132 is '*'
+        if char == "/": return self.rs136() # State 136 is '/'
+        if char == "%": return self.rs140() # State 140 is '%'
+        if char == "^": return self.rs144() # State 144 is '^'
 
         # Assignment & Equality
-        if char == "=": return self.rs148()
+        if char == "=": return self.rs148() # State 148 is '='
 
         # Logical / Relational
-        if char == "!": return self.rs152()
-        if char == "<": return self.rs160()
-        if char == ">": return self.rs164()
-        if char == "&": return self.rs168()
-        if char == "|": return self.rs172()
+        if char == "!": return self.rs152() # State 152 is '!'
+        if char == "<": return self.rs160() # State 160 is '<'
+        if char == ">": return self.rs164() # State 164 is '>'
+        if char == "&": return self.rs168() # State 168 is '&'
+        if char == "|": return self.rs172() # State 172 is '|'
 
         # Others
-        if char == ":": return self.rs175()
-        if char == "@": return self.rs177()
-        if char == "$": return self.rs179()
-        if char == ",": return self.rs181()
-        if char == "\n": return self.rs183()
-
-        # Brackets
-        if char == "{": return self.rs185()
-        if char == "}": return self.rs187()
-        if char == "(": return self.rs189()
-        if char == ")": return self.rs191()
-        if char == "[": return self.rs193()
-        if char == "]": return self.rs195()
+        if char == ":": return self.rs175() # State 175 is 
+        if char == "@": return self.rs177() # State 177 is '@'
+        if char == "$": return self.rs179() # State 179 is '$'
+        if char == ",": return self.rs181() # State 181 is ','
         
-        # --- Identifiers ---
+        # Brackets (States 183-194)
+        if char == "{": return self.rs183() # Corrected: State 183 is '{'
+        if char == "}": return self.rs185() # Corrected: State 185 is '}'
+        if char == "(": return self.rs187() # Corrected: State 187 is '('
+        if char == ")": return self.rs189() # Corrected: State 189 is ')'
+        if char == "[": return self.rs191() # Corrected: State 191 is '['
+        if char == "]": return self.rs193() # Corrected: State 193 is ']'
+        
+        # --- Identifiers (Start at State 195) ---
         if char.islower():
             self.advance() 
-            return self._make_identifier()
+            return self.id195() # Transition to Identifier handler 
 
-        # --- Digits ---
-        if char in Delimiters._get_delimiters()["DIGIT"]:
+        # --- Digits (Start at State 235) ---
+        if char.isdigit():
             self.mark_token_start()
-            return self.c237() # Updated start state
+            return self.c235() # Corrected: Digit start is State 235 
 
-        # --- Literals ---
-        if char == "'": return self.p283()
-        if char == '"': return self.s287()
+        # --- Literals (Start at State 284) ---
+        if char == "'": return self.p284() # Corrected: State 284 is PARCH 
+        if char == '"': return self.s289() # Corrected: State 289 is SCROLL 
 
-        # --- Comments ---
+        # --- Comments (Start at State 293) ---
         if char == "~":
-            return self.cm293()
+            return self.cm293() # State 293 is Comment [cite: 3897]
 
         # --- Whitespace ---
         if char.isspace():
-            token_type = "newline" if char == "\n" else "whitespace"
+            token_type = "whitespace"
             lexeme = char
             l, c = self.line, self.col
             self.advance()
             return Token(token_type, lexeme, l, c)
 
-        # =========================================================================
-        # CATCH-ALL: Clean "Unknown Character" Error
-        # =========================================================================
+        # Catch-all for unknown characters
         err_msg = f"Unknown Character '{char}'"
         err_token = Token("ERROR", char, self.line, self.col, err_msg)
-        err_token.expected = None # Suppress expected list for unknowns
-        
         self.errors.append(err_token)
         self.advance()
-        return None 
-    
+        return None
+
     # ============================================================================================
     # 1. PUBLIC MAIN METHOD
     # ============================================================================================

@@ -5,19 +5,15 @@ class CommentHandler:
 
     # =========================================================================
     # HELPER: Sanitize Delimiters for Display
-    # Replaces invisible chars ('\n', '\t', etc.) with the word "whitespace"
     # =========================================================================
     def _sanitize_delims(self, delim_set):
-        # Ensure we are working with a list
         delims = list(delim_set) if isinstance(delim_set, set) else delim_set
         cleaned_list = []
         has_whitespace = False
         
         for d in delims:
-            # Check for invisible whitespace characters
             if d in [' ', '\t', '\n', '\r', '\v', '\f']:
                 has_whitespace = True
-            # Check if the string "whitespace" was passed manually
             elif d == "whitespace":
                 has_whitespace = True
             else:
@@ -26,7 +22,6 @@ class CommentHandler:
         if has_whitespace:
             cleaned_list.append("whitespace")
             
-        # Remove duplicates and sort
         cleaned_list = list(set(cleaned_list))
         cleaned_list.sort(key=str)
         return cleaned_list
@@ -42,52 +37,69 @@ class CommentHandler:
             self.token_start_col,
             message
         )
-        
-        # --- SANITIZE BEFORE ATTACHING ---
         err_token.expected = self._sanitize_delims(expected_list)
-        
         self.errors.append(err_token)
         return None
 
     # =========================================================================
-    # ENTRY POINT (State 0 -> 295)
+    # ENTRY POINT (State 294)
     # =========================================================================
-    def cm293(self):
-        # State 0: Expects '~'
+    def cm294(self):
+        # State 294: Expects '~'
         if self.current_char == '~':
             self.advance()
             return self.cm295()
-        return None # Should be handled by lexer dispatch
+        return None 
 
     # =========================================================================
-    # STATE 295: Decision Point
+    # STATE 295: Decision Point (Single vs Multi)
     # =========================================================================
     def cm295(self):
         char = self.current_char
         
-        # Path 1: newline -> State 296 (Empty Single Line)
-        if char == '\n':
-            return self.cm296()
-            
-        # Path 2: '(' -> State 298 (Start Multi-line)
+        # Path 1: '(' -> State 298 (Start Multi-line)
         if char == '(':
             return self.cm298()
-            
-        # Path 3: ASCII except newline and ~ -> State 297 (Single Line Text)
-        if char is not None and char != '~':
+
+        # Path 2: newline -> State 297 (Empty Single Line Accept)
+        if char == '\n':
             return self.cm297()
             
-        # Error: Likely found '~' (forbidden) or EOF
+        # Path 3: ASCII except newline and ~ -> State 296 (Single Line Body)
+        # Note: If we see '~' here, it's technically allowed in single line text 
+        # unless rules forbid it, but usually single line consumes everything until \n.
+        if char is not None:
+            return self.cm296()
+            
         return self._report_comment_error(
-            "Invalid Comment Start. Expected '(', newline, or text (except '~').", 
+            "Invalid Comment Start. Expected '(', newline, or text.", 
             ["(", "newline", "text"]
         )
 
     # =========================================================================
-    # STATE 296: Single-Line Final (Accepting)
+    # STATE 296: Single-Line Body Loop
     # =========================================================================
     def cm296(self):
-        self.advance() # Consume the newline (transition logic)
+        self.advance() # Consume previous char
+        
+        # Self-Loop: Consume everything until newline
+        while self.current_char is not None and self.current_char != '\n':
+            self.advance()
+            
+        # Transition: newline -> 297 (Accept)
+        if self.current_char == '\n':
+            return self.cm297()
+            
+        return self._report_comment_error(
+            "Unterminated Single-line Comment. Expected newline.", 
+            ["newline"]
+        )
+
+    # =========================================================================
+    # STATE 297: Single-Line Final (Accepting)
+    # =========================================================================
+    def cm297(self):
+        self.advance() # Consume the newline
         return Token(
             "single-comment", 
             self.current_token_text(), 
@@ -96,37 +108,14 @@ class CommentHandler:
         )
 
     # =========================================================================
-    # STATE 297: Single-Line Body Loop
-    # =========================================================================
-    def cm297(self):
-        self.advance() # Consume the char that brought us here
-        
-        # Self-Loop: ASCII except newline
-        while self.current_char is not None and self.current_char != '\n':
-            self.advance()
-            
-        # Transition: newline -> 296
-        if self.current_char == '\n':
-            return self.cm296()
-            
-        return self._report_comment_error(
-            "Unterminated Single-line Comment. Expected newline.", 
-            ["newline"]
-        )
-
-    # =========================================================================
-    # STATE 298: Multi-Line Start (After '~(')
+    # STATE 298: Multi-Line Start (After '~)(')
     # =========================================================================
     def cm298(self):
         self.advance() # Consume '('
         
         char = self.current_char
         
-        # Transition: ) -> 300 (Empty body case '~()~')
-        if char == ')':
-            return self.cm300()
-            
-        # Transition: ASCII except ) -> 299
+        # Check empty multi-line cases or straight to body
         if char is not None:
             return self.cm299()
             
@@ -139,9 +128,7 @@ class CommentHandler:
     # STATE 299: Multi-Line Body Loop
     # =========================================================================
     def cm299(self):
-        self.advance() # Consume previous char
-        
-        # Self-Loop: ASCII except )
+        # Loop until we see ')'
         while self.current_char is not None and self.current_char != ')':
             self.advance()
             
@@ -162,12 +149,12 @@ class CommentHandler:
         
         char = self.current_char
         
-        # Transition: ~ -> 301
+        # Transition: ~ -> 301 (Accept)
         if char == '~':
             return self.cm301()
             
-        # Transition: ASCII except ~ -> 299 (False alarm, go back to body)
-        # We found a ')', but it wasn't followed by '~', so it's just text.
+        # False alarm (e.g., "( text ) more text" )
+        # Go back to body loop
         if char is not None:
             return self.cm299()
             
@@ -177,25 +164,14 @@ class CommentHandler:
         )
 
     # =========================================================================
-    # STATE 301: Check Final Newline (After '...)~')
+    # STATE 301: Multi-Line Final (Accepting)
     # =========================================================================
     def cm301(self):
         self.advance() # Consume '~'
         
-        # Transition: newline -> 302
-        if self.current_char == '\n':
-            return self.cm302()
-            
-        return self._report_comment_error(
-            "Invalid Comment Termination. Expected newline after '~'.", 
-            ["newline"]
-        )
-
-    # =========================================================================
-    # STATE 302: Multi-Line Final (Accepting)
-    # =========================================================================
-    def cm302(self):
-        self.advance() # Consume newline
+        # CORRECTED: Do NOT require a newline here. 
+        # The comment is closed. We accept immediately.
+        
         return Token(
             "multi-comment", 
             self.current_token_text(), 

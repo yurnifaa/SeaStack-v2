@@ -402,10 +402,7 @@ class SymbolHandler:
     # =============================================
     def rs175(self):  
         self.advance()
-        # DIAGRAM UPDATE: 175->176 uses "whitespace, newline". 
-        # COLON_DELIM in delimiters.py includes UPLET, but diagram does not. 
-        # We must use TERM_DELIM (which is whitespace + newline) to match diagram.
-        if self._comp_delims(Delimiters._get_delimiters()["TERM_DELIM"]): return self.rs176()
+        if self._comp_delims(Delimiters._get_delimiters()["COLON_DELIM"]): return self.rs176()
 
         msg = "Invalid Character. Expected delimiter: \\n or whitespace"
         exp = ["newline", "whitespace"]
@@ -451,93 +448,78 @@ class SymbolHandler:
     def rs182(self): return Token(",", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
-    # [OTHERS] NEWLINE '\n'
-    # =============================================
-    def rs183(self):
-        self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["ASCII"]): return self.rs184()
-        
-        msg = "Invalid Character. Expected: any printable ASCII character"
-        self.errors.append(self._create_sym_error(msg, ["printable ASCII"]))
-
-    def rs184(self): return Token("newline", "\\n", self.line, self.col - 1)
-
-    # =============================================
     # [OTHERS] OPEN-CB '{'
     # =============================================
-    def rs185(self):  
+    def rs183(self):  
         self.advance()
-        # NOTE: Diagram 185->186 says "opencb_delim". 
-        # This key is MISSING in the provided delimiters.py.
-        # Fallback: using ALPHANUMERIC (as per previous logic).
-        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs186()
+        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs184()
 
         msg = "Invalid Character. Expected: lowercase letter or digit"
         self.errors.append(self._create_sym_error(msg, ["lowercase letter", "digit"]))
         
-    def rs186(self): return Token("{", self.current_token_text(), self.line, self.col - 1)
+    def rs184(self): return Token("{", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] CLOSED-CB '}'
     # =============================================
-    def rs187(self):  
+    def rs185(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["CLOSECB_DELIM"]): return self.rs188()
+        if self._comp_delims(Delimiters._get_delimiters()["CLOSECB_DELIM"]): return self.rs186()
 
         msg = "Invalid Character. Expected delimiter: , ) ] } or operator/whitespace"
         exp = [",", ")", "]", "}", "operator", "whitespace"]
         self.errors.append(self._create_sym_error(msg, exp))
         
-    def rs188(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
+    def rs186(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] OPEN-P '('
     # =============================================
-    def rs189(self):  
+    def rs187(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["OPENP_DELIM"]): return self.rs190()
+        if self._comp_delims(Delimiters._get_delimiters()["OPENP_DELIM"]): return self.rs188()
 
         msg = "Invalid Character. Expected: ( ) \" - or Reserved Word start (A B C D N P S)"
         exp = ["(", ")", '"', "-", "A", "B", "C", "D", "N", "P", "S"]
         self.errors.append(self._create_sym_error(msg, exp))
         
-    def rs190(self): return Token("(", self.current_token_text(), self.line, self.col - 1)
+    def rs188(self): return Token("(", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] CLOSED-P ')'
     # =============================================
-    def rs191(self):  
+    def rs189(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["CLOSEP_DELIM"]): return self.rs192()
+        if self._comp_delims(Delimiters._get_delimiters()["CLOSEP_DELIM"]): return self.rs190()
 
         msg = "Invalid Character. Expected delimiter: ) [ ] , or operator/whitespace"
         exp = [")", "[", "]", ",", "operator", "whitespace"]
         self.errors.append(self._create_sym_error(msg, exp))
     
-    def rs192(self): return Token(")", self.current_token_text(), self.line, self.col - 1)
+    def rs190(self): return Token(")", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] OPEN-SB '['
     # =============================================
-    def rs193(self):  
+    def rs191(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["OPENSB_DELIM"]): return self.rs194()
+        if self._comp_delims(Delimiters._get_delimiters()["OPENSB_DELIM"]): return self.rs192()
 
         msg = "Invalid Character. Expected: [ ' \" - or A N alphanumeric/whitespace"
         exp = ["[", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(msg, exp))
         
-    def rs194(self): return Token("[", self.current_token_text(), self.line, self.col - 1)
+    def rs192(self): return Token("[", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] CLOSED-SB ']'
     # =============================================
-    def rs195(self):  
+    def rs193(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["CLOSESB_DELIM"]): return self.rs196()
+        if self._comp_delims(Delimiters._get_delimiters()["CLOSESB_DELIM"]): return self.rs194()
 
         msg = "Invalid Character. Expected delimiter: , ) ] } or operator/whitespace"
         exp = [",", ")", "]", "}", "operator", "whitespace"]
         self.errors.append(self._create_sym_error(msg, exp))
         
-    def rs196(self): return Token("]", self.current_token_text(), self.line, self.col - 1)
+    def rs194(self): return Token("]", self.current_token_text(), self.line, self.col - 1)

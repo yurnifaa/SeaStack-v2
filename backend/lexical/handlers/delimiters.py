@@ -53,8 +53,8 @@ class Delimiters:
         OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set(['[', "'", '"', '-'])
         CLOSESB_DELIM = WHITESPACE | set("\n") | set(['A', 'B', 'C', 'D', 'E', 'H', 'L', 'S', ']', '!', '}'])
         
-        COLON_DELIM = WHITESPACE | set("\n") | UPLET
-        TERM_DELIM = WHITESPACE | set("\n") | set("]") 
+        COLON_DELIM = WHITESPACE | set("\n") | LOWLET | set(['A', 'C', 'E', 'H', 'L', '+', '-'])
+        TERM_DELIM = COLON_DELIM | set(['B', 'D', 'M', 'P', 'S', ']'])
 
         return {
             "LOWLET": LOWLET,
