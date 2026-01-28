@@ -519,7 +519,7 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["CLOSESB_DELIM"]): return self.rs194()
 
         msg = "Invalid Character. Expected delimiter: , ) ] } or operator/whitespace"
-        exp = [ "]", "}", "!", "A", "B", "C", "D", "E", "H", "L", "S", "newline", "lowercase letter", "whitespace"]
+        exp = [ "]", "}", "!", ",", "A", "B", "C", "D", "E", "H", "L", "S", "newline", "lowercase letter", "whitespace"]
         self.errors.append(self._create_sym_error(msg, exp))
         
     def rs194(self): return Token("]", self.current_token_text(), self.line, self.col - 1)
