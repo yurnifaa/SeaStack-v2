@@ -90,6 +90,11 @@ class SymbolHandler:
     # =============================================
     def rs126(self): 
         self.advance()
+
+        # Treat digits as a delimiter for the minus sign.
+        if self.current_char is not None and self.current_char.isdigit():
+            return self.rs127()
+        
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs127()
         if self.current_char == "#": return self.rs128()
         if self.current_char == "=": return self.rs130()

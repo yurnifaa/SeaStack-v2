@@ -56,8 +56,11 @@ class DigitHandler:
     # ENTRY POINT
     # =========================================================================
     def _make_digit(self):
-        # We are at State 0, receiving a digit. 
-        # CORRECTED: Transition to State 235 (1st Digit of COIN)
+        # If we see a '-', consume it and treat it as part of the number
+        if self.current_char == '-':
+            self.advance()
+        
+        # Transition to State 235 (1st Digit of COIN)
         return self.c235()
 
     # =========================================================================
@@ -66,19 +69,14 @@ class DigitHandler:
     
     # --- Digit 1 (State 235) ---
     def c235(self):
-        # FIXED: Leading Zero Logic
-        # If '0' is followed by another digit, consume it (strip leading zero)
-        # If '0' is the only digit (followed by space/delimiter), keep it.
+        # Leading Zero Logic
         if self.current_char == '0':
             peek_char = self.text[self.pos + 1] if self.pos + 1 < len(self.text) else None
             
             if peek_char and peek_char.isdigit():
                 self.advance()              # Consume the '0'
-                self.token_start_pos += 1   # Reset start to ignore the '0'
-                return self.c235()          # Recurse (Start over with next digit)
-            
-        # Standard processing
-        self.advance() 
+                return self.c235()          # Recurse           
+        self.advance()
 
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c236()
         if self.current_char == ".": return self.d267() # Transition to DIME (State 267)

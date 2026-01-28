@@ -149,7 +149,14 @@ class Lexer(
         
         # --- Symbols / Operators (Transition Section VI) ---
         if char == "+": return self.rs120() # State 120 is '+'
-        if char == "-": return self.rs126() # State 126 is '-'
+        # Check for Negative Number vs Subtraction ---
+        if char == "-": 
+            # Lookahead: If the NEXT char is a digit, it's a negative number
+            if self.peek() is not None and self.peek().isdigit():
+                self.mark_token_start()
+                return self._make_digit() 
+            # Otherwise, it's a subtraction symbol
+            return self.rs126()
         if char == "*": return self.rs132() # State 132 is '*'
         if char == "/": return self.rs136() # State 136 is '/'
         if char == "%": return self.rs140() # State 140 is '%'
