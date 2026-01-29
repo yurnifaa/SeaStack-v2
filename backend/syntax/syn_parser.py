@@ -127,9 +127,9 @@ class Parser:
             
             # FIX: Check if the next token actually starts a statement.
             # If it is ']', skip self.statements() entirely.
-            stmnt_tokens = ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"]
-            if self.current_token and self.current_token.type in stmnt_tokens:
-                self.statements()
+            # stmnt_tokens = ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"]
+            # if self.current_token and self.current_token.type in stmnt_tokens:
+            self.statements()
             
             self.eat("]")
         else:
@@ -1468,6 +1468,7 @@ class Parser:
             self.eat("HEAVE")
             self.eat("(")
             self.cond_exp()
+            self.eat(")")
             self.eat("!!")
         else:
             self.error_invalid_token("<haul-stmnt>")

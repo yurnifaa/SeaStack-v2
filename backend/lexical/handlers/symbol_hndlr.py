@@ -67,10 +67,10 @@ class SymbolHandler:
     # --- INC '+#' ---
     def rs122(self):  
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs123()
+        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs123()
         
-        msg = "Invalid Character. Expected: lowercase letter (a-z) or digit"
-        self.errors.append(self._create_sym_error(msg, ["alphanumeric"]))
+        msg = "Invalid Character. Expected: lowercase letter (a-z)"
+        self.errors.append(self._create_sym_error(msg, ["lowlet"]))
         
     def rs123(self): return Token("+#", self.current_token_text(), self.line, self.col - 1)
     
@@ -95,9 +95,10 @@ class SymbolHandler:
         if self.current_char is not None and self.current_char.isdigit():
             return self.rs127()
         
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs127()
+        if self._comp_delims(Delimiters._get_delimiters()["MINUS_DELIM"]): return self.rs127()
         if self.current_char == "#": return self.rs128()
         if self.current_char == "=": return self.rs130()
+        if self.current_char == self.current_char.isdigit(): return self.c235()
 
         msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
@@ -108,11 +109,10 @@ class SymbolHandler:
     # --- DEC '-#' ---
     def rs128(self): 
         self.advance()
-        # DIAGRAM UPDATE: Diagram 128->129 requires 'alphanumeric', not just 'lowlet'
-        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs129()
+        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs129()
         
-        msg = "Invalid Character. Expected: alphanumeric"
-        self.errors.append(self._create_sym_error(msg, ["alphanumeric"]))
+        msg = "Invalid Character. Expected: lowlet"
+        self.errors.append(self._create_sym_error(msg, ["lowlet"]))
         
     def rs129(self): return Token("-#", self.current_token_text(), self.line, self.col - 1)
     
@@ -485,7 +485,7 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["OPENP_DELIM"]): return self.rs188()
 
         msg = "Invalid Character. Expected: ( ) \" - or Reserved Word start (A B C D N P S)"
-        exp = ["(", ")", '"', "-", "A", "B", "C", "D", "N", "P", "S"]
+        exp = ["(", ")", "!", '"', "-", "A", "B", "C", "D", "N", "P", "S"]
         self.errors.append(self._create_sym_error(msg, exp))
         
     def rs188(self): return Token("(", self.current_token_text(), self.line, self.col - 1)

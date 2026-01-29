@@ -106,7 +106,7 @@ FOLLOW = {
     "<look-stmnt>": ["]", "BACK", "id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", "LAND", "SAIL", "COURSE", "ADRIFT"],
     "<cond-exp>": [")", "!!"],
     "<jump-stmnt>": ["COURSE", "ADRIFT", "]"],
-    "<look-tail>": ["]", "BACK", "id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", "LAND", "SAIL", "COURSE", "ADRIFT"],
+    "<look-tail>": ["]", "BACK", "id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"],
     "<chart-stmnt>": ["]", "BACK", "id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", "LAND", "SAIL", "COURSE", "ADRIFT"],
     "<chart-cond>": [")"],
     "<const>": [":", ")"],

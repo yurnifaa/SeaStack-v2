@@ -214,7 +214,7 @@ PREDICT = {
         "||": 116, "&&": 117
     },
     "<log-ope>": {
-        "id": 118, "COIN-lit": 118, "DIME-lit": 118, "(": 118, "PARCH-lit": 120, "SCROLL-lit": 120,
+        "id": 118, "COIN-lit": 119, "DIME-lit": 119, "(": 118, "PARCH-lit": 120, "SCROLL-lit": 121,
         "AYE": 122, "NAY": 122,
         "!": 123, "!#": 123 # UPDATED: New Production 123
     },
@@ -323,7 +323,7 @@ PREDICT = {
     },
     "<stmnt-tail>": {
         "id": 179, "ASK": 179, "ECHO": 179, "LOOK": 179, "CHART": 179, "HOIST": 179, "HEAVE": 179, "HAUL": 179, "+#": 179, "-#": 179, # SHIFTED 178 -> 179
-        "]": 180, "BACK": 180, "LAND": 180, "SAIL": 180, "COURSE": 180, "ADRIFT": 180 # Lambda # SHIFTED 179 -> 180
+        "]": 180, "BACK": 180 # Lambda # SHIFTED 179 -> 180
     },
     "<assign-stmnt>": {
         "id": 181 # SHIFTED 180 -> 181
@@ -383,7 +383,7 @@ PREDICT = {
     "<look-tail>": {
         "DROPLOOK": 211, # SHIFTED 210 -> 211
         "DROP": 212, # SHIFTED 211 -> 212
-        "id": 213, "ASK": 213, "ECHO": 213, "LOOK": 213, "CHART": 213, "HOIST": 213, "HEAVE": 213, "HAUL": 213, "+#": 213, "-#": 213, "]": 213, "BACK": 213, "LAND": 213, "SAIL": 213, "COURSE": 213, "ADRIFT": 213 # Lambda # SHIFTED 212 -> 213
+        "id": 213, "ASK": 213, "ECHO": 213, "LOOK": 213, "CHART": 213, "HOIST": 213, "HEAVE": 213, "HAUL": 213, "+#": 213, "-#": 213, "]": 213, "BACK": 213 # Lambda # SHIFTED 212 -> 213
     },
     "<chart-stmnt>": {
         "CHART": 214 # SHIFTED 213 -> 214

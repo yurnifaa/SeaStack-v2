@@ -29,6 +29,7 @@ class ErrorHandler:
             "Expected: {expected}" # e.g., ']' or more statements
         ),
         "MISSING_START": "Line {line}, Col {col} | Missing Start. Source code is empty.",
+        
         "EXPECTED_EOF": (
             "Line {line}, Col {col} | Unexpected token: '{found}' after AHOY.\n"
             "'{source_line}'\n"
@@ -85,7 +86,7 @@ class ErrorHandler:
     # ==========================================
     def get_missing_start_error(self):
         msg = self.ERROR_TEMPLATES["MISSING_START"].format(line=1, col=1)
-        return self._create_error("Missing Start. Source code is empty.", msg, 1, 1)
+        return self._create_error("Source code is empty.", msg, 1, 1)
 
     # ==========================================
     # Case 4: Program cannot begin with <token>

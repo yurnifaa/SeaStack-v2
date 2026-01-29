@@ -47,7 +47,7 @@ class Delimiters:
         CONCAT_DELIM = WHITESPACE | LOWLET | set('"(')
         
         CLOSECB_DELIM = WHITESPACE | GEN_OP | set("]){&")
-        OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', "'", '-'])
+        OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', "'", '-', '!'])
         CLOSEP_DELIM = WHITESPACE | GEN_OP | set(")[],")
 
         OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set(['(', '[', '!', "'", '"', '-'])
@@ -55,6 +55,8 @@ class Delimiters:
         
         COLON_DELIM = WHITESPACE | set("\n") | LOWLET | set(['A', 'C', 'E', 'H', 'L', '+', '-'])
         TERM_DELIM = COLON_DELIM | set(['B', 'D', 'M', 'P', 'S', ']'])
+
+        MINUS_DELIM = WHITESPACE | LOWLET | set("-(")
 
         return {
             "LOWLET": LOWLET,
@@ -85,4 +87,5 @@ class Delimiters:
             "COLON_DELIM": COLON_DELIM,
             "CONCAT_DELIM": CONCAT_DELIM,
             "TERM_DELIM": TERM_DELIM,
+            "MINUS_DELIM": MINUS_DELIM
         }
