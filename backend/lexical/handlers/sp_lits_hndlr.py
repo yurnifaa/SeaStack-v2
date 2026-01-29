@@ -38,28 +38,28 @@ class LiteralHandler:
         if self.current_char == "'":
             self.advance()
             return self.p285()
-        return None # Should not happen if called correctly from Lexer
+        return None 
 
     # State 285: The Content (Char or Backslash)
     def p285(self):
-        # 1. Check Empty ('')
+        # Check Empty ('')
         if self.current_char == "'":
             return self._error_token(
                 "Invalid PARCH Literal. Expected: character or escape sequence.", 
-                ["ASCII"], 
+                ["ASCII Characters (Except \, ', and newline)"], 
                 "''"
             ) 
         
-        # 2. Check Newline (Illegal)
+        # Check Newline
         if self.current_char == '\n':
             return self._error_token("Invalid PARCH Literal. Newline not allowed.", ["ASCII"], "'")
 
-        # 3. Check Escape Sequence Start
+        # Check Escape Sequence Start
         if self.current_char == '\\':
             self.advance()
             return self.p286() # Go to Escape Handler
 
-        # 4. Standard Character
+        # Standard Character
         if self.current_char is not None:
             self.advance() 
             return self.p287() # Go to Closing Quote Check
@@ -67,15 +67,20 @@ class LiteralHandler:
         # EOF
         return self._error_token("Invalid PARCH Literal. Unexpected EOF.", ["'"], "'")
 
-    # State 286: PARCH Escape Sequence (n, t, d, \, ')
+    # State 286: PARCH Escape Sequence (s, n, t, 0, \)
     def p286(self):
-        if self.current_char in ['n', 't', 'd', '\\', "'"]:
+        # Strict allowed list: s, n, t, 0, \
+        valid_escapes = ['s', 'n', 't', '0', '\\']
+        
+        if self.current_char in valid_escapes:
             self.advance()
             return self.p287() # Go to Closing Quote Check
         
+        # Error 1: Invalid Escape
+        # We fail immediately so the handler stops. 
         return self._error_token(
-            f"Invalid PARCH Escape Sequence \\{self.current_char}. Expected: n, t, d, \\, or '", 
-            ["n", "t", "d", "\\", "'"], 
+            f"Invalid Character '\\{self.current_char if self.current_char else ''}'", 
+            valid_escapes, 
             self.current_token_text()
         )
 
@@ -85,7 +90,7 @@ class LiteralHandler:
             self.advance()
             return self.p288() # Go to Delimiter Check
         
-        # If we have chars but no closing quote (e.g., 'ab')
+        # If we have chars but no closing quote
         return self._error_token(
             "Invalid PARCH Literal. Expected closing quote '.", 
             ["'"], 
@@ -94,11 +99,9 @@ class LiteralHandler:
     
     # State 288: Delimiter Check & Accept
     def p288(self):
-        # Check valid delimiter using PARCH_DELIM
         if self._comp_delims(self._get_parch_delims()):
             return [Token("PARCH-lit", self.current_token_text(), self.line, self.col - 1)]
         
-        # Error: Invalid Delimiter
         err_token = Token(
             "ERROR", 
             self.current_token_text(), 
@@ -125,17 +128,25 @@ class LiteralHandler:
     def s290(self, current_text, start_line, start_col):
         while self.current_char is not None:
             
-            # 1. Closing Quote -> Transition to End
+            # Closing Quote -> Transition to End
             if self.current_char == '"':
+                # Check for Empty SCROLL Literal ("")
+                if current_text == '"':
+                    return self._error_token(
+                        "Invalid SCROLL Literal. Empty string not allowed.", 
+                        ['ASCII Characters (Except \, ", and newline)'], 
+                        '""'
+                    )
+
                 self.advance()
                 return self.s292(current_text + '"', start_line, start_col)
             
-            # 2. Escape Sequence Start -> Transition to s291
+            # Escape Sequence Start -> Transition to s291
             if self.current_char == '\\':
                 self.advance()
                 return self.s291(current_text + '\\', start_line, start_col)
 
-            # 3. Newline -> Error
+            # Newline -> Error
             if self.current_char == '\n':
                 return self._error_token(
                     "Invalid SCROLL literal. Newline not allowed.", 
@@ -143,38 +154,41 @@ class LiteralHandler:
                     current_text
                 )
 
-            # 4. Valid Body Character
+            # Valid Body Character
             if self._comp_delims(self._get_scroll_body_allowed()):
                 current_text += self.current_char
                 self.advance()
                 continue
             
-            # 5. Invalid Character (Unprintable or disallowed)
+            # Invalid Character (Unprintable or disallowed)
             self.advance()
             return self._error_token(
                 "Invalid Character inside SCROLL.", 
-                ["printable ASCII"], 
+                [], 
                 current_text
             )
 
         # EOF
         return self._error_token(
             "Invalid SCROLL literal. Expected closing quote \".", 
-            ['"'], 
+            ['ASCII Characters (Except \, ", and newline)'], 
             current_text
         )
 
-    # State 291: SCROLL Escape Sequence (n, t, d, ", \)
+    # State 291: SCROLL Escape Sequence (d, n, t, 0, \)
     def s291(self, current_text, start_line, start_col):
-        if self.current_char in ['n', 't', 'd', '"', '\\']:
+        # Strict allowed list: d, n, t, 0, \
+        valid_escapes = ['d', 'n', 't', '0', '\\']
+
+        if self.current_char in valid_escapes:
             char = self.current_char
             self.advance()
             # Return to Body Loop (s290)
             return self.s290(current_text + char, start_line, start_col)
 
         return self._error_token(
-            f"Invalid SCROLL Escape Sequence \\{self.current_char}. Expected: n, t, d, \", or \\", 
-            ["n", "t", "d", '"', "\\"], 
+            f"Invalid Character '\\{self.current_char if self.current_char else ''}'", 
+            valid_escapes, 
             current_text
         )
 
@@ -183,7 +197,6 @@ class LiteralHandler:
         if self._comp_delims(self._get_scroll_delims()):
             return self.s293(current_text, start_line, start_col)
         
-        # Error: Invalid Delimiter
         err_token = Token(
             "ERROR", 
             current_text, 
