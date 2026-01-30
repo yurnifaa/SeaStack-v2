@@ -35,13 +35,12 @@ class SymbolHandler:
     # =========================================================================
     # HELPER: Create Error with Expected List
     # =========================================================================
-    def _create_sym_error(self, message, expected_list):
+    def _create_sym_error(self, expected_list):
         err_token = Token(
             "ERROR",
             self.current_token_text(),
             self.line,
             self.col - 1,
-            message
         )
         
         # --- SANITIZE BEFORE ATTACHING ---
@@ -58,9 +57,9 @@ class SymbolHandler:
         if self.current_char == "#": return self.rs122()
         if self.current_char == "=": return self.rs124()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
 
     def rs121(self): return Token("+", self.current_token_text(), self.line, self.col - 1)
 
@@ -69,8 +68,8 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs123()
         
-        msg = "Invalid Character. Expected: lowercase letter (a-z)"
-        self.errors.append(self._create_sym_error(msg, ["lowlet"]))
+        # DELIMITERS
+        self.errors.append(self._create_sym_error(["lowlet"]))
         
     def rs123(self): return Token("+#", self.current_token_text(), self.line, self.col - 1)
     
@@ -79,9 +78,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs125()
         
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
 
     def rs125(self): return Token("+=", self.current_token_text(), self.line, self.col - 1)
     
@@ -100,9 +99,9 @@ class SymbolHandler:
         if self.current_char == "=": return self.rs130()
         if self.current_char == self.current_char.isdigit(): return self.c235()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
 
     def rs127(self): return Token("-", self.current_token_text(), self.line, self.col - 1)
 
@@ -111,8 +110,8 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs129()
         
-        msg = "Invalid Character. Expected: lowlet"
-        self.errors.append(self._create_sym_error(msg, ["lowlet"]))
+        # DELIMITERS
+        self.errors.append(self._create_sym_error(["lowlet"]))
         
     def rs129(self): return Token("-#", self.current_token_text(), self.line, self.col - 1)
     
@@ -121,9 +120,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs131()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
         
     def rs131(self): return Token("-=", self.current_token_text(), self.line, self.col - 1)
     
@@ -134,10 +133,10 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs133()
         if self.current_char == "=": return self.rs134()
-
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
 
     def rs133(self): return Token("*", self.current_token_text(), self.line, self.col - 1)
 
@@ -146,9 +145,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs135()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
 
     def rs135(self): return Token("*=", self.current_token_text(), self.line, self.col - 1)
 
@@ -160,9 +159,9 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs137()
         if self.current_char == "=": return self.rs138()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
         
     def rs137(self): return Token("/", self.current_token_text(), self.line, self.col - 1)
 
@@ -171,9 +170,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs139()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
         
     def rs139(self): return Token("/=", self.current_token_text(), self.line, self.col - 1)
 
@@ -182,12 +181,12 @@ class SymbolHandler:
     # =============================================
     def rs140(self): 
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["MOD_DELIM"]): return self.rs141()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs141()
         if self.current_char == "=": return self.rs142()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace or B C D P S"
-        exp = ["#", "=", "(", "-", "alphanumeric", "whitespace", "B", "C", "D", "P", "S"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs141(self): return Token("%", self.current_token_text(), self.line, self.col - 1)
 
@@ -196,9 +195,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs143()
         
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
 
     def rs143(self): return Token("%=", self.current_token_text(), self.line, self.col - 1)
 
@@ -210,9 +209,9 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs145()
         if self.current_char == "=": return self.rs146()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
         
     def rs145(self): return Token("^", self.current_token_text(), self.line, self.col - 1)
 
@@ -221,9 +220,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs147()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
+        # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
 
     def rs147(self): return Token("^=", self.current_token_text(), self.line, self.col - 1)
 
@@ -235,9 +234,9 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["ASSIGN_DELIM"]): return self.rs149()
         if self.current_char == "=": return self.rs150()
 
-        msg = "Invalid Character. Expected = or delimiter: [ ' \" ( - A N or alphanumeric/whitespace"
-        exp = ["=", "[", "'", '"', "(", "-", "A", "N", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["=", "[", "(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
 
     def rs149(self): return Token("=", self.current_token_text(), self.line, self.col - 1)
 
@@ -246,9 +245,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs151()
         
-        msg = "Invalid Character. Expected delimiter: [ ' \" ( - A N or alphanumeric/whitespace"
-        exp = ["[", "'", '"', "(", "-", "A", "N", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["[", "(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
 
     def rs151(self): return Token("==", self.current_token_text(), self.line, self.col - 1)
 
@@ -262,23 +261,21 @@ class SymbolHandler:
         if self.current_char == "#": return self.rs156()
         if self.current_char == "=": return self.rs158()
 
-        msg = "Invalid Character. Expected: ! # = ( a-z or A N"
-        exp = ["!", "#", "=", "(", "lowercase letter", "A", "N"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["!", "#", "=", "(", "A", "N", "lowercase letter"]
+        self.errors.append(self._create_sym_error(exp))
 
     def rs153(self): return Token("!", self.current_token_text(), self.line, self.col - 1)
 
     # --- STMT TERM '!!' ---
     def rs154(self):  
         self.advance()
-        # DIAGRAM UPDATE: 154->155 accepts "whitespace, newline, ]"
-        # TERM_DELIM is whitespace + newline. We combine it with ']'
-        valid_delims = Delimiters._get_delimiters()["TERM_DELIM"] | set("]")
+        valid_delims = Delimiters._get_delimiters()["TERMINATOR_DELIM"] | set("]")
         
         if self._comp_delims(valid_delims): return self.rs155()
         
-        msg = "Invalid Character. Expected delimiter: \\n, whitespace, or ]"
-        self.errors.append(self._create_sym_error(msg, ["newline", "whitespace", "]"]))
+        # DELIMITERS
+        self.errors.append(self._create_sym_error(["]", "+", "-", "A", "C", "E", "H", "L", "B", "D", "M", "P", "S", "lowlet", "whitespace"]))
         
     def rs155(self): return Token("!!", self.current_token_text(), self.line, self.col - 1)
     
@@ -287,9 +284,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]): return self.rs157()
         
-        msg = "Invalid Character. Expected: ! # = ( a-z or A N"
-        exp = ["!", "#", "=", "(", "lowercase letter", "A", "N"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["(", "A", "N", "lowercase letter"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs157(self): return Token("!#", self.current_token_text(), self.line, self.col - 1)
     
@@ -298,9 +295,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs159()
         
-        msg = "Invalid Character. Expected delimiter: [ ' \" ( - A N or alphanumeric/whitespace"
-        exp = ["[", "'", '"', "(", "-", "A", "N", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["[", "(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs159(self): return Token("!=", self.current_token_text(), self.line, self.col - 1)
     
@@ -312,9 +309,9 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs161()
         if self.current_char == "=": return self.rs162()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
-        exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["=", "(", "-", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs161(self): return Token("<", self.current_token_text(), self.line, self.col - 1)
 
@@ -323,9 +320,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs163()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
-        exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["(", "-", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs163(self): return Token("<=", self.current_token_text(), self.line, self.col - 1)
 
@@ -337,9 +334,9 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs165()
         if self.current_char == "=": return self.rs166()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
-        exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["=", "(", "-", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs165(self): return Token(">", self.current_token_text(), self.line, self.col - 1)
 
@@ -348,9 +345,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs167()
 
-        msg = "Invalid Character. Expected symbol or delimiter: # = ( - or alphanumeric/whitespace"
-        exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["(", "-", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
     
     def rs167(self): return Token(">=", self.current_token_text(), self.line, self.col - 1)
 
@@ -362,21 +359,20 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["CONCAT_DELIM"]): return self.rs169()
         if self.current_char == "&": return self.rs170()
 
-        msg = "Invalid Character. Expected & or delimiter: ' ( a-z or whitespace"
-        exp = ["&", "'", "(", "lowercase letter", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["&", "'", "(", "lowlet", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
 
     def rs169(self): return Token("&", self.current_token_text(), self.line, self.col - 1)
 
     # --- AND '&&' ---
     def rs170(self):  
         self.advance()
-        # DIAGRAM UPDATE: 170->171 uses "gen_op_delim"
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs171()
 
-        msg = "Invalid Character. Expected delimiter: whitespace, alphanumeric, -, ("
-        exp = ["whitespace", "alphanumeric", "-", "("]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["(", "-", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
     
     def rs171(self): return Token("&&", self.current_token_text(), self.line, self.col - 1)
 
@@ -384,21 +380,17 @@ class SymbolHandler:
     # [REL-LOG] OR '||': ||
     # =============================================
     def rs172(self): 
-        # State 172: Expects the second '|'
         self.advance()
         if self.current_char == "|": return self.rs173()
-
-        msg = "Invalid Character. Expected second pipe: |"
-        self.errors.append(self._create_sym_error(msg, ["|"]))
+        self.errors.append(self._create_sym_error(["|"]))
     
     def rs173(self): 
-        # State 173: Delimiter Check
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs174()
 
-        msg = "Invalid Character. Expected delimiter: [ ' \" ( - A N or alphanumeric/whitespace"
-        exp = ["[", "'", '"', "(", "-", "A", "N", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
     
     def rs174(self): return Token("||", self.current_token_text(), self.line, self.col - 1)
 
@@ -409,9 +401,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["COLON_DELIM"]): return self.rs176()
 
-        msg = "Invalid Character. Expected delimiter: \\n or whitespace"
-        exp = ["newline", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["+", "-", "A", "C", "E", "H", "L", "lowlet", "newline", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
     
     def rs176(self): return Token(":", self.current_token_text(), self.line, self.col - 1)
 
@@ -422,8 +414,8 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs178()
 
-        msg = "Invalid Character. Expected: lowercase letter (a-z)"
-        self.errors.append(self._create_sym_error(msg, ["lowercase letter"]))
+        # DELIMITERS
+        self.errors.append(self._create_sym_error(["lowercase letter"]))
         
     def rs178(self): return Token("@", self.current_token_text(), self.line, self.col - 1)
 
@@ -434,8 +426,8 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs180()
 
-        msg = "Invalid Character. Expected: lowercase letter (a-z)"
-        self.errors.append(self._create_sym_error(msg, ["lowercase letter"]))
+        # DELIMITERS
+        self.errors.append(self._create_sym_error(["lowercase letter"]))
         
     def rs180(self): return Token("$", self.current_token_text(), self.line, self.col - 1)
 
@@ -446,9 +438,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["COMMA_DELIM"]): return self.rs182()
 
-        msg = "Invalid Character. Expected: [ ( ' \" alphanumeric or whitespace"
-        exp = ["[", "(", "'", '"', "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["(", "@", '-', "'", '"', "A", "N", "alphanumeric", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs182(self): return Token(",", self.current_token_text(), self.line, self.col - 1)
 
@@ -459,8 +451,8 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs184()
 
-        msg = "Invalid Character. Expected: lowercase letter or digit"
-        self.errors.append(self._create_sym_error(msg, ["lowercase letter", "digit"]))
+        # DELIMITERS
+        self.errors.append(self._create_sym_error(["alphanumeric"]))
         
     def rs184(self): return Token("{", self.current_token_text(), self.line, self.col - 1)
 
@@ -471,9 +463,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["CLOSECB_DELIM"]): return self.rs186()
 
-        msg = "Invalid Character. Expected delimiter: , ) ] } or operator/whitespace"
-        exp = [",", ")", "]", "}", "operator", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["+", "-", "*", "/", "%", "^", "<", ">", "=", "!", "&", "|", "]", ")", "{", "&", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs186(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
 
@@ -484,9 +476,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["OPENP_DELIM"]): return self.rs188()
 
-        msg = "Invalid Character. Expected: ( ) \" - or Reserved Word start (A B C D N P S)"
-        exp = ["(", ")", "!", '"', "-", "A", "B", "C", "D", "N", "P", "S"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["(", ")", "!", '"', "-", "A", "B", "C", "D", "N", "P", "S", "alphanumeric"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs188(self): return Token("(", self.current_token_text(), self.line, self.col - 1)
 
@@ -497,9 +489,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["CLOSEP_DELIM"]): return self.rs190()
 
-        msg = "Invalid Character. Expected delimiter: ) [ ] , or operator/whitespace"
-        exp = [")", "[", "]", ",", "operator", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = ["+", "-", "*", "/", "%", "^", "<", ">", "=", "!", "&", "|", ")", "[", "]", ",", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
     
     def rs190(self): return Token(")", self.current_token_text(), self.line, self.col - 1)
 
@@ -510,9 +502,9 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["OPENSB_DELIM"]): return self.rs192()
 
-        msg = "Invalid Character. Expected: [ ' \" - or A N alphanumeric/whitespace"
+        # DELIMITERS
         exp = ['(', '[', '!', "'", '"', '-', "A", "B", 'C', "D", "E", "H", "L", "M", 'N', "P", "S", "alphanumeric", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        self.errors.append(self._create_sym_error(exp))
         
     def rs192(self): return Token("[", self.current_token_text(), self.line, self.col - 1)
 
@@ -523,8 +515,8 @@ class SymbolHandler:
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["CLOSESB_DELIM"]): return self.rs194()
 
-        msg = "Invalid Character. Expected delimiter: , ) ] } or operator/whitespace"
-        exp = [ "]", "}", "!", ",", "A", "B", "C", "D", "E", "H", "L", "S", "newline", "lowercase letter", "whitespace"]
-        self.errors.append(self._create_sym_error(msg, exp))
+        # DELIMITERS
+        exp = [ "]", "}", "!", ",", "A", "B", "C", "D", "E", "H", "L", "S", "lowlet", "whitespace"]
+        self.errors.append(self._create_sym_error(exp))
         
     def rs194(self): return Token("]", self.current_token_text(), self.line, self.col - 1)

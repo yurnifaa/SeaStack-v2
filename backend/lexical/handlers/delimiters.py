@@ -54,7 +54,7 @@ class Delimiters:
         CLOSESB_DELIM = WHITESPACE | set("\n") | set(['A', 'B', 'C', 'D', 'E', 'H', 'L', 'S', ']', '!', '}', ','])
         
         COLON_DELIM = WHITESPACE | set("\n") | LOWLET | set(['A', 'C', 'E', 'H', 'L', '+', '-'])
-        TERM_DELIM = COLON_DELIM | set(['B', 'D', 'M', 'P', 'S', ']'])
+        TERMINATOR_DELIM = COLON_DELIM | set(['B', 'D', 'M', 'P', 'S', ']'])
 
         MINUS_DELIM = WHITESPACE | LOWLET | set("-(")
 
@@ -86,6 +86,6 @@ class Delimiters:
             "CLOSESB_DELIM": CLOSESB_DELIM,
             "COLON_DELIM": COLON_DELIM,
             "CONCAT_DELIM": CONCAT_DELIM,
-            "TERM_DELIM": TERM_DELIM,
+            "TERMINATOR_DELIM": TERMINATOR_DELIM,
             "MINUS_DELIM": MINUS_DELIM
         }
