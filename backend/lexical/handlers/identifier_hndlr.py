@@ -9,7 +9,7 @@ from backend.lexical.handlers.delimiters import Delimiters
 
 class IdentifierHandler: 
     
-    # --- HELPER: STRICT Validation (Lowercase, Digit, Underscore) ---
+    # --- HELPER: STRICT Validation ---
     def _is_valid_id_char(self):
         char = self.current_char
         # RULE: Lowercase, Digit, or Underscore ONLY. No Uppercase.
@@ -29,11 +29,9 @@ class IdentifierHandler:
             else:
                 cleaned_list.append(d)
         
-        # Add the label if any whitespace was found
         if has_whitespace:
             cleaned_list.append("whitespace")
             
-        # Sort for consistency
         cleaned_list.sort(key=str)
         return cleaned_list
 
@@ -230,7 +228,7 @@ class IdentifierHandler:
             self.advance()
             if self._is_valid_id_char():
                 
-                # OPTIONAL: You might want to consume the rest of the invalid word 
+                # OPTIONAL: IF we wanna consume the rest of the invalid word 
                 # so the lexer doesn't try to tokenize the tail as a new ID.
                 # while self._is_valid_id_char():
                 #     self.advance()
@@ -252,15 +250,8 @@ class IdentifierHandler:
         result = self.current_token_text()
         line, col = self.line, self.col
 
-        # CHECK 1: Delimiter Validation
-        # Per Regular Definition, id_delim includes:
-        # whitespace, gen_op, (, ), }, {, }, $, ,
+        # Delimiter Validation
         if self._comp_delims(Delimiters._get_delimiters()["ID_DELIM"]):
-            
-            # Lookup/assign an ID number if it's new
-            # Note: SeaStack reserved words must not be used as identifiers [cite: 2390]
-            # Ensure your Lexer checks reserved words BEFORE entering this handler
-            # or checks against a reserved word list here.
             
             if result not in self.identifier_table:
                 self.identifier_table[result] = f"id{len(self.identifier_table) + 1}"
@@ -269,8 +260,6 @@ class IdentifierHandler:
             return Token(token_type, result, line, col - 1) 
             
         else:
-            # CHECK 2: Invalid Delimiter Error
-            # This handles cases where the identifier ends with an illegal character 
-            # (e.g., '@' or '#') that is not a valid delimiter.
-            self.errors.append(self._create_id_error(f"Invalid Identifier. Unexpected character '{self.current_char}'."))
+            # Invalid Delimiter Error
+            self.errors.append(self._create_id_error(f"Invalid Identifier. '{self.current_char}'."))
             return None
