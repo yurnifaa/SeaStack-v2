@@ -109,7 +109,7 @@ class LiteralHandler:
             self.col - 1, 
             "Invalid PARCH Literal. Expected delimiter."
         )
-        err_token.expected = ["whitespace", "]", ":", "&", "|", "!", "=", ","]
+        err_token.expected = ["]", ":", "&", "|", "!", "=", ",", "whitespace"]
         self.errors.append(err_token)
         return []
 
@@ -204,7 +204,7 @@ class LiteralHandler:
             start_col, 
             "Invalid SCROLL literal. Expected delimiter."
         )
-        err_token.expected = ["whitespace", ")", "]", "&", "!", "=", ",", "|", "{"]
+        err_token.expected = [")", "]", "{", "&", "!", "=", ",", "|", "whitespace"]
         self.errors.append(err_token)
         return []
 

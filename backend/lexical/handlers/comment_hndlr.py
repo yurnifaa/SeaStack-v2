@@ -121,7 +121,7 @@ class CommentHandler:
             
         return self._report_comment_error(
             "Invalid Multi-line Comment. Unexpected end of file.", 
-            ["text", ")"]
+            ["ASCII Character (Except newline and ~)", ")"]
         )
 
     # =========================================================================
@@ -168,10 +168,7 @@ class CommentHandler:
     # =========================================================================
     def cm301(self):
         self.advance() # Consume '~'
-        
-        # CORRECTED: Do NOT require a newline here. 
-        # The comment is closed. We accept immediately.
-        
+
         return Token(
             "multi-comment", 
             self.current_token_text(), 

@@ -134,7 +134,7 @@ class Lexer(
             self.errors.append(err_token)
 
     # ============================================================================================================
-    # 3. Transition Diagram State 0 
+    # Transition Diagram State 0 
     # ============================================================================================================
     def state0(self):
         if self.current_char is None:
@@ -147,7 +147,7 @@ class Lexer(
         if char.isupper():
             return self._make_keyword()
         
-        # --- Symbols / Operators (Transition Section VI) ---
+        # --- Symbols / Operators ---
         if char == "+": return self.rs120() # State 120 is '+'
         # Check for Negative Number vs Subtraction ---
         if char == "-": 
@@ -189,20 +189,20 @@ class Lexer(
         # --- Identifiers (Start at State 195) ---
         if char.islower():
             self.advance() 
-            return self.id195() # Transition to Identifier handler 
+            return self.id195()
 
         # --- Digits (Start at State 235) ---
         if char.isdigit():
             self.mark_token_start()
-            return self.c235() # Corrected: Digit start is State 235 
+            return self.c235()
 
         # --- Literals (Start at State 284) ---
-        if char == "'": return self.p284() # Corrected: State 284 is PARCH 
-        if char == '"': return self.s289() # Corrected: State 289 is SCROLL 
+        if char == "'": return self.p284() # State 284 is PARCH 
+        if char == '"': return self.s289() # State 289 is SCROLL 
 
         # --- Comments (Start at State 293) ---
         if char == "~":
-            return self.cm294() # State 293 is Comment [cite: 3897]
+            return self.cm294()
 
         # --- Whitespace ---
         if char.isspace():
@@ -220,7 +220,7 @@ class Lexer(
         return None
 
     # ============================================================================================
-    # 1. PUBLIC MAIN METHOD
+    # PUBLIC MAIN METHOD
     # ============================================================================================
     def tokenize(self):                 
         while self.current_char is not None: 
