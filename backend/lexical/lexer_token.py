@@ -16,9 +16,3 @@ class Token:
 
     def __repr__(self):         # yung official string representation. Finoformat yung token for readability
         return f"Token({self.type}, '{self.value}', L{self.line}:C{self.col})" # e.g. type="IDENTIFIER", value="total", line=1, col=1
-    
-# LOCKE COIN MAX = 100!!
-# AHOY() [
-#     COIN age = 18!!
-#     ECHO("Age is: %C", age)!!
-# ]
