@@ -96,6 +96,7 @@ FIRST = {
     "<log-tail>": ["==", "!=", None],
     "<bool-digit>": ["COIN-lit", "DIME-lit"],
     "<bool-arith>": ["+", "-", "*", "/", "%", "^", None],
+    "<arith>": ["+", "-", "*", "/", "%", "^"],
     
     "<arel-ope>": ["id", "(", "COIN-lit", "DIME-lit"],
     "<rel-eq>": ["<", ">", "<=", ">=", "==", "!="],
@@ -136,7 +137,7 @@ FIRST = {
     "<scroll-retval>": ["id", "(", "SCROLL-lit"],
     "<bool-retval>": ["id", "(",  "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
 
-    "<id-tail>": ["{", "$", "("],
+    "<id-tail>": ["{", "$", "(", None],
     "<elmt>": ["{"],
     "<elmt-tail>": ["{", None],
     "<mem>": ["$"],
