@@ -106,7 +106,7 @@ class Parser:
         return self.errors
 
     # =========================================
-    # GRAMMAR PRODUCTIONS
+    # GRAMMAR PRODUCTIONS (UPDATED to 461 PRODS)
     # =========================================
 
     def program(self):
@@ -295,7 +295,6 @@ class Parser:
         elif prod == 35:
             self.eat("{")
             self.eat("COIN-lit")
-            self.eat("}")
             self.coin_arr2_tail()
         elif prod == 36:
             pass # Lambda
@@ -491,7 +490,6 @@ class Parser:
         if prod == 64:
             self.eat("{")
             self.eat("COIN-lit")
-            self.eat("}")
             self.dime_arr_tail()
         else:
             self.error_invalid_token("<dime-arr>")
@@ -507,7 +505,6 @@ class Parser:
         elif prod == 66:
             self.eat("{")
             self.eat("COIN-lit")
-            self.eat("}")
             self.dime_arr2_tail()
         elif prod == 67:
             pass # Lambda
@@ -670,7 +667,6 @@ class Parser:
         if prod == 89:
             self.eat("{")
             self.eat("COIN-lit")
-            self.eat("}")
             self.parch_arr_tail()
         else:
             self.error_invalid_token("<parch-arr>")
@@ -686,7 +682,6 @@ class Parser:
         elif prod == 91:
             self.eat("{")
             self.eat("COIN-lit")
-            self.eat("}")
             self.parch_arr2_tail()
         elif prod == 92:
             pass # Lambda
@@ -903,7 +898,6 @@ class Parser:
         if prod == 123:
             self.eat("{")
             self.eat("COIN-lit")
-            self.eat("}")
             self.scroll_arr_tail()
         else:
             self.error_invalid_token("<scroll-arr>")
@@ -919,7 +913,6 @@ class Parser:
         elif prod == 125:
             self.eat("{")
             self.eat("COIN-lit")
-            self.eat("}")
             self.scroll_arr2_tail()
         elif prod == 126:
             pass # Lambda
@@ -1086,7 +1079,7 @@ class Parser:
             self.bool_val()
             self.eat(")")
         elif prod == 149:
-            self.bool_rule() # Renamed to avoid reserved word conflict
+            self.bool_rule() # Renamed from <bool>
             self.log_tail()
         elif prod == 150:
             self.bool_digit()
@@ -1351,15 +1344,15 @@ class Parser:
             self.eat("SCROLL-lit")
             self.scr_char()
             self.bool_concat()
+        elif prod == 201:
+            self.bool_rule()
         else:
             self.error_invalid_token("<eq-ope>")
             
     def bool_exp3(self):
         # <bool-exp3>
         prod = self.get_production("<bool-exp3>")
-        if prod == 201:
-            self.bool_rule()
-        elif prod == 202:
+        if prod == 202:
             self.arith()
             self.bool_arith()
             self.bool_rel()
@@ -1409,7 +1402,6 @@ class Parser:
             self.eat("{")
             self.eat("COIN-lit")
             self.bool_arr_tail()
-            self.eat("!!")
         else:
             self.error_invalid_token("<bool-arr>")
 
@@ -1520,8 +1512,6 @@ class Parser:
             self.d_type()
             self.eat("id")
             self.param_mult()
-        elif prod == 226:
-             self.params() # Should check grammar recursion/definition
         else:
              self.error_invalid_token("<params>")
 
@@ -1551,38 +1541,41 @@ class Parser:
         # <ret-stmnts>
         prod = self.get_production("<ret-stmnts>")
         if prod == 233:
-            self.stmnt_tail()
+            self.statements()
+            self.ret_stmnts()
+        elif prod == 234:
+            pass # Lambda
         else:
             self.error_invalid_token("<ret-stmnts>")
 
     def coin_retval(self):
         # <coin-retval>
         prod = self.get_production("<coin-retval>")
-        if prod == 234: self.coin_val()
+        if prod == 235: self.coin_val()
         else: self.error_invalid_token("<coin-retval>")
 
     def dime_retval(self):
         # <dime-retval>
         prod = self.get_production("<dime-retval>")
-        if prod == 235: self.dime_val()
+        if prod == 236: self.dime_val()
         else: self.error_invalid_token("<dime-retval>")
         
     def parch_retval(self):
         # <parch-retval>
         prod = self.get_production("<parch-retval>")
-        if prod == 236: self.parch_val()
+        if prod == 237: self.parch_val()
         else: self.error_invalid_token("<parch-retval>")
 
     def scroll_retval(self):
         # <scroll-retval>
         prod = self.get_production("<scroll-retval>")
-        if prod == 237: self.scroll_val()
+        if prod == 238: self.scroll_val()
         else: self.error_invalid_token("<scroll-retval>")
 
     def bool_retval(self):
         # <bool-retval>
         prod = self.get_production("<bool-retval>")
-        if prod == 238: self.bool_val()
+        if prod == 239: self.bool_val()
         else: self.error_invalid_token("<bool-retval>")
 
     # ==================== ID TAILS & ELEMENTS ====================
@@ -1590,17 +1583,17 @@ class Parser:
     def id_tail(self):
         # <id-tail>
         prod = self.get_production("<id-tail>")
-        if prod == 239: self.elmt()
-        elif prod == 240: self.mem()
-        elif prod == 241: self.func()
-        elif prod == 242:
+        if prod == 240: self.elmt()
+        elif prod == 241: self.mem()
+        elif prod == 242: self.func()
+        elif prod == 243:
             pass # Lambda
         else: self.error_invalid_token("<id-tail>")
 
     def elmt(self):
         # <elmt>
         prod = self.get_production("<elmt>")
-        if prod == 243:
+        if prod == 244:
             self.eat("{")
             self.index()
             self.eat("}")
@@ -1611,11 +1604,11 @@ class Parser:
     def elmt_tail(self):
         # <elmt-tail>
         prod = self.get_production("<elmt-tail>")
-        if prod == 244:
+        if prod == 245:
             self.eat("{")
             self.index()
             self.eat("}")
-        elif prod == 245:
+        elif prod == 246:
             pass # Lambda
         else:
             self.error_invalid_token("<elmt-tail>")
@@ -1623,7 +1616,7 @@ class Parser:
     def mem(self):
         # <mem>
         prod = self.get_production("<mem>")
-        if prod == 246:
+        if prod == 247:
             self.eat("$")
             self.eat("id")
         else:
@@ -1632,7 +1625,7 @@ class Parser:
     def func(self):
         # <func>
         prod = self.get_production("<func>")
-        if prod == 247:
+        if prod == 248:
             self.eat("(")
             self.args()
             self.eat(")")
@@ -1642,10 +1635,10 @@ class Parser:
     def args(self):
         # <args>
         prod = self.get_production("<args>")
-        if prod == 248:
+        if prod == 249:
             self.args_val()
             self.args_mult()
-        elif prod == 249:
+        elif prod == 250:
             pass # Lambda
         else:
             self.error_invalid_token("<args>")
@@ -1653,7 +1646,7 @@ class Parser:
     def args_val(self):
         # <args-val>
         prod = self.get_production("<args-val>")
-        if prod == 250:
+        if prod == 251:
             self.value()
         else:
             self.error_invalid_token("<args-val>")
@@ -1661,10 +1654,10 @@ class Parser:
     def args_mult(self):
         # <args-mult>
         prod = self.get_production("<args-mult>")
-        if prod == 251:
+        if prod == 252:
             self.eat(",")
             self.args()
-        elif prod == 252:
+        elif prod == 253:
             pass # Lambda
         else:
             self.error_invalid_token("<args-mult>")
@@ -1674,7 +1667,7 @@ class Parser:
     def var_val(self):
         # <var-val>
         prod = self.get_production("<var-val>")
-        if prod == 253:
+        if prod == 254:
             self.value()
         else:
             self.error_invalid_token("<var-val>")
@@ -1682,27 +1675,27 @@ class Parser:
     def value(self):
         # <value>
         prod = self.get_production("<value>")
-        if prod == 254:
+        if prod == 255:
             self.eat("id")
             self.id_tail()
             self.var_exp()
-        elif prod == 255:
+        elif prod == 256:
             self.eat("(")
             self.value()
             self.eat(")")
             self.var_exp()
-        elif prod == 256:
+        elif prod == 257:
             self.var_digit()
             self.digit_tail()
-        elif prod == 257:
+        elif prod == 258:
             self.eat("PARCH-lit")
             self.eq_parch()
-        elif prod == 258:
+        elif prod == 259:
             self.eat("SCROLL-lit")
             self.scr_char()
             self.var_scroll()
             self.eq_scroll()
-        elif prod == 259:
+        elif prod == 260:
             self.var_bool()
         else:
             self.error_invalid_token("<value>")
@@ -1710,18 +1703,18 @@ class Parser:
     def var_digit(self):
         # <var-digit>
         prod = self.get_production("<var-digit>")
-        if prod == 260: self.eat("COIN-lit")
-        elif prod == 261: self.eat("DIME-lit")
+        if prod == 261: self.eat("COIN-lit")
+        elif prod == 262: self.eat("DIME-lit")
         else:
             self.error_invalid_token("<var-digit>")
 
     def digit_tail(self):
         # <digit-tail>
         prod = self.get_production("<digit-tail>")
-        if prod == 262:
+        if prod == 263:
             self.var_arith()
             self.var_releq()
-        elif prod == 263:
+        elif prod == 264:
             pass # Lambda
         else:
             self.error_invalid_token("<digit-tail>")
@@ -1729,11 +1722,11 @@ class Parser:
     def var_arith(self):
         # <var-arith>
         prod = self.get_production("<var-arith>")
-        if prod == 264:
+        if prod == 265:
             self.arith_op()
             self.arel_ope()
             self.var_arith()
-        elif prod == 265:
+        elif prod == 266:
             pass # Lambda
         else:
             self.error_invalid_token("<var-arith>")
@@ -1741,13 +1734,13 @@ class Parser:
     def var_releq(self):
         # <var-releq>
         prod = self.get_production("<var-releq>")
-        if prod == 266:
+        if prod == 267:
             self.var_rel()
-        elif prod == 267:
+        elif prod == 268:
             self.eq_op()
             self.arel_ope()
             self.var_log()
-        elif prod == 268:
+        elif prod == 269:
             pass # Lambda
         else:
             self.error_invalid_token("<var-releq>")
@@ -1755,12 +1748,12 @@ class Parser:
     def var_rel(self):
         # <var-rel>
         prod = self.get_production("<var-rel>")
-        if prod == 269:
+        if prod == 270:
             self.rel_op()
             self.arel_ope()
             self.var_arith()
             self.var_logeq()
-        elif prod == 270:
+        elif prod == 271:
             pass # Lambda
         else:
             self.error_invalid_token("<var-rel>")
@@ -1768,11 +1761,11 @@ class Parser:
     def var_logeq(self):
         # <var-logeq>
         prod = self.get_production("<var-logeq>")
-        if prod == 271:
+        if prod == 272:
             self.logeq_op()
             self.log_ope()
             self.var_log()
-        elif prod == 272:
+        elif prod == 273:
             pass # Lambda
         else:
             self.error_invalid_token("<var-logeq>")
@@ -1780,19 +1773,19 @@ class Parser:
     def logeq_op(self):
         # <logeq-op>
         prod = self.get_production("<logeq-op>")
-        if prod == 273: self.log_op()
-        elif prod == 274: self.eq_op()
+        if prod == 274: self.log_op()
+        elif prod == 275: self.eq_op()
         else:
             self.error_invalid_token("<logeq-op>")
 
     def var_log(self):
         # <var-log>
         prod = self.get_production("<var-log>")
-        if prod == 275:
+        if prod == 276:
             self.log_op()
             self.log_ope()
             self.var_log()
-        elif prod == 276:
+        elif prod == 277:
             pass # Lambda
         else:
             self.error_invalid_token("<var-log>")
@@ -1800,7 +1793,7 @@ class Parser:
     def log_ope(self):
         # <log-ope>
         prod = self.get_production("<log-ope>")
-        if prod == 277:
+        if prod == 278:
             self.bool_ope()
         else:
             self.error_invalid_token("<log-ope>")
@@ -1808,11 +1801,11 @@ class Parser:
     def eq_parch(self):
         # <eq-parch>
         prod = self.get_production("<eq-parch>")
-        if prod == 278:
+        if prod == 279:
             self.eq_op()
             self.eat("PARCH-lit")
             self.var_log()
-        elif prod == 279:
+        elif prod == 280:
             pass # Lambda
         else:
             self.error_invalid_token("<eq-parch>")
@@ -1820,12 +1813,12 @@ class Parser:
     def eq_scroll(self):
         # <eq-scroll>
         prod = self.get_production("<eq-scroll>")
-        if prod == 280:
+        if prod == 281:
             self.eq_op()
             self.bool_scroll()
             self.bool_concat()
             self.var_log()
-        elif prod == 281:
+        elif prod == 282:
             pass # Lambda
         else:
             self.error_invalid_token("<eq-scroll>")
@@ -1833,11 +1826,11 @@ class Parser:
     def var_scroll(self):
         # <var-scroll>
         prod = self.get_production("<var-scroll>")
-        if prod == 282:
+        if prod == 283:
             self.concat_op()
             self.concat_ope()
             self.var_scroll()
-        elif prod == 283:
+        elif prod == 284:
             pass # Lambda
         else:
             self.error_invalid_token("<var-scroll>")
@@ -1845,7 +1838,7 @@ class Parser:
     def concat_ope(self):
         # <concat-ope>
         prod = self.get_production("<concat-ope>")
-        if prod == 284:
+        if prod == 285:
             self.scroll_ope()
         else:
             self.error_invalid_token("<concat-ope>")
@@ -1853,7 +1846,7 @@ class Parser:
     def var_bool(self):
         # <var-bool>
         prod = self.get_production("<var-bool>")
-        if prod == 285:
+        if prod == 286:
             self.bool_rule()
         else:
             self.error_invalid_token("<var-bool>")
@@ -1861,9 +1854,9 @@ class Parser:
     def var_exp(self):
         # <var-exp>
         prod = self.get_production("<var-exp>")
-        if prod == 286:
+        if prod == 287:
             self.expressions()
-        elif prod == 287:
+        elif prod == 288:
             pass # Lambda
         else:
             self.error_invalid_token("<var-exp>")
@@ -1871,25 +1864,25 @@ class Parser:
     def expressions(self):
         # <expressions>
         prod = self.get_production("<expressions>")
-        if prod == 288:
+        if prod == 289:
             self.arith_op()
             self.arel_ope()
             self.var_arith()
             self.var_releq()
-        elif prod == 289:
+        elif prod == 290:
             self.rel_op()
             self.arel_ope()
             self.var_arith()
             self.var_logeq()
-        elif prod == 290:
+        elif prod == 291:
             self.log_op()
             self.log_ope()
             self.var_log()
-        elif prod == 291:
+        elif prod == 292:
             self.eq_op()
             self.eq_ope()
             self.var_log()
-        elif prod == 292:
+        elif prod == 293:
             self.concat_op()
             self.concat_ope()
             self.var_scroll()
@@ -1902,7 +1895,7 @@ class Parser:
     def const(self):
         # <const>
         prod = self.get_production("<const>")
-        if prod == 293:
+        if prod == 294:
             self.eat("LOCKE")
             self.const_init()
             self.eat("!!")
@@ -1912,23 +1905,23 @@ class Parser:
     def const_init(self):
         # <const-init>
         prod = self.get_production("<const-init>")
-        if prod == 294:
+        if prod == 295:
             self.eat("COIN")
             self.coin_locke()
             self.coin_locke_mult()
-        elif prod == 295:
+        elif prod == 296:
             self.eat("DIME")
             self.dime_locke()
             self.dime_locke_mult()
-        elif prod == 296:
+        elif prod == 297:
             self.eat("PARCH")
             self.parch_locke()
             self.parch_locke_mult()
-        elif prod == 297:
+        elif prod == 298:
             self.eat("SCROLL")
             self.scroll_locke()
             self.scroll_locke_mult()
-        elif prod == 298:
+        elif prod == 299:
             self.eat("BOOL")
             self.bool_locke()
             self.bool_locke_mult()
@@ -1938,7 +1931,7 @@ class Parser:
     def coin_locke(self):
         # <coin-locke>
         prod = self.get_production("<coin-locke>")
-        if prod == 299:
+        if prod == 300:
             self.eat("id")
             self.eat("=")
             self.eat("COIN-lit")
@@ -1948,11 +1941,11 @@ class Parser:
     def coin_locke_mult(self):
         # <coin-locke-mult>
         prod = self.get_production("<coin-locke-mult>")
-        if prod == 300:
+        if prod == 301:
             self.eat(",")
             self.coin_locke()
             self.coin_locke_mult()
-        elif prod == 301:
+        elif prod == 302:
             pass # Lambda
         else:
             self.error_invalid_token("<coin-locke-mult>")
@@ -1960,7 +1953,7 @@ class Parser:
     def dime_locke(self):
         # <dime-locke>
         prod = self.get_production("<dime-locke>")
-        if prod == 302:
+        if prod == 303:
             self.eat("id")
             self.eat("=")
             self.locke_digit()
@@ -1970,7 +1963,7 @@ class Parser:
     def locke_digit(self):
         # <locke-digit>
         prod = self.get_production("<locke-digit>")
-        if prod == 303:
+        if prod == 304:
             self.digits()
         else:
             self.error_invalid_token("<locke-digit>")
@@ -1978,11 +1971,11 @@ class Parser:
     def dime_locke_mult(self):
         # <dime-locke-mult>
         prod = self.get_production("<dime-locke-mult>")
-        if prod == 304:
+        if prod == 305:
             self.eat(",")
             self.dime_locke()
             self.dime_locke_mult()
-        elif prod == 305:
+        elif prod == 306:
             pass # Lambda
         else:
             self.error_invalid_token("<dime-locke-mult>")
@@ -1990,7 +1983,7 @@ class Parser:
     def parch_locke(self):
         # <parch-locke>
         prod = self.get_production("<parch-locke>")
-        if prod == 306:
+        if prod == 307:
             self.eat("id")
             self.eat("=")
             self.eat("PARCH-lit")
@@ -2000,11 +1993,11 @@ class Parser:
     def parch_locke_mult(self):
         # <parch-locke-mult>
         prod = self.get_production("<parch-locke-mult>")
-        if prod == 307:
+        if prod == 308:
             self.eat(",")
             self.parch_locke()
             self.parch_locke_mult()
-        elif prod == 308:
+        elif prod == 309:
             pass # Lambda
         else:
             self.error_invalid_token("<parch-locke-mult>")
@@ -2012,7 +2005,7 @@ class Parser:
     def scroll_locke(self):
         # <scroll-locke>
         prod = self.get_production("<scroll-locke>")
-        if prod == 309:
+        if prod == 310:
             self.eat("id")
             self.eat("=")
             self.eat("SCROLL-lit")
@@ -2023,11 +2016,11 @@ class Parser:
     def scr_id(self):
         # <scr-id>
         prod = self.get_production("<scr-id>")
-        if prod == 310:
+        if prod == 311:
             self.eat("{")
             self.eat("COIN-lit")
             self.eat("}")
-        elif prod == 311:
+        elif prod == 312:
             pass # Lambda
         else:
             self.error_invalid_token("<scr-id>")
@@ -2035,11 +2028,11 @@ class Parser:
     def scroll_locke_mult(self):
         # <scroll-locke-mult>
         prod = self.get_production("<scroll-locke-mult>")
-        if prod == 312:
+        if prod == 313:
             self.eat(",")
             self.scroll_locke()
             self.scroll_locke_mult()
-        elif prod == 313:
+        elif prod == 314:
             pass # Lambda
         else:
             self.error_invalid_token("<scroll-locke-mult>")
@@ -2047,7 +2040,7 @@ class Parser:
     def bool_locke(self):
         # <bool-locke>
         prod = self.get_production("<bool-locke>")
-        if prod == 314:
+        if prod == 315:
             self.eat("id")
             self.eat("=")
             self.locke_bool()
@@ -2057,7 +2050,7 @@ class Parser:
     def locke_bool(self):
         # <locke-bool>
         prod = self.get_production("<locke-bool>")
-        if prod == 315:
+        if prod == 316:
             self.bool_lit()
         else:
             self.error_invalid_token("<locke-bool>")
@@ -2065,11 +2058,11 @@ class Parser:
     def bool_locke_mult(self):
         # <bool-locke-mult>
         prod = self.get_production("<bool-locke-mult>")
-        if prod == 316:
+        if prod == 317:
             self.eat(",")
             self.bool_locke()
             self.bool_locke_mult()
-        elif prod == 317:
+        elif prod == 318:
             pass # Lambda
         else:
             self.error_invalid_token("<bool-locke-mult>")
@@ -2079,7 +2072,7 @@ class Parser:
     def struct(self):
         # <struct>
         prod = self.get_production("<struct>")
-        if prod == 318:
+        if prod == 319:
             self.eat("MAST")
             self.eat("id")
             self.eat("[")
@@ -2089,7 +2082,7 @@ class Parser:
             self.eat("!!")
             self.struct()
             self.sub_func()
-        elif prod == 319:
+        elif prod == 320:
             pass # Lambda
         else:
             self.error_invalid_token("<struct>")
@@ -2097,7 +2090,7 @@ class Parser:
     def mem_dec(self):
         # <mem-dec>
         prod = self.get_production("<mem-dec>")
-        if prod == 320:
+        if prod == 321:
             self.d_type()
             self.eat("id")
             self.mem_mult()
@@ -2108,11 +2101,11 @@ class Parser:
     def mem_mult(self):
         # <mem-mult>
         prod = self.get_production("<mem-mult>")
-        if prod == 321:
+        if prod == 322:
             self.eat(",")
             self.eat("id")
             self.mem_mult()
-        elif prod == 322:
+        elif prod == 323:
             pass # Lambda
         else:
             self.error_invalid_token("<mem-mult>")
@@ -2120,10 +2113,10 @@ class Parser:
     def mem_dec_tail(self):
         # <mem-dec-tail>
         prod = self.get_production("<mem-dec-tail>")
-        if prod == 323:
+        if prod == 324:
             self.mem_dec()
             self.mem_dec_tail()
-        elif prod == 324:
+        elif prod == 325:
             pass # Lambda
         else:
             self.error_invalid_token("<mem-dec-tail>")
@@ -2131,32 +2124,32 @@ class Parser:
     def sub_func(self):
         # <sub-func>
         prod = self.get_production("<sub-func>")
-        if prod == 325: self.return_func()
-        elif prod == 326: self.nonreturn_func()
-        elif prod == 327: pass # Lambda
+        if prod == 326: self.return_func()
+        elif prod == 327: self.nonreturn_func()
+        elif prod == 328: pass # Lambda
         else:
             self.error_invalid_token("<sub-func>")
 
     def return_func(self):
         # <return-func>
         prod = self.get_production("<return-func>")
-        if prod == 328: 
+        if prod == 329: 
             self.eat("COIN")
             self.eat("id")
             self.coin_func()
-        elif prod == 329:
+        elif prod == 330:
             self.eat("DIME")
             self.eat("id")
             self.dime_func()
-        elif prod == 330:
+        elif prod == 331:
             self.eat("PARCH")
             self.eat("id")
             self.parch_func()
-        elif prod == 331:
+        elif prod == 332:
             self.eat("SCROLL")
             self.eat("id")
             self.scroll_func()
-        elif prod == 332:
+        elif prod == 333:
             self.eat("BOOL")
             self.eat("id")
             self.bool_func()
@@ -2166,7 +2159,7 @@ class Parser:
     def nonreturn_func(self):
         # <nonreturn-func>
         prod = self.get_production("<nonreturn-func>")
-        if prod == 333:
+        if prod == 334:
             self.eat("ABYSS")
             self.eat("id")
             self.eat("(")
@@ -2184,18 +2177,29 @@ class Parser:
     def nonret_stmnts(self):
         # <nonret-stmnts>
         prod = self.get_production("<nonret-stmnts>")
-        if prod == 334:
-            self.stmnt_tail()
+        if prod == 335:
+            self.statements()
+            self.nonret_tail()
         else:
             self.error_invalid_token("<nonret-stmnts>")
+            
+    def nonret_tail(self):
+        # <nonret-tail>
+        prod = self.get_production("<nonret-tail>")
+        if prod == 336:
+            self.nonret_stmnts()
+        elif prod == 337:
+            pass # Lambda
+        else:
+             self.error_invalid_token("<nonret-tail>")
 
     def nonret_back(self):
         # <nonret-back>
         prod = self.get_production("<nonret-back>")
-        if prod == 335:
+        if prod == 338:
             self.eat("BACK")
             self.eat("!!")
-        elif prod == 336:
+        elif prod == 339:
             pass # Lambda
         else:
             self.error_invalid_token("<nonret-back>")
@@ -2203,12 +2207,12 @@ class Parser:
     def local_dec(self):
         # <local-dec>
         prod = self.get_production("<local-dec>")
-        if prod == 337:
+        if prod == 340:
             self.var_arr()
             self.local_dec()
-        elif prod == 338:
+        elif prod == 341:
             self.struct_dec()
-        elif prod == 339:
+        elif prod == 342:
             pass # Lambda
         else:
             self.error_invalid_token("<local-dec>")
@@ -2216,23 +2220,23 @@ class Parser:
     def var_arr(self):
         # <var-arr>
         prod = self.get_production("<var-arr>")
-        if prod == 340:
+        if prod == 343:
             self.eat("COIN")
             self.eat("id")
             self.coin_local()
-        elif prod == 341:
+        elif prod == 344:
             self.eat("DIME")
             self.eat("id")
             self.dime_local()
-        elif prod == 342:
+        elif prod == 345:
             self.eat("PARCH")
             self.eat("id")
             self.parch_local()
-        elif prod == 343:
+        elif prod == 346:
             self.eat("SCROLL")
             self.eat("id")
             self.scroll_local()
-        elif prod == 344:
+        elif prod == 347:
             self.eat("BOOL")
             self.eat("id")
             self.bool_local()
@@ -2242,44 +2246,44 @@ class Parser:
     def coin_local(self):
         # <coin-local>
         prod = self.get_production("<coin-local>")
-        if prod == 345: self.coin_dec()
+        if prod == 348: self.coin_dec()
         else: self.error_invalid_token("<coin-local>")
 
     def dime_local(self):
         # <dime-local>
         prod = self.get_production("<dime-local>")
-        if prod == 346: self.dime_dec()
+        if prod == 349: self.dime_dec()
         else: self.error_invalid_token("<dime-local>")
 
     def parch_local(self):
         # <parch-local>
         prod = self.get_production("<parch-local>")
-        if prod == 347: self.parch_dec()
+        if prod == 350: self.parch_dec()
         else: self.error_invalid_token("<parch-local>")
 
     def scroll_local(self):
         # <scroll-local>
         prod = self.get_production("<scroll-local>")
-        if prod == 348: self.scroll_dec()
+        if prod == 351: self.scroll_dec()
         else: self.error_invalid_token("<scroll-local>")
 
     def bool_local(self):
         # <bool-local>
         prod = self.get_production("<bool-local>")
-        if prod == 349: self.bool_dec()
+        if prod == 352: self.bool_dec()
         else: self.error_invalid_token("<bool-local>")
 
     def struct_dec(self):
         # <struct-dec>
         prod = self.get_production("<struct-dec>")
-        if prod == 350:
+        if prod == 353:
             self.eat("MAST")
             self.eat("id")
             self.eat("id")
             self.str_dec_init()
             self.eat("!!")
             self.struct_dec()
-        elif prod == 351:
+        elif prod == 354:
             pass # Lambda
         else:
             self.error_invalid_token("<struct-dec>")
@@ -2287,17 +2291,17 @@ class Parser:
     def str_dec_init(self):
         # <str-dec-init>
         prod = self.get_production("<str-dec-init>")
-        if prod == 352:
+        if prod == 355:
             self.eat(",")
             self.eat("id")
             self.str_dec_tail()
-        elif prod == 353:
+        elif prod == 356:
             self.eat("=")
             self.eat("[")
             self.str_val()
             self.str_val_tail()
             self.eat("]")
-        elif prod == 354:
+        elif prod == 357:
             pass # Lambda
         else:
             self.error_invalid_token("<str-dec-init>")
@@ -2305,11 +2309,11 @@ class Parser:
     def str_dec_tail(self):
         # <str-dec-tail>
         prod = self.get_production("<str-dec-tail>")
-        if prod == 355:
+        if prod == 358:
             self.eat(",")
             self.eat("id")
             self.str_dec_tail()
-        elif prod == 356:
+        elif prod == 359:
             pass # Lambda
         else:
             self.error_invalid_token("<str-dec-tail>")
@@ -2317,9 +2321,9 @@ class Parser:
     def str_val(self):
         # <str-val>
         prod = self.get_production("<str-val>")
-        if prod == 357:
+        if prod == 360:
             self.var_val()
-        elif prod == 358:
+        elif prod == 361:
             self.eat("$")
             self.eat("id")
             self.eat("=")
@@ -2330,11 +2334,11 @@ class Parser:
     def str_val_tail(self):
         # <str-val-tail>
         prod = self.get_production("<str-val-tail>")
-        if prod == 359:
+        if prod == 362:
             self.eat(",")
             self.str_val()
             self.str_val_tail()
-        elif prod == 360:
+        elif prod == 363:
             pass # Lambda
         else:
             self.error_invalid_token("<str-val-tail>")
@@ -2344,23 +2348,34 @@ class Parser:
     def ahoy_stmnts(self):
         # <ahoy-stmnts>
         prod = self.get_production("<ahoy-stmnts>")
-        if prod == 361:
+        if prod == 364:
             self.statements()
+            self.ahoy_tail()
         else:
             self.error_invalid_token("<ahoy-stmnts>")
+    
+    def ahoy_tail(self):
+        # <ahoy-tail>
+        prod = self.get_production("<ahoy-tail>")
+        if prod == 365:
+            self.ahoy_stmnts()
+        elif prod == 366:
+            pass # Lambda
+        else:
+            self.error_invalid_token("<ahoy-tail>")
 
     def statements(self):
         # <statements>
         prod = self.get_production("<statements>")
-        if prod == 362: self.assign_stmnt()
-        elif prod == 363: self.ask_stmnt()
-        elif prod == 364: self.echo_stmnt()
-        elif prod == 365: self.look_stmnt()
-        elif prod == 366: self.chart_stmnt()
-        elif prod == 367: self.hoist_stmnt()
-        elif prod == 368: self.heave_stmnt()
-        elif prod == 369: self.haul_stmnt()
-        elif prod == 370:
+        if prod == 367: self.assign_stmnt()
+        elif prod == 368: self.ask_stmnt()
+        elif prod == 369: self.echo_stmnt()
+        elif prod == 370: self.look_stmnt()
+        elif prod == 371: self.chart_stmnt()
+        elif prod == 372: self.hoist_stmnt()
+        elif prod == 373: self.heave_stmnt()
+        elif prod == 374: self.haul_stmnt()
+        elif prod == 375:
             self.unary_exp()
             self.eat("!!")
         else:
@@ -2369,10 +2384,10 @@ class Parser:
     def stmnt_tail(self):
         # <stmnt-tail>
         prod = self.get_production("<stmnt-tail>")
-        if prod == 371:
+        if prod == 376:
             self.statements()
             self.stmnt_tail()
-        elif prod == 372:
+        elif prod == 377:
             pass # Lambda
         else:
             self.error_invalid_token("<stmnt-tail>")
@@ -2380,7 +2395,7 @@ class Parser:
     def assign_stmnt(self):
         # <assign-stmnt>
         prod = self.get_production("<assign-stmnt>")
-        if prod == 373:
+        if prod == 378:
             self.eat("id")
             self.assign_tail()
             self.eat("!!")
@@ -2390,10 +2405,10 @@ class Parser:
     def assign_tail(self):
         # <assign-tail>
         prod = self.get_production("<assign-tail>")
-        if prod == 374:
+        if prod == 379:
             self.arr_str()
             self.assign_body()
-        elif prod == 375:
+        elif prod == 380:
             self.eat("(")
             self.args()
             self.eat(")")
@@ -2403,15 +2418,15 @@ class Parser:
     def arr_str(self):
         # <arr-str>
         prod = self.get_production("<arr-str>")
-        if prod == 376:
+        if prod == 381:
             self.eat("{")
             self.index()
             self.eat("}")
             self.elmt_tail2()
-        elif prod == 377:
+        elif prod == 382:
             self.eat("$")
             self.eat("id")
-        elif prod == 378:
+        elif prod == 383:
             pass # Lambda
         else:
             self.error_invalid_token("<arr-str>")
@@ -2419,11 +2434,11 @@ class Parser:
     def elmt_tail2(self):
         # <elmt-tail2>
         prod = self.get_production("<elmt-tail2>")
-        if prod == 379:
+        if prod == 384:
             self.eat("{")
             self.index()
             self.eat("}")
-        elif prod == 380:
+        elif prod == 385:
             pass # Lambda
         else:
             self.error_invalid_token("<elmt-tail2>")
@@ -2431,10 +2446,10 @@ class Parser:
     def assign_body(self):
         # <assign-body>
         prod = self.get_production("<assign-body>")
-        if prod == 381:
+        if prod == 386:
             self.eat("=")
             self.assign_val()
-        elif prod == 382:
+        elif prod == 387:
             self.arith_assign_op()
             self.arith_ope()
             self.arith_tail()
@@ -2444,7 +2459,7 @@ class Parser:
     def assign_val(self):
         # <assign-val>
         prod = self.get_production("<assign-val>")
-        if prod == 383:
+        if prod == 388:
             self.var_val()
         else:
             self.error_invalid_token("<assign-val>")
@@ -2452,19 +2467,19 @@ class Parser:
     def arith_assign_op(self):
         # <arith-assign-op>
         prod = self.get_production("<arith-assign-op>")
-        if prod == 384: self.eat("+=")
-        elif prod == 385: self.eat("-=")
-        elif prod == 386: self.eat("*=")
-        elif prod == 387: self.eat("/=")
-        elif prod == 388: self.eat("%=")
-        elif prod == 389: self.eat("^=")
+        if prod == 389: self.eat("+=")
+        elif prod == 390: self.eat("-=")
+        elif prod == 391: self.eat("*=")
+        elif prod == 392: self.eat("/=")
+        elif prod == 393: self.eat("%=")
+        elif prod == 394: self.eat("^=")
         else:
             self.error_invalid_token("<arith-assign-op>")
 
     def arith_ope(self):
         # <arith-ope>
         prod = self.get_production("<arith-ope>")
-        if prod == 390:
+        if prod == 395:
             self.dime_ope()
         else:
             self.error_invalid_token("<arith-ope>")
@@ -2472,11 +2487,11 @@ class Parser:
     def arith_tail(self):
         # <arith-tail>
         prod = self.get_production("<arith-tail>")
-        if prod == 391:
+        if prod == 396:
             self.arith_op()
             self.arith_ope()
             self.arith_tail()
-        elif prod == 392:
+        elif prod == 397:
             pass # Lambda
         else:
             self.error_invalid_token("<arith-tail>")
@@ -2484,7 +2499,7 @@ class Parser:
     def ask_stmnt(self):
         # <ask-stmnt>
         prod = self.get_production("<ask-stmnt>")
-        if prod == 393:
+        if prod == 398:
             self.eat("ASK")
             self.eat("(")
             self.eat("SCROLL-lit")
@@ -2498,7 +2513,7 @@ class Parser:
     def addr(self):
         # <addr>
         prod = self.get_production("<addr>")
-        if prod == 394:
+        if prod == 399:
             self.eat("@")
             self.eat("id")
             self.id_addr()
@@ -2509,17 +2524,17 @@ class Parser:
     def id_addr(self):
         # <id-addr>
         prod = self.get_production("<id-addr>")
-        if prod == 395: self.arr_str()
-        elif prod == 396: pass # Lambda
+        if prod == 400: self.arr_str()
+        elif prod == 401: pass # Lambda
         else: self.error_invalid_token("<id-addr>")
 
     def addr_tail(self):
         # <addr-tail>
         prod = self.get_production("<addr-tail>")
-        if prod == 397:
+        if prod == 402:
             self.eat(",")
             self.addr()
-        elif prod == 398:
+        elif prod == 403:
             pass # Lambda
         else:
             self.error_invalid_token("<addr-tail>")
@@ -2527,7 +2542,7 @@ class Parser:
     def echo_stmnt(self):
         # <echo-stmnt>
         prod = self.get_production("<echo-stmnt>")
-        if prod == 399:
+        if prod == 404:
             self.eat("ECHO")
             self.eat("(")
             self.eat("SCROLL-lit")
@@ -2540,11 +2555,11 @@ class Parser:
     def echo_arg(self):
         # <echo-arg>
         prod = self.get_production("<echo-arg>")
-        if prod == 400:
+        if prod == 405:
             self.eat(",")
             self.echo_val()
             self.echo_arg()
-        elif prod == 401:
+        elif prod == 406:
             pass # Lambda
         else:
             self.error_invalid_token("<echo-arg>")
@@ -2552,7 +2567,7 @@ class Parser:
     def echo_val(self):
         # <echo-val>
         prod = self.get_production("<echo-val>")
-        if prod == 402:
+        if prod == 407:
             self.var_val()
         else:
             self.error_invalid_token("<echo-val>")
@@ -2560,13 +2575,14 @@ class Parser:
     def look_stmnt(self):
         # <look-stmnt>
         prod = self.get_production("<look-stmnt>")
-        if prod == 403:
+        if prod == 408:
             self.eat("LOOK")
             self.eat("(")
             self.condition()
             self.eat(")")
             self.eat("[")
             self.look_body()
+            self.jump_stmnt()
             self.eat("]")
             self.look_tail()
         else:
@@ -2575,7 +2591,7 @@ class Parser:
     def condition(self):
         # <condition>
         prod = self.get_production("<condition>")
-        if prod == 404:
+        if prod == 409:
             self.bool_val()
         else:
             self.error_invalid_token("<condition>")
@@ -2583,22 +2599,24 @@ class Parser:
     def look_body(self):
         # <look-body>
         prod = self.get_production("<look-body>")
-        if prod == 405:
-            self.stmnt_tail()
-            self.jump_stmnt()
+        if prod == 410:
+            self.statements()
+            self.look_body()
+        elif prod == 411:
+            pass # Lambda
         else:
             self.error_invalid_token("<look-body>")
 
     def jump_stmnt(self):
         # <jump-stmnt>
         prod = self.get_production("<jump-stmnt>")
-        if prod == 406:
+        if prod == 412:
             self.eat("SAIL")
             self.eat("!!")
-        elif prod == 407:
+        elif prod == 413:
             self.eat("LAND")
             self.eat("!!")
-        elif prod == 408:
+        elif prod == 414:
             pass # Lambda
         else:
             self.error_invalid_token("<jump-stmnt>")
@@ -2606,21 +2624,23 @@ class Parser:
     def look_tail(self):
         # <look-tail>
         prod = self.get_production("<look-tail>")
-        if prod == 409:
+        if prod == 415:
             self.eat("DROPLOOK")
             self.eat("(")
             self.condition()
             self.eat(")")
             self.eat("[")
             self.look_body()
+            self.jump_stmnt()
             self.eat("]")
             self.look_tail()
-        elif prod == 410:
+        elif prod == 416:
             self.eat("DROP")
             self.eat("[")
             self.look_body()
+            self.jump_stmnt()
             self.eat("]")
-        elif prod == 411:
+        elif prod == 417:
             pass # Lambda
         else:
             self.error_invalid_token("<look-tail>")
@@ -2628,7 +2648,7 @@ class Parser:
     def chart_stmnt(self):
         # <chart-stmnt>
         prod = self.get_production("<chart-stmnt>")
-        if prod == 412:
+        if prod == 418:
             self.eat("CHART")
             self.eat("(")
             self.chart_cond()
@@ -2644,46 +2664,63 @@ class Parser:
     def chart_cond(self):
         # <chart-cond>
         prod = self.get_production("<chart-cond>")
-        if prod == 413: self.eat("id")
-        elif prod == 414: self.chart_const()
+        if prod == 419: self.eat("id")
+        elif prod == 420: self.chart_const()
         else:
             self.error_invalid_token("<chart-cond>")
 
     def chart_const(self):
         # <chart-const>
         prod = self.get_production("<chart-const>")
-        if prod == 415: self.eat("COIN-lit")
-        elif prod == 416: self.eat("PARCH-lit")
+        if prod == 421: self.eat("COIN-lit")
+        elif prod == 422: self.eat("PARCH-lit")
         else:
             self.error_invalid_token("<chart-const>")
 
     def courses(self):
         # <courses>
         prod = self.get_production("<courses>")
-        if prod == 417:
+        if prod == 423:
             self.eat("COURSE")
             self.chart_const()
             self.eat(":")
             self.course_body()
+            self.course_jmp()
         else:
             self.error_invalid_token("<courses>")
 
     def course_body(self):
         # <course-body>
         prod = self.get_production("<course-body>")
-        if prod == 418:
-            self.stmnt_tail()
-            self.jump_stmnt()
+        if prod == 424:
+            self.statements()
+            self.course_body()
+        elif prod == 425:
+            pass # Lambda
         else:
             self.error_invalid_token("<course-body>")
+    
+    def course_jmp(self):
+        # <course-jmp>
+        prod = self.get_production("<course-jmp>")
+        if prod == 426:
+             self.eat("SAIL")
+             self.eat("!!")
+        elif prod == 427:
+             self.eat("LAND")
+             self.eat("!!")
+        elif prod == 428:
+            pass # Lambda
+        else:
+             self.error_invalid_token("<course-jmp>")
 
     def course_tail(self):
         # <course-tail>
         prod = self.get_production("<course-tail>")
-        if prod == 419:
+        if prod == 429:
             self.courses()
             self.course_tail()
-        elif prod == 420:
+        elif prod == 430:
             pass # Lambda
         else:
             self.error_invalid_token("<course-tail>")
@@ -2691,13 +2728,13 @@ class Parser:
     def adrift_case(self):
         # <adrift-case>
         prod = self.get_production("<adrift-case>")
-        if prod == 421:
+        if prod == 431:
             self.eat("ADRIFT")
             self.eat(":")
             self.adrift_body()
             self.eat("LAND")
             self.eat("!!")
-        elif prod == 422:
+        elif prod == 432:
             pass # Lambda
         else:
             self.error_invalid_token("<adrift-case>")
@@ -2705,15 +2742,18 @@ class Parser:
     def adrift_body(self):
         # <adrift-body>
         prod = self.get_production("<adrift-body>")
-        if prod == 423:
-            self.stmnt_tail()
+        if prod == 433:
+            self.statements()
+            self.adrift_body()
+        elif prod == 434:
+            pass # Lambda
         else:
             self.error_invalid_token("<adrift-body>")
 
     def hoist_stmnt(self):
         # <hoist-stmnt>
         prod = self.get_production("<hoist-stmnt>")
-        if prod == 424:
+        if prod == 435:
             self.eat("HOIST")
             self.eat("(")
             self.init()
@@ -2724,6 +2764,7 @@ class Parser:
             self.eat(")")
             self.eat("[")
             self.look_body()
+            self.jump_stmnt()
             self.eat("]")
         else:
             self.error_invalid_token("<hoist-stmnt>")
@@ -2731,19 +2772,19 @@ class Parser:
     def init(self):
         # <init>
         prod = self.get_production("<init>")
-        if prod == 425:
+        if prod == 436:
             self.eat("COIN")
             self.eat("id")
             self.eat("=")
             self.eat("COIN-lit")
             self.init1()
-        elif prod == 426:
+        elif prod == 437:
             self.eat("id")
             self.id_init()
             self.eat("=")
             self.eat("COIN-lit")
             self.init2()
-        elif prod == 427:
+        elif prod == 438:
             pass # Lambda
         else:
             self.error_invalid_token("<init>")
@@ -2751,7 +2792,7 @@ class Parser:
     def id_init(self):
         # <id-init>
         prod = self.get_production("<id-init>")
-        if prod == 428:
+        if prod == 439:
             self.arr_str()
         else:
             self.error_invalid_token("<id-init>")
@@ -2759,13 +2800,13 @@ class Parser:
     def init1(self):
         # <init1>
         prod = self.get_production("<init1>")
-        if prod == 429:
+        if prod == 440:
             self.eat(",")
             self.eat("id")
             self.eat("=")
             self.eat("COIN-lit")
             self.init1()
-        elif prod == 430:
+        elif prod == 441:
             pass # Lambda
         else:
             self.error_invalid_token("<init1>")
@@ -2773,14 +2814,14 @@ class Parser:
     def init2(self):
         # <init2>
         prod = self.get_production("<init2>")
-        if prod == 431:
+        if prod == 442:
             self.eat(",")
             self.eat("id")
             self.arr_str()
             self.eat("=")
             self.var_val()
             self.init2()
-        elif prod == 432:
+        elif prod == 443:
             pass # Lambda
         else:
             self.error_invalid_token("<init2>")
@@ -2788,7 +2829,7 @@ class Parser:
     def hoist_cond(self):
         # <hoist-cond>
         prod = self.get_production("<hoist-cond>")
-        if prod == 433:
+        if prod == 444:
             self.eat("id")
             self.id_cond()
             self.releq_op()
@@ -2800,7 +2841,7 @@ class Parser:
     def id_cond(self):
         # <id-cond>
         prod = self.get_production("<id-cond>")
-        if prod == 434:
+        if prod == 445:
             self.arr_str()
         else:
             self.error_invalid_token("<id-cond>")
@@ -2808,18 +2849,18 @@ class Parser:
     def releq_op(self):
         # <releq-op>
         prod = self.get_production("<releq-op>")
-        if prod == 435: self.rel_op()
-        elif prod == 436: self.eq_op()
+        if prod == 446: self.rel_op()
+        elif prod == 447: self.eq_op()
         else:
             self.error_invalid_token("<releq-op>")
 
     def hoist_ope(self):
         # <hoist-ope>
         prod = self.get_production("<hoist-ope>")
-        if prod == 437:
+        if prod == 448:
             self.eat("id")
             self.id_tail()
-        elif prod == 438:
+        elif prod == 449:
             self.eat("COIN-lit")
         else:
             self.error_invalid_token("<hoist-ope>")
@@ -2827,10 +2868,10 @@ class Parser:
     def hoist_log(self):
         # <hoist-log>
         prod = self.get_production("<hoist-log>")
-        if prod == 439:
+        if prod == 450:
             self.log_op()
             self.hoist_cond()
-        elif prod == 440:
+        elif prod == 451:
             pass # Lambda
         else:
             self.error_invalid_token("<hoist-log>")
@@ -2838,7 +2879,7 @@ class Parser:
     def inc_dec(self):
         # <inc-dec>
         prod = self.get_production("<inc-dec>")
-        if prod == 441:
+        if prod == 452:
             self.in_de()
             self.in_de2()
         else:
@@ -2847,9 +2888,9 @@ class Parser:
     def in_de(self):
         # <in-de>
         prod = self.get_production("<in-de>")
-        if prod == 442:
+        if prod == 453:
             self.unary_exp()
-        elif prod == 443:
+        elif prod == 454:
             self.eat("id")
             self.arr_str()
             self.arith_assign_op()
@@ -2861,11 +2902,11 @@ class Parser:
     def in_de2(self):
         # <in-de2>
         prod = self.get_production("<in-de2>")
-        if prod == 444:
+        if prod == 455:
             self.eat(",")
             self.in_de()
             self.in_de2()
-        elif prod == 445:
+        elif prod == 456:
             pass # Lambda
         else:
             self.error_invalid_token("<in-de2>")
@@ -2873,13 +2914,14 @@ class Parser:
     def heave_stmnt(self):
         # <heave-stmnt>
         prod = self.get_production("<heave-stmnt>")
-        if prod == 446:
+        if prod == 457:
             self.eat("HEAVE")
             self.eat("(")
             self.condition()
             self.eat(")")
             self.eat("[")
             self.look_body()
+            self.jump_stmnt()
             self.eat("]")
         else:
             self.error_invalid_token("<heave-stmnt>")
@@ -2887,10 +2929,11 @@ class Parser:
     def haul_stmnt(self):
         # <haul-stmnt>
         prod = self.get_production("<haul-stmnt>")
-        if prod == 447:
+        if prod == 458:
             self.eat("HAUL")
             self.eat("[")
             self.look_body()
+            self.jump_stmnt()
             self.eat("]")
             self.eat("HEAVE")
             self.eat("(")
@@ -2903,7 +2946,7 @@ class Parser:
     def unary_exp(self):
         # <unary-exp>
         prod = self.get_production("<unary-exp>")
-        if prod == 448:
+        if prod == 459:
             self.unary_op()
             self.eat("id")
         else:
@@ -2912,7 +2955,7 @@ class Parser:
     def unary_op(self):
         # <unary-op>
         prod = self.get_production("<unary-op>")
-        if prod == 449: self.eat("+#")
-        elif prod == 450: self.eat("-#")
+        if prod == 460: self.eat("+#")
+        elif prod == 461: self.eat("-#")
         else:
             self.error_invalid_token("<unary-op>")

@@ -113,6 +113,8 @@ FIRST = {
     "<bool-exp2>": ["+", "-", "*", "/", "%", "^", "<", ">", "<=", ">=", "==", "!=", "&", None],
     "<concat-tail>": ["==", "!="],
     "<eq-ope>": ["id", "(", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#"],
+    "<bool-exp3>": ["+", "-", "*", "/", "%", "^", "<", ">", "<=", ">=", "^&"],
+    "<bool-rel>": ["<", ">", "<=", ">=", None],
     "<bool-exp>": ["||", "&&", None],
 
     "<log-op>": ["||", "&&"],
@@ -143,11 +145,11 @@ FIRST = {
     "<mem>": ["$"],
     "<func>": ["("],
    
-    "<args>": ["id", "(",  "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
-    "<args-val>": ["id", "(",  "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
+    "<args>": ["id", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", None],
+    "<args-val>": ["id", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
     "<args-mult>": [",", None],
-    "<var-val>": ["id", "(", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#"],
-    "<value>": ["id", "(", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#"],
+    "<var-val>": ["id", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#"],
+    "<value>": ["id", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit", "AYE", "NAY", "!", "!#"],
     
     "<var-digit>": ["COIN-lit", "DIME-lit"],
     "<digit-tail>": ["+", "-", "*", "/", "%", "^", "<", ">", "<=", ">=", "==", "!=", None],
@@ -196,6 +198,7 @@ FIRST = {
     "<return-func>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL"],
     "<nonreturn-func>": ["ABYSS"],
     "<nonret-stmnts>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"],
+    "<nonret-tail>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", None],
     "<nonret-back>": ["BACK", None],
     
     "<local-dec>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "MAST", None],
@@ -210,10 +213,11 @@ FIRST = {
     "<str-dec-init>": [",", "=", None],
     "<str-dec-tail>": [",", None],
 
-    "<str-val>": ["id", "(", "COIN-lit", "DIME-lit", "PARCH-lit", "&", "AYE", "NAY", "!", "!#"],
+    "<str-val>": ["id", "$", "COIN-lit", "DIME-lit", "PARCH-lit", "AYE", "NAY", "!", "!#"],
     "<str-val-tail>": [",", None],
 
     "<ahoy-stmnts>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"],
+    "<ahoy-tail>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", None],
     "<statements>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"],
     "<stmnt-tail>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", None],
     
@@ -222,7 +226,7 @@ FIRST = {
     "<arr-str>": ["{", "$", None],
     "<elmt-tail2>": ["{", None],
     "<assign-body>": ["=", "+=", "-=", "*=", "/=", "%=", "^="],
-    "<assign-val>": ["id", "(", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
+    "<assign-val>": ["id", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
     "<arith-assign-op>": ["+=", "-=", "*=", "/=", "%=", "^="],
     "<arith-ope>": ["id", "(", "COIN-lit", "DIME-lit"],
     "<arith-tail>": ["+", "-", "*", "/", "%", "^", None],
@@ -234,11 +238,11 @@ FIRST = {
     
     "<echo-stmnt>": ["ECHO"],
     "<echo-arg>": [",", None],
-    "<echo-val>": ["id", "(", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
+    "<echo-val>": ["id", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
 
     "<look-stmnt>": ["LOOK"],
     "<condition>": ["id", "(", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
-    "<look-body>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", "SAIL", "LAND"],
+    "<look-body>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", None],
     "<jump-stmnt>": ["SAIL", "LAND", None],
     "<look-tail>": ["DROPLOOK", "DROP", None],
     
@@ -247,20 +251,21 @@ FIRST = {
     "<chart-const>": ["COIN-lit", "PARCH-lit"],
     
     "<courses>": ["COURSE"],
-    "<course-body>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", "SAIL", "LAND"],
+    "<course-body>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", None],
+    "<course-jmp>": ["SAIL", "LAND", None],
     "<course-tail>": ["COURSE", None],
     
     "<adrift-case>": ["ADRIFT", None],
-    "<adrift-body>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"],
+    "<adrift-body>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#", None],
     "<hoist-stmnt>": ["HOIST"],
 
     "<init>": ["COIN", "id", None],
-    "<id-init>": ["{", "$", None],
+    "<id-init>": ["{", "$"],
     "<init1>": [",", None],
     "<init2>": [",", None],
     
     "<hoist-cond>": ["id"],
-    "<id-cond>": ["{", "$", None],
+    "<id-cond>": ["{", "$"],
     "<releq-op>": ["<", ">", "<=", ">=", "==", "!="],
     "<hoist-ope>": ["COIN-lit", "id"],
     "<hoist-log>": ["||", "&&", None],
