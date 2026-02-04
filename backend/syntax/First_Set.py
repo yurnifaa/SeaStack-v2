@@ -158,8 +158,8 @@ FIRST = {
     "<var-log>": ["||", "&&", None],
     "<log-ope>": ["id", "(", "AYE", "NAY", "!", "!#", "COIN-lit", "DIME-lit", "PARCH-lit", "SCROLL-lit"],
 
-    "<eq-parch>": ["==", "!="],
-    "<eq-scroll>": ["==", "!="],
+    "<eq-parch>": ["==", "!=", None],
+    "<eq-scroll>": ["==", "!=", None],
     "<var-scroll>": ["&", None],
     "<concat-ope>": ["id", "(", "SCROLL-lit"],
     "<var-bool>": ["AYE", "NAY", "!", "!#"],
@@ -209,7 +209,7 @@ FIRST = {
     "<str-dec-init>": [",", "=", None],
     "<str-dec-tail>": [",", None],
 
-    "<str-val>": ["id", "(", "COIN-lit", "DIME-lit", "PARCH-lit", "&", "AYE", "NAY", "!", "!#", "$"],
+    "<str-val>": ["id", "(", "COIN-lit", "DIME-lit", "PARCH-lit", "&", "AYE", "NAY", "!", "!#"],
     "<str-val-tail>": [",", None],
 
     "<ahoy-stmnts>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "+#", "-#"],
