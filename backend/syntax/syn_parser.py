@@ -109,7 +109,7 @@ class Parser:
             # Filter based on Parentheses ( )
             if paren_balance > 0:
                 if token in ["]", "}", "!!"]: continue
-                if token == "," and not allow_comma: continue  # <--- NEW CHECK
+                if token == "," and not allow_comma: continue
                 
             # Filter based on Brackets [ ]
             elif bracket_balance > 0:
@@ -2995,12 +2995,17 @@ class Parser:
         else:
             self.error_invalid_token("<in-de>")
 
-    def in_de2(self):
+    def in_de2(self):   
         # <in-de2>
         prod = self.get_production("<in-de2>")
         if prod == 462:
-            self.in_de()
-            self.in_de2()
+            self.eat(",")
+            if self.current_token.type in ["+#", "-#"]:
+                self.unary_exp()
+            else:
+                self.in_de()
+                
+            self.in_de2()  # Recurse
         elif prod == 463:
             pass # Lambda
         else:
@@ -3044,7 +3049,7 @@ class Parser:
         if prod == 466:
             self.unary_op()
             self.eat("id")
-            self.arr_str()
+            self.un_arr_str()
         else:
             self.error_invalid_token("<unary-exp>")
 
@@ -3055,3 +3060,38 @@ class Parser:
         elif prod == 468: self.eat("-#")
         else:
             self.error_invalid_token("<unary-op>")
+
+    def un_arr_str(self):
+        # <un-arr-str>
+        prod = self.get_production("<un-arr-str>")
+        
+        if prod == 470:  # { <index> } <uas-tail>
+            self.eat("{")
+            self.index()
+            self.eat("}")
+            self.uas_tail()
+            
+        elif prod == 471:
+            self.eat("$")
+            self.eat("id")
+            
+        elif prod == 472: # Lambda
+            pass 
+            
+        else:
+            self.error_invalid_token("<un-arr-str>")
+
+    def uas_tail(self):
+        # <uas-tail>
+        prod = self.get_production("<uas-tail>")
+        
+        if prod == 473:
+            self.eat("{")
+            self.index()
+            self.eat("}")
+            
+        elif prod == 474: # Lambda
+            pass
+            
+        else:
+            self.error_invalid_token("<uas-tail>")
