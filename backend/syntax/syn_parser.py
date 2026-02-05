@@ -1273,6 +1273,7 @@ class Parser:
         if prod == 175:
             self.rel_op()
             self.arel_ope()
+            self.bool_arith()
             self.rel_tail()
         else:
             self.error_invalid_token("<rel>")
