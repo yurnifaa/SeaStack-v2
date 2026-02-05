@@ -464,7 +464,7 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["CLOSECB_DELIM"]): return self.rs186()
 
         # DELIMITERS
-        exp = ["+", "-", "*", "/", "%", "^", "<", ">", "=", "!", "&", "|", "]", ")", "{", "&", "whitespace"]
+        exp = ["+", ",", "-", "*", "/", "%", "^", "<", ">", "=", "!", "&", "|", "]", ")", "{", "&", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
         
     def rs186(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
