@@ -69,9 +69,62 @@ class Parser:
         return productions.get(self.current_token.type)
 
     def error_invalid_token(self, non_terminal):
-        """Helper to raise invalid token error with expected tokens from Predict Set."""
-        expected = list(PREDICT.get(non_terminal, {}).keys())
-        raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
+        """
+        Smart error reporting that filters out invalid suggestions based on context.
+        """
+        raw_expected = list(PREDICT.get(non_terminal, {}).keys())
+        filtered_expected = []
+
+        # 1. Track context
+        paren_balance = 0
+        bracket_balance = 0
+        curly_balance = 0
+        
+        # We need to find the INDEX of the most recent open parenthesis
+        last_open_paren_index = -1
+
+        for i in range(self.pos):
+            t_type = self.tokens[i].type
+            if t_type == "(": 
+                paren_balance += 1
+                last_open_paren_index = i
+            elif t_type == ")": 
+                paren_balance -= 1
+            elif t_type == "[": bracket_balance += 1
+            elif t_type == "]": bracket_balance -= 1
+            elif t_type == "{": curly_balance += 1
+            elif t_type == "}": curly_balance -= 1
+
+        # 2. Determine if commas are allowed
+        # Commas are only valid inside ( ) if it's a function call (preceded by id, ASK, ECHO)
+        allow_comma = False
+        if paren_balance > 0 and last_open_paren_index > 0:
+            prev_token = self.tokens[last_open_paren_index - 1].type
+            # These are the only things that use commas inside ( ):
+            if prev_token in ["id", "ASK", "ECHO"]:
+                allow_comma = True
+
+        # 3. Filter the suggestions
+        for token in raw_expected:
+            # Filter based on Parentheses ( )
+            if paren_balance > 0:
+                if token in ["]", "}", "!!"]: continue
+                if token == "," and not allow_comma: continue  # <--- NEW CHECK
+                
+            # Filter based on Brackets [ ]
+            elif bracket_balance > 0:
+                if token in [")", "}", "!!"]: continue
+
+            # Filter based on Curlies { }
+            elif curly_balance > 0:
+                if token in [")", "]", "!!"]: continue
+
+            filtered_expected.append(token)
+
+        if not filtered_expected:
+            filtered_expected = raw_expected
+
+        raise Exception(self.err_handler.get_invalid_token_error(self.current_token, filtered_expected))
 
     # =========================================
     # Entry Point
@@ -295,6 +348,7 @@ class Parser:
         elif prod == 35:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.coin_arr2_tail()
         elif prod == 36:
             pass # Lambda
@@ -490,6 +544,7 @@ class Parser:
         if prod == 64:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.dime_arr_tail()
         else:
             self.error_invalid_token("<dime-arr>")
@@ -505,6 +560,7 @@ class Parser:
         elif prod == 66:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.dime_arr2_tail()
         elif prod == 67:
             pass # Lambda
@@ -667,6 +723,7 @@ class Parser:
         if prod == 89:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.parch_arr_tail()
         else:
             self.error_invalid_token("<parch-arr>")
@@ -682,6 +739,7 @@ class Parser:
         elif prod == 91:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.parch_arr2_tail()
         elif prod == 92:
             pass # Lambda
@@ -898,6 +956,7 @@ class Parser:
         if prod == 123:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.scroll_arr_tail()
         else:
             self.error_invalid_token("<scroll-arr>")
@@ -913,6 +972,7 @@ class Parser:
         elif prod == 125:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.scroll_arr2_tail()
         elif prod == 126:
             pass # Lambda
@@ -1337,7 +1397,7 @@ class Parser:
         elif prod == 198:
             self.bool_digit()
             self.bool_arith()
-            self.rel_eq()
+            self.bool_rel()
         elif prod == 199:
             self.eat("PARCH-lit")
         elif prod == 200:
@@ -1401,6 +1461,7 @@ class Parser:
         if prod == 211:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.bool_arr_tail()
         else:
             self.error_invalid_token("<bool-arr>")
@@ -1416,6 +1477,7 @@ class Parser:
         elif prod == 213:
             self.eat("{")
             self.eat("COIN-lit")
+            self.eat("}")
             self.bool_arr2_tail()
         elif prod == 214:
             pass # Lambda
@@ -2379,6 +2441,7 @@ class Parser:
         # <str-val-tail>
         prod = self.get_production("<str-val-tail>")
         if prod == 371:
+            self.eat(",")
             self.str_val()
             self.str_val_tail()
         elif prod == 372:

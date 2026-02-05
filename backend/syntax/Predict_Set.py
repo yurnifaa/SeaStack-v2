@@ -340,7 +340,7 @@ PREDICT = {
     },
     "<bool-exp3>": {
         "+": 202, "-": 202, "*": 202, "/": 202, "%": 202, "^": 202,
-        "<": 203, ">": 203, "<=": 203, ">=": 203,
+        "<": 203, ">": 203, "<=": 203, ">=": 203, "||": 203, "&&": 203, ")": 203, ",": 203, "!!": 203, "]": 203,
         "&": 204
     },
     "<bool-rel>": {
@@ -386,10 +386,10 @@ PREDICT = {
         ")": 226
     },
     "<param-mult>": {
-        ",": 226, ")": 227
+        ",": 227, ")": 228
     },
     "<d-type>": {
-        "COIN": 228, "DIME": 229, "PARCH": 230, "SCROLL": 231, "BOOL": 232
+        "COIN": 229, "DIME": 230, "PARCH": 231, "SCROLL": 232, "BOOL": 233
     },
     "<ret-stmnts>": {
         "id": 234, "ASK": 234, "ECHO": 234, "LOOK": 234, "CHART": 234, 
@@ -596,7 +596,7 @@ PREDICT = {
     "<scroll-local>": { "=": 360, "{": 360, "!!": 360, ",": 360 },
     "<bool-local>": { "=": 361, "{": 361, "!!": 361, ",": 361 },
     "<struct-dec>": { "MAST": 362, "id": 363, "ASK": 363, "ECHO": 363, "LOOK": 363, "CHART": 363, "HOIST": 363, "HEAVE": 363, "HAUL": 363, "+#": 363, "-#": 363, "BACK": 363, "]": 363 },
-    "<str-dec-init>": { "id": 364, "=": 365, "!!": 366 },
+    "<str-dec-init>": { ",": 364, "=": 365, "!!": 366 },
     "<str-dec-tail>": { ",": 367, "!!": 368 },
     "<str-val>": { 
         "id": 369, "(": 369, "COIN-lit": 369, "DIME-lit": 369, "PARCH-lit": 369, 
@@ -642,7 +642,9 @@ PREDICT = {
     "<condition>": { "id": 416, "(": 416, "AYE": 416, "NAY": 416, "!": 416, "!#": 416, "COIN-lit": 416, "DIME-lit": 416, "PARCH-lit": 416, "SCROLL-lit": 416 },
     "<look-body>": { "id": 417, "ASK": 417, "ECHO": 417, "LOOK": 417, "CHART": 417, "HOIST": 417, "HEAVE": 417, "HAUL": 417, "+#": 417, "-#": 417, "SAIL": 418, "LAND": 418, "]": 418 },
     "<jump-stmnt>": { "SAIL": 419, "LAND": 420, "]": 421 },
-    "<look-tail>": { "DROPLOOK": 422, "DROP": 423, "]": 424 },
+    "<look-tail>": { "DROPLOOK": 422, "DROP": 423, "]": 424, "id": 424, "ASK": 424, "ECHO": 424, "LOOK": 424, "CHART": 424, 
+                        "HOIST": 424, "HEAVE": 424, "HAUL": 424, "+#": 424, "-#": 424,
+                        "SAIL": 424, "LAND": 424, "BACK": 424 },
     "<chart-stmnt>": { "CHART": 425 },
     "<chart-cond>": { "id": 426, "COIN-lit": 427, "PARCH-lit": 427 },
     "<chart-const>": { "COIN-lit": 428, "PARCH-lit": 429 },
