@@ -262,7 +262,7 @@ class SymbolHandler:
         if self.current_char == "=": return self.rs158()
 
         # DELIMITERS
-        exp = ["!", "#", "=", "(", "A", "N", "lowercase letter"]
+        exp = ["!", "#", "=", "(", "A", "N", "lowlet"]
         self.errors.append(self._create_sym_error(exp))
 
     def rs153(self): return Token("!", self.current_token_text(), self.line, self.col - 1)
@@ -285,7 +285,7 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]): return self.rs157()
         
         # DELIMITERS
-        exp = ["(", "A", "N", "lowercase letter"]
+        exp = ["(", "A", "N", "lowlet"]
         self.errors.append(self._create_sym_error(exp))
         
     def rs157(self): return Token("!#", self.current_token_text(), self.line, self.col - 1)
@@ -415,7 +415,7 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs178()
 
         # DELIMITERS
-        self.errors.append(self._create_sym_error(["lowercase letter"]))
+        self.errors.append(self._create_sym_error(["lowlet"]))
         
     def rs178(self): return Token("@", self.current_token_text(), self.line, self.col - 1)
 
@@ -427,7 +427,7 @@ class SymbolHandler:
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs180()
 
         # DELIMITERS
-        self.errors.append(self._create_sym_error(["lowercase letter"]))
+        self.errors.append(self._create_sym_error(["lowlet"]))
         
     def rs180(self): return Token("$", self.current_token_text(), self.line, self.col - 1)
 

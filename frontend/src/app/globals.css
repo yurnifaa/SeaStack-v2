@@ -206,6 +206,7 @@ html, body {
     flex-grow: 1;
     overflow: hidden;
     background-color: #fafafa;
+    font-variant-ligatures: none;
 }
 
 /* --- Table Styles --- */
@@ -214,6 +215,7 @@ html, body {
     height: 100%;
     overflow: auto;
     background-color: #ffffff;
+    font-variant-ligatures: none;
 }
 
 table { width: 100%; border-collapse: collapse; }
@@ -277,7 +279,8 @@ body.dark-mode .panel {
 }
 
 body.dark-mode .code-editor-area {
-    background-color: #0a2457; 
+    background-color: #0a2457;
+    font-variant-ligatures: none; 
 }
 
 /* Active tab blends with Editor */
@@ -288,6 +291,7 @@ body.dark-mode .tab.active {
 
 body.dark-mode .table-container {
     background-color: #2d3748;
+    font-variant-ligatures: none;
 }
 
 /* Update table borders */
