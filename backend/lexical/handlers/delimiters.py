@@ -13,6 +13,7 @@ class Delimiters:
         DIGIT = set("0123456789")
         ALPHANUMERIC = LOWLET | DIGIT
         ASCII = set(string.printable)
+        NONZERO = set("123456789")
 
     # =========================================================================
     # Whitespace, Newline, Tab
@@ -64,6 +65,7 @@ class Delimiters:
             "DIGIT": DIGIT,
             "ALPHANUMERIC": ALPHANUMERIC,
             "ASCII": ASCII,
+            "NONZERO": NONZERO, 
             "WHITESPACE": WHITESPACE,
             "ARITH_OP": ARITH_OP,
             "GEN_OP": GEN_OP,

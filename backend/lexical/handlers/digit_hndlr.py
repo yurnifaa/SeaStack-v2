@@ -60,35 +60,62 @@ class DigitHandler:
         if self.current_char == '-':
             self.advance()
         
-        # Transition to State 235 (1st Digit of COIN)
+        # Transition to State 235 (1st Digit logic)
         return self.c235()
 
     # =========================================================================
     # COIN-lit (Integers) - States 235 to 266
     # =========================================================================
     
-    # --- Digit 1 (State 235) ---
+    # --- Digit 1 (Start State Logic) ---
     def c235(self):
-        # Leading Zero Logic
+        # PATH A: Leading Zero (Diagram State 0 -> 235)
         if self.current_char == '0':
-            peek_char = self.text[self.pos + 1] if self.pos + 1 < len(self.text) else None
+            self.advance()
+            # Transitions: digit_delim -> 236 (Accept), . -> 267 (Dime), digit -> ERROR
             
-            if peek_char and peek_char.isdigit():
-                self.advance()              # Consume the '0'
-                return self.c235()          # Recurse           
-        self.advance()
+            if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
+                return self.c236()
+            
+            if self.current_char == ".":
+                return self.d267() # Transition to DIME
+                
+            if self.current_char is not None and self.current_char.isdigit():
+                # 0 followed by digit is INVALID
+                self.errors.append(self._create_digit_error("Invalid COIN-lit. Leading zeros are not allowed."))
+                return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
+            
+            self.errors.append(self._create_digit_error("Invalid COIN-lit. Expected '.', or delimiter."))
+            return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c236()
-        if self.current_char == ".": return self.d267() # Transition to DIME (State 267)
-        if self.current_char is not None and self.current_char.isdigit(): return self.c237() # To Digit 2
-        
-        self.errors.append(self._create_digit_error("Invalid COIN-lit. Expected digit, '.', or delimiter."))
+        # PATH B: Non-Zero Digit (Diagram State 0 -> 237)
+        elif self.current_char in Delimiters._get_delimiters()["NONZERO"]:
+            self.advance() # Consume 1-9
+            
+            # Transitions: digit_delim -> 238 (Accept), . -> 267 (Dime), digit -> 239 (Next State)
+            
+            if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
+                return self.c238()
+                
+            if self.current_char == ".":
+                return self.d267() # Transition to DIME
+                
+            if self.current_char is not None and self.current_char.isdigit():
+                # Transition to logic for 2nd digit
+                return self.c237() 
+                
+            self.errors.append(self._create_digit_error("Invalid COIN-lit. Expected digit, '.', or delimiter."))
+            return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
+
+        # Catch-all
+        self.advance()
+        self.errors.append(self._create_digit_error("Invalid Digit Start."))
         return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # State 236 (Accept 1 Digit)
+    # State 236 (Accept single '0')
     def c236(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
-    # --- Digit 2 (State 237) ---
+    # --- Digit 2 (State 237 in code / Handling Node 239 logic) ---
     def c237(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c238()
