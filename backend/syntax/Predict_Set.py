@@ -1084,51 +1084,89 @@ PREDICT = {
         "+#": 549,
         "-#": 550
     },
+
+    "<ahoy-local-dec>": {
+        "COIN": 551, "DIME": 551, "PARCH": 551, "SCROLL": 551, "BOOL": 551,
+        "MAST": 552,
+        "id": 553, "ASK": 553, "ECHO": 553, "LOOK": 553, "CHART": 553, "HOIST": 553, "HEAVE": 553, "HAUL": 553, "+#": 553, "-#": 553
+    },
+
+    "<ahoy-var-arr>": {
+        "COIN": 554,
+        "DIME": 555,
+        "PARCH": 556,
+        "SCROLL": 557,
+        "BOOL": 558
+    },
+    "<ahoy-coin-local>": {
+        "=": 559, ",": 559, "!!": 559,
+        "{": 560
+    },
+    "<ahoy-dime-local>": {
+        "=": 561, ",": 561, "!!": 561,
+        "{": 562
+    },
+    "<ahoy-parch-local>": {
+        "=": 563, ",": 563, "!!": 563,
+        "{": 564
+    },
+    "<ahoy-scroll-local>": {
+        "=": 565, ",": 565, "!!": 565,
+        "{": 566
+    },
+    "<ahoy-bool-local>": {
+        "=": 567, ",": 567, "!!": 567,
+        "{": 568
+    },
+    "<ahoy-struct-dec>": {
+        "MAST": 569,
+        "id": 570, "ASK": 570, "ECHO": 570, "LOOK": 570, "CHART": 570, "HOIST": 570, "HEAVE": 570, "HAUL": 570, "+#": 570, "-#": 570
+    },
     "<ahoy-stmnts>": {
-        "id": 551, "ASK": 551, "ECHO": 551, "LOOK": 551, "CHART": 551, "HOIST": 551, "HEAVE": 551, "HAUL": 551, "+#": 551, "-#": 551
+        "id": 571, "ASK": 571, "ECHO": 571, "LOOK": 571, "CHART": 571, "HOIST": 571, "HEAVE": 571, "HAUL": 571, "+#": 571, "-#": 571
     },
     "<ahoy-tail>": {
-        "id": 552, "ASK": 552, "ECHO": 552, "LOOK": 552, "CHART": 552, "HOIST": 552, "HEAVE": 552, "HAUL": 552, "+#": 552, "-#": 552,
-        "]": 553
+        "id": 572, "ASK": 572, "ECHO": 572, "LOOK": 572, "CHART": 572, "HOIST": 572, "HEAVE": 572, "HAUL": 572, "+#": 572, "-#": 572,
+        "]": 573
     },
     "<ahoy-stmnt>": {
-        "id": 554,
-        "ASK": 555,
-        "ECHO": 556,
-        "LOOK": 557,
-        "CHART": 558,
-        "HOIST": 559,
-        "HEAVE": 560,
-        "HAUL": 561,
-        "+#": 562, "-#": 562
+        "id": 574,
+        "ASK": 575,
+        "ECHO": 576,
+        "LOOK": 577,
+        "CHART": 578,
+        "HOIST": 579,
+        "HEAVE": 580,
+        "HAUL": 581,
+        "+#": 582, "-#": 582
     },
     "<ahoy-assign>": {
-        "id": 563
+        "id": 583
     },
     "<ahoy-ask>": {
-        "ASK": 564
+        "ASK": 584
     },
     "<ahoy-echo>": {
-        "ECHO": 565
+        "ECHO": 585
     },
     "<ahoy-look>": {
-        "LOOK": 566
+        "LOOK": 586
     },
     "<ahoy-look-tail>": {
-        "DROPLOOK": 567,
-        "DROP": 568,
-        "]": 569, "id": 569, "ASK": 569, "ECHO": 569, "LOOK": 569, "CHART": 569, "HOIST": 569, "HEAVE": 569, "HAUL": 569, "+#": 569, "-#": 569, "SAIL": 569, "LAND": 569
+        "DROPLOOK": 587,
+        "DROP": 588,
+        "]": 589, "id": 589, "ASK": 589, "ECHO": 589, "LOOK": 589, "CHART": 589, "HOIST": 589, "HEAVE": 589, "HAUL": 589, "+#": 589, "-#": 589
     },
     "<ahoy-chart>": {
-        "CHART": 570
+        "CHART": 590
     },
     "<ahoy-hoist>": {
-        "HOIST": 571
+        "HOIST": 591
     },
     "<ahoy-heave>": {
-        "HEAVE": 572
+        "HEAVE": 592
     },
     "<ahoy-haul>": {
-        "HAUL": 573
+        "HAUL": 593
     }
 }

@@ -76,13 +76,13 @@ class Parser:
     # =========================================
     def parse(self):
         try:
-            # 1. Missing start check
+            # Missing start check
             if not self.tokens:
                 raise Exception(self.err_handler.get_missing_start_error())
 
             self.program()
             
-            # 3. Expected EOF check
+            # Expected EOF check
             if self.current_token is not None:
                 raise Exception(self.err_handler.get_expected_eof_error(self.current_token))
                 
@@ -116,7 +116,7 @@ class Parser:
             self.eat("(")
             self.eat(")")
             self.eat("[")
-            self.local_dec()
+            self.ahoy_local_dec()
             self.ahoy_stmnts()
             self.eat("]")
         else:
@@ -3054,7 +3054,7 @@ class Parser:
         # <condition>
         prod = self.get_production("<condition>")
         if prod == 489:
-            self.bool_val()
+            self.bool_grp_val()
         else:
             self.error_invalid_token("<condition>")
 
@@ -3476,10 +3476,128 @@ class Parser:
         else:
             self.error_invalid_token("<unary-op>")
 
+# =========================================
+# AHOY PRODUCTIONS
+# =========================================
+
+    def ahoy_local_dec(self):
+        # <ahoy-local-dec>
+        prod = self.get_production("<ahoy-local-dec>")
+        if prod == 551:
+            self.ahoy_var_arr()
+            self.ahoy_local_dec()
+        elif prod == 552:
+            self.ahoy_struct_dec()
+        elif prod == 553:
+            pass # Lambda
+        else:
+            self.error_invalid_token("<ahoy-local-dec>")
+
+    def ahoy_var_arr(self):
+        # <ahoy-var-arr>
+        prod = self.get_production("<ahoy-var-arr>")
+        if prod == 554:
+            self.eat("COIN")
+            self.eat("id")
+            self.ahoy_coin_local()
+        elif prod == 555:
+            self.eat("DIME")
+            self.eat("id")
+            self.ahoy_dime_local()
+        elif prod == 556:
+            self.eat("PARCH")
+            self.eat("id")
+            self.ahoy_parch_local()
+        elif prod == 557:
+            self.eat("SCROLL")
+            self.eat("id")
+            self.ahoy_scroll_local()
+        elif prod == 558:
+            self.eat("BOOL")
+            self.eat("id")
+            self.ahoy_bool_local()
+        else:
+            self.error_invalid_token("<ahoy-var-arr>")
+
+    def ahoy_coin_local(self):
+        # <ahoy-coin-local>
+        prod = self.get_production("<ahoy-coin-local>")
+        if prod == 559:
+            self.coin_var()
+            self.eat("!!")
+        elif prod == 560:
+            self.coin_arr()
+            self.eat("!!")
+        else:
+            self.error_invalid_token("<ahoy-coin-local>")
+
+    def ahoy_dime_local(self):
+        # <ahoy-dime-local>
+        prod = self.get_production("<ahoy-dime-local>")
+        if prod == 561:
+            self.dime_var()
+            self.eat("!!")
+        elif prod == 562:
+            self.dime_arr()
+            self.eat("!!")
+        else:
+            self.error_invalid_token("<ahoy-dime-local>")
+
+    def ahoy_parch_local(self):
+        # <ahoy-parch-local>
+        prod = self.get_production("<ahoy-parch-local>")
+        if prod == 563:
+            self.parch_var()
+            self.eat("!!")
+        elif prod == 564:
+            self.parch_arr()
+            self.eat("!!")
+        else:
+            self.error_invalid_token("<ahoy-parch-local>")
+
+    def ahoy_scroll_local(self):
+        # <ahoy-scroll-local>
+        prod = self.get_production("<ahoy-scroll-local>")
+        if prod == 565:
+            self.scroll_var()
+            self.eat("!!")
+        elif prod == 566:
+            self.scroll_arr()
+            self.eat("!!")
+        else:
+            self.error_invalid_token("<ahoy-scroll-local>")
+
+    def ahoy_bool_local(self):
+        # <ahoy-bool-local>
+        prod = self.get_production("<ahoy-bool-local>")
+        if prod == 567:
+            self.bool_var()
+            self.eat("!!")
+        elif prod == 568:
+            self.bool_arr()
+            self.eat("!!")
+        else:
+            self.error_invalid_token("<ahoy-bool-local>")
+
+    def ahoy_struct_dec(self):
+        # <ahoy-struct-dec>
+        prod = self.get_production("<ahoy-struct-dec>")
+        if prod == 569:
+            self.eat("MAST")
+            self.eat("id")
+            self.eat("id")
+            self.str_dec_init()
+            self.eat("!!")
+            self.ahoy_struct_dec()
+        elif prod == 570:
+            pass # Lambda
+        else:
+            self.error_invalid_token("<ahoy-struct-dec>")
+
     def ahoy_stmnts(self):
         # <ahoy-stmnts>
         prod = self.get_production("<ahoy-stmnts>")
-        if prod == 551:
+        if prod == 571:
             self.ahoy_stmnt()
             self.ahoy_tail()
         else:
@@ -3488,9 +3606,9 @@ class Parser:
     def ahoy_tail(self):
         # <ahoy-tail>
         prod = self.get_production("<ahoy-tail>")
-        if prod == 552:
+        if prod == 572:
             self.ahoy_stmnts()
-        elif prod == 553:
+        elif prod == 573:
             pass # Lambda
         else:
             self.error_invalid_token("<ahoy-tail>")
@@ -3498,15 +3616,15 @@ class Parser:
     def ahoy_stmnt(self):
         # <ahoy-stmnt>
         prod = self.get_production("<ahoy-stmnt>")
-        if prod == 554: self.ahoy_assign()
-        elif prod == 555: self.ahoy_ask()
-        elif prod == 556: self.ahoy_echo()
-        elif prod == 557: self.ahoy_look()
-        elif prod == 558: self.ahoy_chart()
-        elif prod == 559: self.ahoy_hoist()
-        elif prod == 560: self.ahoy_heave()
-        elif prod == 561: self.ahoy_haul()
-        elif prod == 562: 
+        if prod == 574: self.ahoy_assign()
+        elif prod == 575: self.ahoy_ask()
+        elif prod == 576: self.ahoy_echo()
+        elif prod == 577: self.ahoy_look()
+        elif prod == 578: self.ahoy_chart()
+        elif prod == 579: self.ahoy_hoist()
+        elif prod == 580: self.ahoy_heave()
+        elif prod == 581: self.ahoy_haul()
+        elif prod == 582:
             self.unary_exp()
             self.eat("!!")
         else:
@@ -3515,7 +3633,7 @@ class Parser:
     def ahoy_assign(self):
         # <ahoy-assign>
         prod = self.get_production("<ahoy-assign>")
-        if prod == 563:
+        if prod == 583:
             self.eat("id")
             self.assign_tail()
             self.eat("!!")
@@ -3525,7 +3643,7 @@ class Parser:
     def ahoy_ask(self):
         # <ahoy-ask>
         prod = self.get_production("<ahoy-ask>")
-        if prod == 564:
+        if prod == 584:
             self.eat("ASK")
             self.eat("(")
             self.eat("SCROLL-lit")
@@ -3539,7 +3657,7 @@ class Parser:
     def ahoy_echo(self):
         # <ahoy-echo>
         prod = self.get_production("<ahoy-echo>")
-        if prod == 565:
+        if prod == 585:
             self.eat("ECHO")
             self.eat("(")
             self.eat("SCROLL-lit")
@@ -3552,7 +3670,7 @@ class Parser:
     def ahoy_look(self):
         # <ahoy-look>
         prod = self.get_production("<ahoy-look>")
-        if prod == 566:
+        if prod == 586:
             self.eat("LOOK")
             self.eat("(")
             self.condition()
@@ -3568,7 +3686,7 @@ class Parser:
     def ahoy_look_tail(self):
         # <ahoy-look-tail>
         prod = self.get_production("<ahoy-look-tail>")
-        if prod == 567:
+        if prod == 587:
             self.eat("DROPLOOK")
             self.eat("(")
             self.condition()
@@ -3578,13 +3696,13 @@ class Parser:
             self.jump_stmnt()
             self.eat("]")
             self.ahoy_look_tail()
-        elif prod == 568:
+        elif prod == 588:
             self.eat("DROP")
             self.eat("[")
             self.look_body()
             self.jump_stmnt()
             self.eat("]")
-        elif prod == 569:
+        elif prod == 589:
             pass # Lambda
         else:
             self.error_invalid_token("<ahoy-look-tail>")
@@ -3592,7 +3710,7 @@ class Parser:
     def ahoy_chart(self):
         # <ahoy-chart>
         prod = self.get_production("<ahoy-chart>")
-        if prod == 570:
+        if prod == 590:
             self.eat("CHART")
             self.eat("(")
             self.chart_cond()
@@ -3608,7 +3726,7 @@ class Parser:
     def ahoy_hoist(self):
         # <ahoy-hoist>
         prod = self.get_production("<ahoy-hoist>")
-        if prod == 571:
+        if prod == 591:
             self.eat("HOIST")
             self.eat("(")
             self.hoist_init()
@@ -3627,7 +3745,7 @@ class Parser:
     def ahoy_heave(self):
         # <ahoy-heave>
         prod = self.get_production("<ahoy-heave>")
-        if prod == 572:
+        if prod == 592:
             self.eat("HEAVE")
             self.eat("(")
             self.condition()
@@ -3642,7 +3760,7 @@ class Parser:
     def ahoy_haul(self):
         # <ahoy-haul>
         prod = self.get_production("<ahoy-haul>")
-        if prod == 573:
+        if prod == 593:
             self.eat("HAUL")
             self.eat("[")
             self.look_body()
