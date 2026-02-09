@@ -5,8 +5,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #E9EDFF;
-  --foreground: #000000;
+  --background: #0c2b4e;
+  --foreground: #ffffff;
 }
 
 html, body {
@@ -15,11 +15,34 @@ html, body {
     padding: 0;
     font-family: "Fira Code", monospace;
     font-weight: 500;
-    background-color: var(--background);
+    
+    /* Dark Blue Radial Background */
+    background-color: #0c2b4e;
+    background-image: 
+        radial-gradient(at 47% 33%, hsl(204.07, 70%, 53%) 0, transparent 59%), 
+        radial-gradient(at 82% 65%, hsl(203.75, 64%, 44%) 0, transparent 55%);
+    background-attachment: fixed;
+    background-size: cover;
+    
+    color: #ffffff; 
     overflow: hidden;
 }
 
-/* Force overrides for Tailwind container */
+/* --- GLOBAL RESET FOR INPUTS --- */
+input, textarea, select, button {
+    color: #ffffff !important;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    caret-color: #fbca1f;
+}
+
+/* Selection Highlight (Dragging text) */
+::selection {
+    background: rgba(251, 202, 31, 0.3);
+    color: white;
+}
+
 .container {
     display: flex;
     flex-direction: column;
@@ -30,7 +53,9 @@ html, body {
     padding: 0 !important;
 }
 
-/* --- Header --- */
+/* ================================================================
+   NAVBAR
+   ================================================================ */
 .header {
     background-color: #0C2B4E;
     color: white;
@@ -41,20 +66,27 @@ html, body {
     border-bottom: 2px solid #34495e;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     flex-shrink: 0;
+    z-index: 50;
 }
 
-.header-left, .header-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
+.header-left, .header-right { display: flex; align-items: center; gap: 15px; }
 .logo { height: 30px; width: 30px; margin-right: 10px; border-radius: 50%; }
 .title { font-size: 1.2rem; font-weight: 500; margin-right: 20px; }
-
 .main-nav ul { margin: 0; padding: 0; list-style: none; display: flex; gap: 15px; }
 
-/* --- Button Styles --- */
+.btn-header {
+    background-color: #0C2B4E;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+}
+.btn-header:hover { background-color: #2980b9; box-shadow: 0 8px 16px 0 rgba(0,0,0,0.6); }
+
+/* --- Gooey Button --- */
 .c-button {
   color: #ffffff;
   font-weight: 800;
@@ -102,41 +134,17 @@ html, body {
   transition: all 700ms ease;
 }
 
-.c-button--gooey .c-button__blobs div:nth-child(1) {
-  left: -5%;
-}
+.c-button--gooey .c-button__blobs div:nth-child(1) { left: -5%; }
+.c-button--gooey .c-button__blobs div:nth-child(2) { left: 30%; transition-delay: 60ms; }
+.c-button--gooey .c-button__blobs div:nth-child(3) { left: 66%; transition-delay: 25ms; }
+.c-button--gooey:hover { color: #fff; }
+.c-button--gooey:hover .c-button__blobs div { transform: scale(1.4) translateY(0) translateZ(0); }
 
-.c-button--gooey .c-button__blobs div:nth-child(2) {
-  left: 30%;
-  transition-delay: 60ms;
-}
 
-.c-button--gooey .c-button__blobs div:nth-child(3) {
-  left: 66%;
-  transition-delay: 25ms;
-}
+/* ================================================================
+   MAIN CONTENT LAYOUT
+   ================================================================ */
 
-.c-button--gooey:hover {
-  color: #fff;
-}
-
-.c-button--gooey:hover .c-button__blobs div {
-  transform: scale(1.4) translateY(0) translateZ(0);
-}
-
-.btn-header {
-    background-color: #0C2B4E;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 500;
-}
-.btn-header:hover { background-color: #2980b9; box-shadow: 0 8px 16px 0 rgba(0,0,0,0.6); }
-
-/* --- Main Layout --- */
 .main-content {
     display: flex;
     flex: 1;
@@ -146,171 +154,158 @@ html, body {
     overflow: hidden; 
 }
 
+/* Wrapper for panels (transparent) */
 .panel {
     display: flex;
     flex-direction: column;
-    border-radius: 8px; 
-    overflow: hidden; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    background-color: #ffffff; /* Default Light Mode */
-    transition: background-color 0.3s;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    gap: 15px;
 }
 
-.panel-left { flex: 3; }
-.panel-right { flex: 2; }
+/* ================================================================
+   SHARED GLASS UTILITY
+   ================================================================ 
+*/
+.glass-panel,
+.panel-left,        
+.table-container,
+.footer {
+    backdrop-filter: blur(0px) saturate(35%);
+    -webkit-backdrop-filter: blur(0px) saturate(35%);
+    background-color: rgba(23, 38, 68, 0.50) !important;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.125);
+    overflow: hidden;
+}
 
-/* --- Tab Bar --- */
+
+/* --- LEFT PANEL (Merged Tabs + Editor) --- */
+.panel-left {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
 .panel-tab-bar {
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    background-color: #0C2B4E; 
-    overflow-x: auto;
-    overflow-y: hidden;
-    height: 40px;
+    height: 45px;
+    padding: 0 10px;
+    
+    /* Make distinct from editor */
+    background: rgba(0, 0, 0, 0.2); 
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.panel-tab-bar::-webkit-scrollbar { display: none; }
 
 .tab {
     display: flex;
     align-items: center;
     padding: 0 15px;
-    background-color: #0C2B4E;
-    color: #bdc3c7;
+    color: rgba(255,255,255,0.8);
     cursor: pointer;
     font-size: 0.9em;
     font-weight: 600;
-    white-space: nowrap;
     height: 100%;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
 }
-
-.tab.active {
-    background-color: #0C2B4E;
-    color: #ffffff;
-    border-bottom: 5px solid #fbca1f; 
+.tab:hover { background: rgba(255,255,255,0.1); color: white; }
+.tab.active { 
+    color: #ffffff; 
+    border-bottom: 3px solid #fbca1f; 
+    background: rgba(255,255,255,0.2); 
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
+.tab .close-tab { background: none; border: none; color: inherit; margin-left: 10px; cursor: pointer; }
 
-.tab .close-tab {
-    background: none;
-    border: none;
-    color: inherit;
-    font-weight: bold;
-    margin-left: 10px;
-    cursor: pointer;
-}
-
-/* --- Editor Area --- */
+/* The Editor inside the merged panel */
 .code-editor-area {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    overflow: hidden;
-    background-color: #fafafa;
-    font-variant-ligatures: none;
+    position: relative;
+    background: transparent !important; 
+    border: none !important;
 }
 
-/* --- Table Styles --- */
+/* --- FORCE TEXT WHITE / REMOVE HIGHLIGHT --- */
+.code-editor-area *, 
+.code-editor-area textarea { 
+    background-color: transparent !important; 
+    color: #ffffff !important;
+}
+
+/* Explicitly force any "active line" or "selection" classes to have NO background */
+.code-editor-area .active-line,
+.code-editor-area .selected,
+.code-editor-area .current-line {
+    background-color: transparent !important;
+    border: none !important;
+}
+
+/* --- RIGHT PANEL (Table) --- */
+.panel-right { 
+    flex: 2; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+}
+
 .table-container {
     width: 100%;
     height: 100%;
-    overflow: auto;
-    background-color: #ffffff;
-    font-variant-ligatures: none;
 }
-
 table { width: 100%; border-collapse: collapse; }
-th, td { padding: 12px 15px; text-align: center; font-family: inherit; white-space: pre-wrap; }
-
-th {
-    background-color: #0C2B4E !important;
-    color: #ffffff;
-    font-weight: bold;
-    font-size: 16px;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+th, td { 
+    padding: 12px 15px; 
+    text-align: center; 
+    color: #ffffff; 
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
 }
+th {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+td { border-bottom: 1px solid rgba(255,255,255,0.1); }
+tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.1) !important; }
+tr:hover { background-color: rgba(255, 255, 255, 0.2) !important; }
 
-tr:nth-child(even) { background-color: #CFDBE4; }
 
-/* --- Footer --- */
+/* --- FOOTER --- */
 .footer {
     height: 200px;
     display: flex;
     flex-direction: column;
-    background-color: #34495e;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
     margin: 0 20px 20px 20px;
-    overflow: hidden;
     flex-shrink: 0;
 }
-.footer-nav { background-color: #2c3e50; }
+.footer-nav { 
+    background: rgba(0, 0, 0, 0.1) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
 .footer-nav ul { margin: 0; padding: 0 10px; list-style: none; display: flex; }
 .footer-nav li a {
-    color: #bdc3c7;
+    color: rgba(255,255,255,0.7);
     padding: 10px 15px;
     display: block;
     cursor: pointer;
-    border-bottom: 3px solid transparent;
+    border-bottom: 2px solid transparent;
 }
-
 .footer-nav li a.active { color: white; border-bottom-color: #3498db; font-weight: bold; }
 .footer-content {
     flex-grow: 1;
     padding: 15px;
     overflow-y: auto;
-    background-color: #3c4a5c; 
-    color: #e0e0e0;
+    color: #ffffff;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.2);
 }
 
-/* =========================================
-   DARK MODE OVERRIDES (Based on your CSS)
-   ========================================= */
-body.dark-mode {
-    background-color: #1a202c; /* Page Background */
-}
-
-/* Update panels to #2d3748 */
-body.dark-mode .panel {
-    background-color: #2d3748; 
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-}
-
-body.dark-mode .code-editor-area {
-    background-color: #0a2457;
-    font-variant-ligatures: none; 
-}
-
-/* Active tab blends with Editor */
-body.dark-mode .tab.active {
-    background-color: #0c2b4e; 
-    color: white;
-}
-
-body.dark-mode .table-container {
-    background-color: #2d3748;
-    font-variant-ligatures: none;
-}
-
-/* Update table borders */
-body.dark-mode table td {
-    border-bottom: 1px solid #232b38;
-    color: #e2e8f0;
-}
-
-/* Update table zebra striping */
-body.dark-mode table tr:nth-child(even) {
-    background-color: #3c4a5c;
-}
-
-/* Update table hover */
-body.dark-mode table tr:hover {
-    background-color: #4a5568;
-}
-
-/* Toggle Switch CSS */
+/* --- TOGGLE SWITCH (Restored) --- */
 .switch { position: relative; display: inline-block; width: 3.5em; height: 2em; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #091f38; transition: 0.4s; border-radius: 30px; overflow: hidden; }
