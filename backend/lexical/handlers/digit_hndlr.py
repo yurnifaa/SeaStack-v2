@@ -347,19 +347,12 @@ class DigitHandler:
     # --- DIME Digit 8 (State 282) - MAX LENGTH DIME ---
     def d282(self):
         self.advance()
-        significant_end = self.pos
-        while self.current_char == '0':
-            self.advance()
-
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d283(significant_end)
-
+        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): 
+            return self.d283()
         if self.current_char is not None and self.current_char.isdigit(): 
              return self._report_digit_error("Invalid DIME-lit. Limit (8) exceeded. Expected delimiter.")
 
         return self._report_digit_error("Invalid DIME-lit. Expected delimiter.")
 
-    def d283(self, lexeme_end=None): 
-        if lexeme_end:
-            result_lexeme = self.text[self.token_start_pos : lexeme_end]
-            return Token("DIME-lit", result_lexeme, self.line, self.col - 1)
+    def d283(self): 
         return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)

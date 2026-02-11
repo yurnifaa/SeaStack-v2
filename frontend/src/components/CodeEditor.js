@@ -18,7 +18,7 @@ const seaLight = createTheme({
     gutterForeground: '#64748b',
   },
   styles: [
-    { tag: t.typeName, color: '#db1616' },      // Datatypes: Light Red
+    { tag: t.typeName, color: '#0019ff' },      // Datatypes: Light Red
     { tag: t.keyword, color: '#d16619' },       // Keywords: Soft Orange
     { tag: t.comment, color: '#9CA3AF' },       // Comments: Grey
     { tag: t.string, color: '#119141' },        // Strings: Soft Green
@@ -42,13 +42,13 @@ const seaDark = createTheme({
     gutterForeground: '#5c7c9c', 
   },
   styles: [
-    { tag: t.typeName, color: '#F87171' },      // Datatypes: Light Red
-    { tag: t.keyword, color: '#FDE047' },       // Keywords: Soft Yellow
+    { tag: t.typeName, color: '#6675ff' },      // Datatypes: Blue
+    { tag: t.keyword, color: '#cc91ff' },       // Keywords: Purple
     { tag: t.comment, color: '#9CA3AF' },       // Comments: Grey
-    { tag: t.string, color: '#86EFAC' },        // Strings: Light Soft Green
+    { tag: t.string, color: '#7abdff' },        // Strings: Light Blue
     { tag: t.number, color: '#93C5FD' },        // Numbers: Soft Blue
-    { tag: t.variableName, color: '#E2E8F0' },  // Identifiers: White/Grey
-    { tag: t.operator, color: '#C491FA' },      // Operators: Soft Purple
+    { tag: t.variableName, color: '#E2E8F0' },  // Identifiers: White
+    { tag: t.operator, color: '#F87171' },      // Operators: Soft Red
     { tag: t.punctuation, color: '#E2E8F0' },
   ],
 });
