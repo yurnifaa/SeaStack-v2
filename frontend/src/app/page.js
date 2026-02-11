@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react"; 
 import SeaStackEditor from "../components/CodeEditor";
 
-// --- Reusable Gooey Button Component ---
 const GooeyButton = ({ onClick, children }) => {
   return (
     <button className="c-button c-button--gooey" onClick={onClick}>
@@ -19,7 +18,7 @@ const GooeyButton = ({ onClick, children }) => {
 export default function Home() {
   const [code, setCode] = useState("");
   const [tokens, setTokens] = useState([]);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // File Management State
   const [fileName, setFileName] = useState("file.sea");
@@ -38,11 +37,12 @@ export default function Home() {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    const isDark = document.body.classList.contains('dark-mode') || savedTheme === 'dark';
-
-    if (isDark) {
+    if (savedTheme === 'light') {
+      setIsDarkMode(false);
+      document.body.classList.remove('dark-mode');
+    } else {
       setIsDarkMode(true);
-      document.body.classList.add('dark-mode'); 
+      document.body.classList.add('dark-mode');
     }
   }, []);
 
@@ -51,8 +51,10 @@ export default function Home() {
     setIsDarkMode(checked); 
     if (checked) {
       document.body.classList.add('dark-mode');
+      localStorage.setItem('theme', 'dark');
     } else {
       document.body.classList.remove('dark-mode');
+      localStorage.setItem('theme', 'light');
     }
   };
 
