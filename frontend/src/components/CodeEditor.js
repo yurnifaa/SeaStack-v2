@@ -2,23 +2,34 @@
 import React from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { createTheme } from '@uiw/codemirror-themes';
-import { EditorView } from '@codemirror/view'; 
+import { tags as t } from '@lezer/highlight';
+import { seaStackLanguage } from './seaStackLang'; 
 
-// --- Light Theme ---
+// --- Light Mode Palette ---
 const seaLight = createTheme({
   theme: 'light',
   settings: {
     background: 'transparent',
     foreground: '#000000',
     caret: '#0C2B4E',
-    selection: '#bae6fd',
-    selectionMatch: '#bae6fd',
+    selection: '#73a5bf',
+    selectionMatch: '#73a5bf',
     gutterBackground: 'transparent',
-    gutterForeground: '#424f61',
+    gutterForeground: '#64748b',
   },
+  styles: [
+    { tag: t.typeName, color: '#db1616' },      // Datatypes: Light Red
+    { tag: t.keyword, color: '#d16619' },       // Keywords: Soft Orange
+    { tag: t.comment, color: '#9CA3AF' },       // Comments: Grey
+    { tag: t.string, color: '#119141' },        // Strings: Soft Green
+    { tag: t.number, color: '#2563EB' },        // Numbers: Soft Blue
+    { tag: t.variableName, color: '#000000' },  // Identifiers: Black
+    { tag: t.operator, color: '#7518c9' },      // Operators: Purple
+    { tag: t.punctuation, color: '#000000' },   
+  ],
 });
 
-// --- Dark Theme ---
+// --- Dark Mode Palette ---
 const seaDark = createTheme({
   theme: 'dark',
   settings: {   
@@ -30,9 +41,21 @@ const seaDark = createTheme({
     gutterBackground: 'transparent',
     gutterForeground: '#5c7c9c', 
   },
+  styles: [
+    { tag: t.typeName, color: '#F87171' },      // Datatypes: Light Red
+    { tag: t.keyword, color: '#FDE047' },       // Keywords: Soft Yellow
+    { tag: t.comment, color: '#9CA3AF' },       // Comments: Grey
+    { tag: t.string, color: '#86EFAC' },        // Strings: Light Soft Green
+    { tag: t.number, color: '#93C5FD' },        // Numbers: Soft Blue
+    { tag: t.variableName, color: '#E2E8F0' },  // Identifiers: White/Grey
+    { tag: t.operator, color: '#C491FA' },      // Operators: Soft Purple
+    { tag: t.punctuation, color: '#E2E8F0' },
+  ],
 });
 
 // --- Highlighting Styles ---
+import { EditorView } from '@codemirror/view'; 
+
 const lightHighlightStyle = EditorView.theme({
   "&": { backgroundColor: "transparent !important" },
   ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.4) !important" },
@@ -60,7 +83,10 @@ export default function SeaStackEditor({ code, setCode, isDarkMode }) {
         value={code}
         height="100%"
         theme={isDarkMode ? seaDark : seaLight} 
-        extensions={[isDarkMode ? darkHighlightStyle : lightHighlightStyle]} 
+        extensions={[
+            isDarkMode ? darkHighlightStyle : lightHighlightStyle,
+            seaStackLanguage
+        ]} 
         onChange={onChange}
         basicSetup={{
           lineNumbers: true,
