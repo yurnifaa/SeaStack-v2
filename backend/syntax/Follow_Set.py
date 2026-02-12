@@ -1,5 +1,4 @@
 # Follow_Set.py
-# Source: SeaStack Language Specification - IX. FOLLOW SET (UPDATED)
 # EOF represents the End of File ($)
 
 FOLLOW = {
@@ -13,7 +12,7 @@ FOLLOW = {
     "<multi-var-init>": ["!!"],
     "<array>": ["COIN", "DIME", "PARCH", "SCROLL", "BOOL", "LOCKE", "MAST", "ABYSS", "AHOY"],
     "<arr-tail>": ["!!"],
-    "<arr-val>": ["}", "]"], # Adjusted per context, often closed by brace or bracket
+    "<arr-val>": ["}", "]"],
     "<arr-val-tail>": ["]"],
     "<arr2-tail>": ["!!"],
     "<arr2-val>": ["]", ","],
@@ -98,6 +97,6 @@ FOLLOW = {
     "<init>": ["!!"],
     "<heave-stmnt>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "SAIL", "+#", "-#", "BACK", "]", "LAND"],
     "<haul-stmnt>": ["id", "ASK", "ECHO", "LOOK", "CHART", "HOIST", "HEAVE", "HAUL", "SAIL", "+#", "-#", "BACK", "]", "LAND"],
-    "<unary-exp>": ["!!", ")", "]"], # Found in HOIST closing
+    "<unary-exp>": ["!!", ")", "]"],
     "<unary-op>": ["id"]
 }

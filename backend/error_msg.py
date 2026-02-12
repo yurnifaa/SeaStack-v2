@@ -26,7 +26,7 @@ class ErrorHandler:
         ),
         "UNEXPECTED_EOF": (
             "Line {line}, Col {col} | Unexpected End Of File.\n"
-            "Expected: {expected}" # e.g., ']' or more statements
+            "Expected: {expected}" # kunwari ']' or more statements
         ),
         "MISSING_START": "Line {line}, Col {col} | Missing Start. Source code is empty.",
         
@@ -47,7 +47,7 @@ class ErrorHandler:
     
     @staticmethod
     def _format_list_static(expected_list):
-        # Formats a list of tokens into a readable string (e.g., 'A, B, or C').
+        # Formats a list of tokens into a readable string (Like '], ), or ;').
         if not expected_list: 
             return "Nothing"
         
@@ -60,13 +60,14 @@ class ErrorHandler:
         return f"'{', '.join(clean[:-1])}', or '{clean[-1]}'"
 
     def _get_line_content(self, line_num):
-        # Safely retrieves the line content for context display.
+        # Yung actual line to after "Unexpected Token"
+        # di siya need,,, for visual lang
         if isinstance(line_num, int) and 1 <= line_num <= len(self.lines):
             return self.lines[line_num - 1].strip()
         return ""
 
     def _create_error(self, header, message_body, line, col, found_str=None, expected_list=None):
-        # Standardizes the error dictionary return format.
+        # Error dictionary return format.
         return {
             "type": "Syntax Error",
             "error_header": header,
@@ -143,7 +144,7 @@ class ErrorHandler:
         else:
         # ==================================================================
         # Case 3: Unexpected End Of File
-        # We hit EOF but expected something else (like ']' or statements)
+        # We hit EOF but expected something else (like ] or more statement decla)
         # ==================================================================
             line = len(self.lines) if self.lines else 1
             col = "End"
@@ -155,8 +156,8 @@ class ErrorHandler:
             return self._create_error("Unexpected EOF or", msg, line, col, found, expected_tokens)
 
     def get_missing_token_error(self, current_token, expected_token_type):
-        # Case 5: Misplaced Token / Missing specific token.
-        # Triggered by eat() failures.
+        # Case 5: Misplaced Token / Missing a specific token
+        # Triggered pag nagfail yung eat()
         if current_token:
             line, col = current_token.line, current_token.col
             found = current_token.type
@@ -182,11 +183,10 @@ class ErrorHandler:
         return self._create_error("Misplaced Token:", msg, line, col, found, [expected_token_type])
 
     def get_unexpected_token_error(self, token, expected_tokens):
-        # Wrapper for get_invalid_token_error to maintain backward compatibility if needed.
         return self.get_invalid_token_error(token, expected_tokens)
 
     def get_custom_error(self, token, message):
-        # Generic fallback error.
+        # Generic fallback error just in case
         if token:
             line, col = token.line, token.col
             found = token.type

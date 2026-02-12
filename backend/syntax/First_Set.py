@@ -1,5 +1,4 @@
 # First_Set.py
-# Source: SeaStack Language Specification - VIII. FIRST SET (UPDATED)
 # lambda (epsilon) is represented as None
 
 FIRST = {
