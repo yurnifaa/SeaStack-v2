@@ -269,7 +269,7 @@ export default function Home() {
   const ErrorList = ({ errors, typeName }) => {
     return (
         <div style={{ fontFamily: '"Fira Code", monospace', fontVariantLigatures: 'none', fontSize: '0.9rem' }}>
-            <div style={{ fontWeight: 'bold', color: '#f87171', marginBottom: '8px' }}>
+            <div style={{ fontWeight: 'bold', color: '#a8cbff', marginBottom: '8px' }}>
                 Found &apos;{errors.length}&apos; {typeName} Error/s
             </div>
             
