@@ -1530,7 +1530,7 @@ PREDICT = {
         "SCROLL-lit": 802
     },
     "<courses>": {
-        "course":803
+        "COURSE":803
     },
     "<course-body>": {
         "+#": 804, "-#": 804, "ASK": 804, "CHART": 804, "ECHO": 804, "HAUL": 804, "HEAVE": 804, "HOIST": 804, "LOOK": 804, "id": 804,
