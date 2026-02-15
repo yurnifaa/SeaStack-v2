@@ -7,7 +7,7 @@ It takes its foundation from the C language, adapting familiar constructs such a
 ![Light Mode](frontend/public/GitHub_shots/Light_Mode3.png)
 
 ### 🌑 IDE - Dark Mode
-![Dark Mode](frontend/public/GitHub_shots/Dark_Mode2.png)
+![Dark Mode](frontend/public/GitHub_shots/Dark_Mode3.png)
 
 ## Language Rules (to be added in the future)
 
