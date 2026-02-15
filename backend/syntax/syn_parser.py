@@ -2117,21 +2117,16 @@ class Parser:
         else:
             self.error_invalid_token("<bool-grp-exp>")
 
-    def bool_array(self):
-        # <bool-array>
-        prod = self.get_production("<bool-array>")
+    def bool_arr(self):
+        # <bool-arr>
+        prod = self.get_production("<bool-arr>")
         if prod == 337:
             self.eat("{")
             self.eat("COIN-lit")
             self.eat("}")
             self.bool_arr_tail()
-        elif prod == 352:
-            self.bool_lit_arr()
-        elif prod == 353:
-            self.not_op()
-            self.not_ope_arr()
         else:
-            self.error_invalid_token("<bool-array>")
+            self.error_invalid_token("<bool-arr>")
 
     def bool_arr_tail(self):
         # <bool-arr-tail>
@@ -2210,6 +2205,17 @@ class Parser:
             self.bool_eq_arr()
         else:
             self.error_invalid_token("<bool-val-exp-arr>")
+
+    def bool_array(self):
+        # <bool-array>
+        prod = self.get_production("<bool-array>")
+        if prod == 352:
+            self.bool_lit_arr()
+        elif prod == 353:
+            self.not_op()
+            self.not_ope_arr()
+        else:
+            self.error_invalid_token("<bool-array>")
 
     def bool_lit_arr(self):
         # <bool-lit-arr>

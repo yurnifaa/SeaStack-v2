@@ -42,16 +42,16 @@ class Delimiters:
         BOOL_DELIM = WHITESPACE | set(")]&!=,|")
         
         PARCH_DELIM = BOOL_DELIM | set(":")
-        SCR_DELIM = BOOL_DELIM | set("{")
+        SCR_DELIM = BOOL_DELIM | set("{:")
         
         COMMA_DELIM = ASSIGN_DELIM | set(['@'])
         CONCAT_DELIM = WHITESPACE | LOWLET | set('"(')
         
-        CLOSECB_DELIM = WHITESPACE | GEN_OP | set("]){&")
+        CLOSECB_DELIM = WHITESPACE | GEN_OP | set("]){&:")
         OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', "'", '-', '!'])
         CLOSEP_DELIM = WHITESPACE | GEN_OP | set(")[],")
 
-        OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set(['(', '[', '!', "'", '"', '-'])
+        OPENSB_DELIM = WHITESPACE | set("\n") | ALPHANUMERIC | UPLET | set(['(', '[', ']', '!', "'", '"', '-'])
         CLOSESB_DELIM = WHITESPACE | set("\n") | set(['A', 'B', 'C', 'D', 'E', 'H', 'L', 'S', ']', '!', '}', ','])
         
         COLON_DELIM = WHITESPACE | set("\n") | LOWLET | set(['A', 'C', 'E', 'H', 'L', '+', '-'])
