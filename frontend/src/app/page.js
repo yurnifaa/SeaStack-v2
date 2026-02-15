@@ -333,8 +333,8 @@ export default function Home() {
                 accept=".sea" 
                 style={{ display: "none" }} 
             />
-            <button className="btn-header" onClick={handleFileBtnClick}>File</button>
-            <button className="btn-header" onClick={handleSaveFile}>Save</button>
+            <GooeyButton onClick={handleFileBtnClick}>File</GooeyButton>
+            <GooeyButton onClick={handleSaveFile}>Save</GooeyButton>
             
             <label className="switch">
             <input type="checkbox" onChange={toggleTheme} checked={isDarkMode} />

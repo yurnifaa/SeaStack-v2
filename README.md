@@ -1,8 +1,10 @@
 # 🌊 SeaStack | Programming Language and Compiler
-A C-inspired programming language with an oceanic twist — built from scratch for automata theory and formal languages. SeaStack is a high-level programming language designed to combine structured programming principles with a thematic and engaging syntax inspired by the Ocean Voyager theme. It takes its foundation from the C language, adapting familiar constructs such as functions, loops, conditionals, and data type.  This built as part of an academic project in automata theory and formal languages, SeaStack includes its own lexer, parser, and GUI-based IDE.
+A C-inspired programming language with an oceanic twist — built from scratch for automata theory and formal languages. SeaStack is a high-level programming language designed to combine structured programming principles with a thematic and engaging syntax inspired by the Ocean Voyager theme. 
+
+It takes its foundation from the C language, adapting familiar constructs such as functions, loops, conditionals, and data type.  This built as part of an academic project in automata theory and formal languages, SeaStack includes its own lexer, parser, and GUI-based IDE.
 
 ### 🌕 IDE - Light Mode
-![Light Mode](frontend/public/GitHub_shots/Light_Mode2.png)
+![Light Mode](frontend/public/GitHub_shots/Light_Mode3.png)
 
 ### 🌑 IDE - Dark Mode
 ![Dark Mode](frontend/public/GitHub_shots/Dark_Mode2.png)
