@@ -2729,6 +2729,7 @@ class Parser:
             self.var_scroll_eq()
         elif prod == 443:
             self.var_bool()
+            self.var_logeq()
         else:
             self.error_invalid_token("<value>")
 
@@ -3523,6 +3524,7 @@ class Parser:
             self.var_scroll_eq_2()
         elif prod == 579:
             self.var_bool_2()
+            self.var_logeq_2()
         else:
             self.error_invalid_token("<value-2>")
 
@@ -3941,6 +3943,7 @@ class Parser:
             self.var_scroll_eq_3()
         elif prod == 659:
             self.var_bool_3()
+            self.var_logeq_3()
         else:
             self.error_invalid_token("<value-3>")
 
