@@ -125,6 +125,7 @@ class Parser:
             self.global_dec()
         elif prod == 4:
             self.struct()
+            self.sub_func()
         elif prod == 5:
             self.nonreturn_func()
         elif prod == 6:
@@ -3208,7 +3209,6 @@ class Parser:
             self.eat("]")
             self.eat("!!")
             self.struct()
-            self.sub_func()
         elif prod == 525:
             pass # Lambda
         else:
