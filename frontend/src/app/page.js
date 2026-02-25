@@ -31,7 +31,8 @@ export default function Home() {
 
   const [lexicalErrors, setLexicalErrors] = useState([]);
   const [syntaxErrors, setSyntaxErrors] = useState([]);   
-  const [semanticLogs, setSemanticLogs] = useState([]); 
+  const [semanticErrors, setSemanticErrors] = useState([]);
+  const [hasSemanticRan, setHasSemanticRan] = useState(false);
   
   const [activeTab, setActiveTab] = useState("lexical"); 
 
@@ -216,6 +217,20 @@ export default function Home() {
     };
   };
 
+  const formatSemanticError = (errObj) => {
+  if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
+    return { ...errObj, isStructured: false };
+  }
+  return {
+    line: errObj.line,
+    col: errObj.col,
+    headerStr: errObj.message,
+    sourceCode: null,
+    expectedStr: "",
+    isStructured: true,
+  };
+};
+
   // ==========================================
   // --- ANALYSIS LOGIC ---
   // ==========================================
@@ -262,6 +277,45 @@ export default function Home() {
   
   const handleLexicalAnalysis = () => performAnalysis("lexical");
   const handleSyntaxAnalysis = () => performAnalysis("syntax");
+  const handleSemanticAnalysis = async () => {
+  // Block if syntax has errors or hasn't been run yet
+  if (syntaxErrors.length > 0) {
+    alert("Semantic analysis cannot proceed: fix all syntax errors first.");
+    return;
+  }
+
+  setSemanticErrors([]);
+  setHasSemanticRan(false);
+
+  try {
+    const res = await fetch('http://127.0.0.1:5000/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code }),
+    });
+
+    if (!res.ok) throw new Error(`Server status: ${res.status}`);
+    const result = await res.json();
+
+    if (result.lexical_errors?.length > 0 || result.syntax_errors?.length > 0) {
+      alert("Semantic analysis cannot proceed: fix all lexical and syntax errors first.");
+      return;
+    }
+
+    if (result.semantic_errors?.length > 0) {
+      const formattedSem = result.semantic_errors.map(err => formatSemanticError(err));
+      setSemanticErrors(formattedSem);
+    }
+
+    setHasSemanticRan(true);
+    setActiveTab("semantic");
+
+  } catch (err) {
+    console.error("Connection Error:", err);
+    setSemanticErrors([{ line: "0", col: "0", message: "Cannot connect to backend.", isStructured: false }]);
+    setActiveTab("semantic");
+  }
+};
 
   // ==========================================
   // --- ERROR LIST COMPONENT ---
@@ -269,7 +323,7 @@ export default function Home() {
   const ErrorList = ({ errors, typeName }) => {
     return (
         <div style={{ fontFamily: '"Fira Code", monospace', fontVariantLigatures: 'none', fontSize: '0.9rem' }}>
-            <div style={{ fontWeight: 'bold', color: '#a8cbff', marginBottom: '8px' }}>
+            <div style={{ fontWeight: 'bold', color: '#f87171', marginBottom: '8px' }}>
                 Found &apos;{errors.length}&apos; {typeName} Error/s
             </div>
             
@@ -320,7 +374,7 @@ export default function Home() {
             <ul>
               <li><GooeyButton onClick={handleLexicalAnalysis}>Lexical</GooeyButton></li>
               <li><GooeyButton onClick={handleSyntaxAnalysis}>Syntax</GooeyButton></li>
-              <li><GooeyButton onClick={() => setActiveTab("semantic")}>Semantic</GooeyButton></li>
+              <li><GooeyButton onClick={handleSemanticAnalysis}>Semantic</GooeyButton></li>
             </ul>
           </nav>
         </div>
@@ -418,13 +472,20 @@ export default function Home() {
           {activeTab === "lexical" && <ErrorList errors={lexicalErrors} typeName="Lexical" />}
           {activeTab === "syntax" && <ErrorList errors={syntaxErrors} typeName="Syntax" />}
           {activeTab === "semantic" && (
-             <div className="log-container">
-               {semanticLogs.length === 0 && <div style={{color: '#888', fontStyle: 'italic'}}>Ready for semantic analysis...</div>}
-               {semanticLogs.map((log, i) => (
-                 <div key={i}>{log.message}</div>
-               ))}
-             </div>
-          )}
+             <div>
+    {!hasSemanticRan && semanticErrors.length === 0 ? (
+      <div style={{ color: '#888', fontStyle: 'italic' }}>
+        Run Semantic analysis on a syntax-error-free program to see results.
+      </div>
+    ) : semanticErrors.length === 0 ? (
+      <div style={{ color: '#4ade80', fontStyle: 'italic' }}>
+        ✓ No semantic errors found.
+      </div>
+    ) : (
+      <ErrorList errors={semanticErrors} typeName="Semantic" />
+    )}
+  </div>
+)}
         </div>
       </footer>
 

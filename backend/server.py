@@ -11,6 +11,8 @@ from flask_cors import CORS
 try:
     from backend.lexical.lexer import Lexer
     from backend.syntax.syn_parser import Parser 
+    from backend.semantic.ast_parser import ASTParser
+    from backend.semantic.semantic_analyzer import SemanticAnalyzer
 except ImportError as e:
     print(f"\n[ERROR] Import Failed! Details: {e}")
     sys.exit(1)
@@ -27,7 +29,8 @@ def analyze_code():
         "success": False,
         "tokens": [],
         "lexical_errors": [],
-        "syntax_errors": []
+        "syntax_errors": [],
+        "semantic_errors": [] 
     }
 
     # =================================
@@ -115,6 +118,35 @@ def analyze_code():
             })
             response_data['success'] = False
     
+    # =================================
+    #    --- SEMANTIC ANALYSIS ---
+    # =================================
+    # Only runs if both lexical and syntax passed
+    if not response_data['lexical_errors'] and not response_data['syntax_errors']:
+        try:
+            ast_parser = ASTParser(tokens, code_string)
+            program_node = ast_parser.build()
+
+            analyzer = SemanticAnalyzer(program_node, code_string)
+            sem_errors = analyzer.analyze()
+
+            if sem_errors:
+                response_data['semantic_errors'].extend(sem_errors)
+                response_data['success'] = False
+            else:
+                response_data['success'] = True
+
+        except Exception as e:
+            response_data['semantic_errors'].append({
+                "type": "Server Error",
+                "line": "?",
+                "col": "?",
+                "found": "CRASH",
+                "expected": [],
+                "message": f"Semantic Analyzer Crashed: {str(e)}"
+            })
+            response_data['success'] = False
+
     return jsonify(response_data)
 
 if __name__ == '__main__':
