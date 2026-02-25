@@ -8,9 +8,7 @@
 # need to do error recovery — we just build the tree.
 #
 # It is a top-down predictive parser (LL(1)), using the exact same PREDICT
-# table as syn_parser.py. Every method corresponds to one grammar non-terminal,
-# and they are named identically to their syn_parser counterparts so you can
-# diff the two files side by side.
+# table as syn_parser.py. Every method corresponds to one grammar non-terminal.
 #
 # KEY DIFFERENCES FROM syn_parser:
 #   syn_parser:  self.eat('id')              — consumes token, returns nothing
@@ -54,7 +52,7 @@
 #   When in doubt, cross-reference with syn_parser.py.
 # =============================================================================
 
-from syntax.predict_set import PREDICT
+from syntax.Predict_Set import PREDICT
 from semantic.ast_nodes import (
     ProgramNode, AhoyNode,
     ConstDeclNode,

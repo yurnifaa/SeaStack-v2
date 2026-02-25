@@ -217,19 +217,28 @@ export default function Home() {
     };
   };
 
-  const formatSemanticError = (errObj) => {
-  if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
-    return { ...errObj, isStructured: false };
-  }
-  return {
-    line: errObj.line,
-    col: errObj.col,
-    headerStr: errObj.message,
-    sourceCode: null,
-    expectedStr: "",
-    isStructured: true,
+  const formatSemanticError = (errObj, sourceCode) => {
+    if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
+      return { ...errObj, isStructured: false };
+    }
+
+    // Use the actual_line from backend if available, otherwise fall back to parsing sourceCode
+    let actualLine = errObj.actual_line || "";
+    if (!actualLine && sourceCode) {
+      const lineNum = parseInt(errObj.line, 10);
+      const lines = sourceCode.split('\n');
+      actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
+    }
+
+    return {
+      line: errObj.line,
+      col: errObj.col,
+      headerStr: errObj.error_type || errObj.type || "Semantic Error",
+      sourceCode: actualLine || null,
+      expectedStr: errObj.message || "",
+      isStructured: true,
+    };
   };
-};
 
   // ==========================================
   // --- ANALYSIS LOGIC ---
@@ -303,7 +312,7 @@ export default function Home() {
     }
 
     if (result.semantic_errors?.length > 0) {
-      const formattedSem = result.semantic_errors.map(err => formatSemanticError(err));
+      const formattedSem = result.semantic_errors.map(err => formatSemanticError(err, code));
       setSemanticErrors(formattedSem);
     }
 
@@ -323,7 +332,7 @@ export default function Home() {
   const ErrorList = ({ errors, typeName }) => {
     return (
         <div style={{ fontFamily: '"Fira Code", monospace', fontVariantLigatures: 'none', fontSize: '0.9rem' }}>
-            <div style={{ fontWeight: 'bold', color: '#f87171', marginBottom: '8px' }}>
+            <div style={{ fontWeight: 'bold', color: '#e8effa', marginBottom: '8px' }}>
                 Found &apos;{errors.length}&apos; {typeName} Error/s
             </div>
             
@@ -351,7 +360,7 @@ export default function Home() {
                             {/* Expected (Render only if string is not empty) */}
                             {err.expectedStr && (
                                 <span style={{ color: '#e5e7eb'}}>
-                                    Expected: &apos;{err.expectedStr}&apos;
+                                    {err.expectedStr}
                                 </span>
                             )}
                         </div>
@@ -478,8 +487,8 @@ export default function Home() {
         Run Semantic analysis on a syntax-error-free program to see results.
       </div>
     ) : semanticErrors.length === 0 ? (
-      <div style={{ color: '#4ade80', fontStyle: 'italic' }}>
-        ✓ No semantic errors found.
+      <div style={{ fontWeight: 'bold', color: '#e8effa', marginBottom: '8px', fontSize: '0.9rem' }}>
+        Found &apos;0&apos; Semantic Error/s
       </div>
     ) : (
       <ErrorList errors={semanticErrors} typeName="Semantic" />

@@ -1,5 +1,5 @@
 import sys
-from syntax.predict_set import PREDICT
+from syntax.Predict_Set import PREDICT
 from backend.error_msg import ErrorHandler
 
 # ============================================================
