@@ -6,8 +6,9 @@ PREDICT = {
         'ABYSS': 1, 'AHOY': 1, 'BOOL': 1, 'COIN': 1, 'DIME': 1, 'LOCKE': 1, 'MAST': 1, 'PARCH': 1, 'SCROLL': 1
     },
     '<global-dec>': {
+        'BOOL': 2, 'COIN': 2, 'DIME': 2,  'PARCH': 2, 'SCROLL': 2,
         'LOCKE': 3,
-        'BOOL': 4, 'COIN': 4, 'DIME': 4, 'MAST': 4, 'PARCH': 4, 'SCROLL': 4,
+        'MAST': 4,
         'ABYSS': 5,
         'AHOY': 6
     },
