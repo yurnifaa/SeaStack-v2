@@ -8,7 +8,9 @@
 # need to do error recovery — we just build the tree.
 #
 # It is a top-down predictive parser (LL(1)), using the exact same PREDICT
-# table as syn_parser.py. Every method corresponds to one grammar non-terminal.
+# table as syn_parser.py. Every method corresponds to one grammar non-terminal,
+# and they are named identically to their syn_parser counterparts so you can
+# diff the two files side by side.
 #
 # KEY DIFFERENCES FROM syn_parser:
 #   syn_parser:  self.eat('id')              — consumes token, returns nothing
@@ -52,7 +54,7 @@
 #   When in doubt, cross-reference with syn_parser.py.
 # =============================================================================
 
-from syntax.Predict_Set import PREDICT
+from syntax.predict_set import PREDICT
 from semantic.ast_nodes import (
     ProgramNode, AhoyNode,
     ConstDeclNode,
@@ -220,47 +222,47 @@ class ASTParser:
         return nodes
 
     def dime_dec(self, dtype_tok, name_tok):
-        prod = self.get_production('<dime-var-arr-func>')
+        prod = self.get_production('<dime-dec>')
         nodes = []
-        if prod == 58:
+        if prod == 49:
             nodes.extend(self.dime_var_arr('DIME', name_tok))
             self.eat('!!')
             nodes.extend(self.global_dec())
-        elif prod == 59:
+        elif prod == 50:
             nodes.append(self.dime_func('DIME', name_tok))
         return nodes
 
     def parch_dec(self, dtype_tok, name_tok):
-        prod = self.get_production('<parch-var-arr-func>')
+        prod = self.get_production('<parch-dec>')
         nodes = []
-        if prod == 98:
+        if prod == 79:
             nodes.extend(self.parch_var_arr('PARCH', name_tok))
             self.eat('!!')
             nodes.extend(self.global_dec())
-        elif prod == 99:
+        elif prod == 80:
             nodes.append(self.parch_func('PARCH', name_tok))
         return nodes
 
     def scroll_dec(self, dtype_tok, name_tok):
-        prod = self.get_production('<scroll-var-arr-func>')
+        prod = self.get_production('<scroll-dec>')
         nodes = []
-        if prod == 122:
+        if prod == 103:
             nodes.extend(self.scroll_var_arr('SCROLL', name_tok))
             self.eat('!!')
             nodes.extend(self.global_dec())
-        elif prod == 123:
+        elif prod == 104:
             nodes.append(self.scroll_func('SCROLL', name_tok))
             nodes.extend(self.sub_func())
         return nodes
 
     def bool_dec(self, dtype_tok, name_tok):
-        prod = self.get_production('<bool-var-arr-func>')
+        prod = self.get_production('<bool-dec>')
         nodes = []
-        if prod == 164:
+        if prod == 135:
             nodes.extend(self.bool_var_arr('BOOL', name_tok))
             self.eat('!!')
             nodes.extend(self.global_dec())
-        elif prod == 165:
+        elif prod == 136:
             nodes.append(self.bool_func('BOOL', name_tok))
         return nodes
 
@@ -313,26 +315,26 @@ class ASTParser:
 
     def coin_arr_tail(self, dtype, name_tok, dim1):
         prod = self.get_production('<coin-arr-tail>')
-        if prod == 40:                          # 1D with initializer: = [...]
+        if prod == 37:                          # 1D with initializer: = [...]
             self.eat('='); self.eat('[')
             values = self.coin_arr1()
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, values, name_tok)
-        elif prod == 41:                        # 2D: {size2} ...
+        elif prod == 38:                        # 2D: {size2} ...
             self.eat('{'); dim2_tok = self.current_token; self.eat('COIN-lit'); self.eat('}')
             dim2 = int(dim2_tok.value)
             return self.coin_arr2_tail(dtype, name_tok, dim1, dim2)
-        else:                                   # prod 42: λ — no init
+        else:                                   # prod 39: λ — no init
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, None, name_tok)
 
     def coin_arr2_tail(self, dtype, name_tok, dim1, dim2):
         prod = self.get_production('<coin-arr2-tail>')
-        if prod == 49:                          # 2D with initializer: = [[...], ...]
+        if prod == 43:                          # 2D with initializer: = [[...], ...]
             self.eat('='); self.eat('[')
             rows = self.coin_arr2()
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, rows, name_tok)
-        else:                                   # prod 50: λ
+        else:                                   # prod 44: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, None, name_tok)
 
     def coin_arr1(self):
@@ -342,10 +344,10 @@ class ASTParser:
 
     def cav_tail(self):
         prod = self.get_production('<cav-tail>')
-        if prod == 47:
+        if prod == 41:
             self.eat(',')
             return self.coin_arr1()
-        return []  # prod 48: λ
+        return []  # prod 42: λ
 
     def coin_arr2(self):
         # prod 45
@@ -357,10 +359,10 @@ class ASTParser:
 
     def cav2_tail(self):
         prod = self.get_production('<cav2-tail>')
-        if prod == 52:
+        if prod == 46:
             self.eat(',')
             return self.coin_arr2()
-        return []  # prod 53: λ
+        return []  # prod 47: λ
 
     # ─────────────────────────────────────────────────────────────────────────
     # DIME VAR/ARR
@@ -369,9 +371,9 @@ class ASTParser:
 
     def dime_var_arr(self, dtype, name_tok):
         prod = self.get_production('<dime-var-arr>')
-        if prod == 60:
+        if prod == 51:
             return self.dime_var(dtype, name_tok)
-        elif prod == 61:
+        elif prod == 52:
             return [self.dime_arr(dtype, name_tok)]
         return []
 
@@ -384,19 +386,19 @@ class ASTParser:
 
     def dime_init(self):
         prod = self.get_production('<dime-init>')
-        if prod == 63:
+        if prod == 54:
             self.eat('=')
             return self.dime_val()
-        return None  # prod 64: λ
+        return None  # prod 55: λ
 
     def dime_init_mult(self, dtype):
         prod = self.get_production('<dime-init-mult>')
-        if prod == 65:
+        if prod == 56:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             init = self.dime_init()
             return [VarDeclNode(dtype, name_tok.value, init, name_tok)] + self.dime_init_mult(dtype)
-        return []  # prod 66: λ
+        return []  # prod 57: λ
 
     def dime_arr(self, dtype, name_tok):
         # prod 66
@@ -406,26 +408,26 @@ class ASTParser:
 
     def dime_arr_tail(self, dtype, name_tok, dim1):
         prod = self.get_production('<dime-arr-tail>')
-        if prod == 80:
+        if prod == 67:
             self.eat('='); self.eat('[')
             values = self._arr1_values(self.dime_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, values, name_tok)
-        elif prod == 81:
+        elif prod == 68:
             self.eat('{'); dim2_tok = self.current_token; self.eat('COIN-lit'); self.eat('}')
             dim2 = int(dim2_tok.value)
             return self.dime_arr2_tail(dtype, name_tok, dim1, dim2)
-        else:  # prod 82: λ
+        else:  # prod 69: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, None, name_tok)
 
     def dime_arr2_tail(self, dtype, name_tok, dim1, dim2):
         prod = self.get_production('<dime-arr2-tail>')
-        if prod == 89:
+        if prod == 73:
             self.eat('='); self.eat('[')
             rows = self._arr2_rows(self.dime_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, rows, name_tok)
-        else:  # prod 90: λ
+        else:  # prod 74: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, None, name_tok)
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -435,9 +437,9 @@ class ASTParser:
 
     def parch_var_arr(self, dtype, name_tok):
         prod = self.get_production('<parch-var-arr>')
-        if prod == 100:
+        if prod == 81:
             return self.parch_var(dtype, name_tok)
-        elif prod == 101:
+        elif prod == 82:
             return [self.parch_arr(dtype, name_tok)]
         return []
 
@@ -450,19 +452,19 @@ class ASTParser:
 
     def parch_init(self):
         prod = self.get_production('<parch-init>')
-        if prod == 103:
+        if prod == 84:
             self.eat('=')
             return self.parch_val()
-        return None  # prod 104: λ
+        return None  # prod 85: λ
 
     def parch_init_mult(self, dtype):
         prod = self.get_production('<parch-init-mult>')
-        if prod == 105:
+        if prod == 86:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             init = self.parch_init()
             return [VarDeclNode(dtype, name_tok.value, init, name_tok)] + self.parch_init_mult(dtype)
-        return []  # prod 106: λ
+        return []  # prod 87: λ
 
     def parch_arr(self, dtype, name_tok):
         # prod 90
@@ -472,26 +474,26 @@ class ASTParser:
 
     def parch_arr_tail(self, dtype, name_tok, dim1):
         prod = self.get_production('<parch-arr-tail>')
-        if prod == 110:
+        if prod == 91:
             self.eat('='); self.eat('[')
             values = self._arr1_values(self.parch_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, values, name_tok)
-        elif prod == 111:
+        elif prod == 92:
             self.eat('{'); dim2_tok = self.current_token; self.eat('COIN-lit'); self.eat('}')
             dim2 = int(dim2_tok.value)
             return self.parch_arr2_tail(dtype, name_tok, dim1, dim2)
-        else:  # prod 112: λ
+        else:  # prod 93: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, None, name_tok)
 
     def parch_arr2_tail(self, dtype, name_tok, dim1, dim2):
         prod = self.get_production('<parch-arr2-tail>')
-        if prod == 116:
+        if prod == 97:
             self.eat('='); self.eat('[')
             rows = self._arr2_rows(self.parch_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, rows, name_tok)
-        else:  # prod 117: λ
+        else:  # prod 98: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, None, name_tok)
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -502,9 +504,9 @@ class ASTParser:
 
     def scroll_var_arr(self, dtype, name_tok):
         prod = self.get_production('<scroll-var-arr>')
-        if prod == 124:
+        if prod == 105:
             return self.scroll_var(dtype, name_tok)
-        elif prod == 125:
+        elif prod == 106:
             return [self.scroll_arr(dtype, name_tok)]
         return []
 
@@ -517,19 +519,19 @@ class ASTParser:
 
     def scroll_init(self):
         prod = self.get_production('<scroll-init>')
-        if prod == 127:
+        if prod == 108:
             self.eat('=')
             return self.scroll_val()
-        return None  # prod 128: λ
+        return None  # prod 109: λ
 
     def scroll_init_mult(self, dtype):
         prod = self.get_production('<scroll-init-mult>')
-        if prod == 129:
+        if prod == 110:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             init = self.scroll_init()
             return [VarDeclNode(dtype, name_tok.value, init, name_tok)] + self.scroll_init_mult(dtype)
-        return []  # prod 130: λ
+        return []  # prod 111: λ
 
     def scroll_arr(self, dtype, name_tok):
         # prod 122
@@ -539,26 +541,26 @@ class ASTParser:
 
     def scroll_arr_tail(self, dtype, name_tok, dim1):
         prod = self.get_production('<scroll-arr-tail>')
-        if prod == 146:
+        if prod == 123:
             self.eat('='); self.eat('[')
             values = self._arr1_values(self.scroll_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, values, name_tok)
-        elif prod == 147:
+        elif prod == 124:
             self.eat('{'); dim2_tok = self.current_token; self.eat('COIN-lit'); self.eat('}')
             dim2 = int(dim2_tok.value)
             return self.scroll_arr2_tail(dtype, name_tok, dim1, dim2)
-        else:  # prod 148: λ
+        else:  # prod 125: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, None, name_tok)
 
     def scroll_arr2_tail(self, dtype, name_tok, dim1, dim2):
         prod = self.get_production('<scroll-arr2-tail>')
-        if prod == 155:
+        if prod == 129:
             self.eat('='); self.eat('[')
             rows = self._arr2_rows(self.scroll_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, rows, name_tok)
-        else:  # prod 156: λ
+        else:  # prod 130: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, None, name_tok)
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -569,9 +571,9 @@ class ASTParser:
 
     def bool_var_arr(self, dtype, name_tok):
         prod = self.get_production('<bool-var-arr>')
-        if prod == 166:
+        if prod == 137:
             return self.bool_var(dtype, name_tok)
-        elif prod == 167:
+        elif prod == 138:
             return [self.bool_arr(dtype, name_tok)]
         return []
 
@@ -584,19 +586,19 @@ class ASTParser:
 
     def bool_init(self):
         prod = self.get_production('<bool-init>')
-        if prod == 169:
+        if prod == 140:
             self.eat('=')
             return self.bool_val()
-        return None  # prod 170: λ
+        return None  # prod 141: λ
 
     def bool_init_mult(self, dtype):
         prod = self.get_production('<bool-init-mult>')
-        if prod == 171:
+        if prod == 142:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             init = self.bool_init()
             return [VarDeclNode(dtype, name_tok.value, init, name_tok)] + self.bool_init_mult(dtype)
-        return []  # prod 172: λ
+        return []  # prod 143: λ
 
     def bool_arr(self, dtype, name_tok):
         # prod 202
@@ -606,26 +608,26 @@ class ASTParser:
 
     def bool_arr_tail(self, dtype, name_tok, dim1):
         prod = self.get_production('<bool-arr-tail>')
-        if prod == 261:
+        if prod == 203:
             self.eat('='); self.eat('[')
             values = self._arr1_values(self.bool_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, values, name_tok)
-        elif prod == 262:
+        elif prod == 204:
             self.eat('{'); dim2_tok = self.current_token; self.eat('COIN-lit'); self.eat('}')
             dim2 = int(dim2_tok.value)
             return self.bool_arr2_tail(dtype, name_tok, dim1, dim2)
-        else:  # prod 263: λ
+        else:  # prod 205: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, None, name_tok)
 
     def bool_arr2_tail(self, dtype, name_tok, dim1, dim2):
         prod = self.get_production('<bool-arr2-tail>')
-        if prod == 296:
+        if prod == 209:
             self.eat('='); self.eat('[')
             rows = self._arr2_rows(self.bool_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, rows, name_tok)
-        else:  # prod 297: λ
+        else:  # prod 210: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, None, name_tok)
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -663,19 +665,19 @@ class ASTParser:
 
     def const_init(self):
         prod = self.get_production('<const-init>')
-        if prod == 443:
+        if prod == 266:
             self.eat('COIN')
             return self.coin_locke_list('COIN')
-        elif prod == 444:
+        elif prod == 267:
             self.eat('DIME')
             return self.dime_locke_list('DIME')
-        elif prod == 445:
+        elif prod == 268:
             self.eat('PARCH')
             return self.parch_locke_list('PARCH')
-        elif prod == 446:
+        elif prod == 269:
             self.eat('SCROLL')
             return self.scroll_locke_list('SCROLL')
-        elif prod == 447:
+        elif prod == 270:
             self.eat('BOOL')
             return self.bool_locke_list('BOOL')
         return []
@@ -693,7 +695,7 @@ class ASTParser:
                                    LiteralNode('COIN', int(val_tok.value), val_tok), name_tok))
         # prod 272: , coin_locke coin_locke_mult | prod 273: λ
         prod = self.get_production('<coin-locke-mult>')
-        while prod == 449:
+        while prod == 272:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
@@ -721,7 +723,7 @@ class ASTParser:
             lit = LiteralNode('DIME', float(val_tok.value), val_tok)
         nodes.append(ConstDeclNode(dtype, name_tok.value, lit, name_tok))
         prod = self.get_production('<dime-locke-mult>')
-        while prod == 454:
+        while prod == 277:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
@@ -748,7 +750,7 @@ class ASTParser:
         nodes.append(ConstDeclNode(dtype, name_tok.value,
                                    LiteralNode('PARCH', val_tok.value, val_tok), name_tok))
         prod = self.get_production('<parch-locke-mult>')
-        while prod == 457:
+        while prod == 280:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
@@ -772,7 +774,7 @@ class ASTParser:
         val = self.scr_id_const(base, str_tok)
         nodes.append(ConstDeclNode(dtype, name_tok.value, val, name_tok))
         prod = self.get_production('<scroll-locke-mult>')
-        while prod == 462:
+        while prod == 285:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
@@ -789,12 +791,12 @@ class ASTParser:
         prod 284: λ
         """
         prod = self.get_production('<scr-id>')
-        if prod == 460:
+        if prod == 283:
             self.eat('{')
             idx_tok = self.current_token; self.eat('COIN-lit')
             self.eat('}')
             return ScrollCharAccessNode(base_expr, LiteralNode('COIN', int(idx_tok.value), idx_tok), tok)
-        return base_expr  # prod 461: λ
+        return base_expr  # prod 284: λ
 
     def bool_locke_list(self, dtype):
         """
@@ -814,7 +816,7 @@ class ASTParser:
             lit = LiteralNode('BOOL', False, val_tok)
         nodes.append(ConstDeclNode(dtype, name_tok.value, lit, name_tok))
         prod = self.get_production('<bool-locke-mult>')
-        while prod == 467:
+        while prod == 290:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
@@ -837,7 +839,7 @@ class ASTParser:
     def struct(self):
         nodes = []
         prod = self.get_production('<struct>')
-        while prod == 469:
+        while prod == 292:
             self.eat('MAST')
             name_tok = self.current_token; self.eat('id')
             self.eat('[')
@@ -847,7 +849,7 @@ class ASTParser:
             self.eat('!!')
             nodes.append(StructDefNode(name_tok.value, members, name_tok))
             prod = self.get_production('<struct>')
-        return nodes  # prod 470: λ
+        return nodes  # prod 293: λ
 
     def mem_dec(self):
         """
@@ -863,18 +865,18 @@ class ASTParser:
 
     def mem_mult(self, dtype):
         prod = self.get_production('<mem-mult>')
-        if prod == 472:
+        if prod == 295:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             return [MemberDeclNode(dtype, name_tok.value, name_tok)] + self.mem_mult(dtype)
-        return []  # prod 473: λ
+        return []  # prod 296: λ
 
     def mem_dec_tail(self):
         prod = self.get_production('<mem-dec-tail>')
-        if prod == 474:
+        if prod == 297:
             members = self.mem_dec()
             return members + self.mem_dec_tail()
-        return []  # prod 475: λ
+        return []  # prod 298: λ
 
     # =========================================================================
     # FUNCTION DEFINITIONS
@@ -887,11 +889,11 @@ class ASTParser:
         prod 301: λ
         """
         prod = self.get_production('<sub-func>')
-        if prod == 476:
+        if prod == 299:
             return [self.return_func()]
-        elif prod == 477:
+        elif prod == 300:
             return [self.nonreturn_func()]
-        return []  # prod 478: λ
+        return []  # prod 301: λ
 
     def return_func(self):
         """
@@ -902,8 +904,8 @@ class ASTParser:
         prod 306: BOOL id bool_func
         """
         prod = self.get_production('<return-func>')
-        dtype_map = {479: 'COIN', 480: 'DIME', 481: 'PARCH', 482: 'SCROLL', 483: 'BOOL'}
-        token_map = {479: 'COIN', 480: 'DIME', 481: 'PARCH', 482: 'SCROLL', 483: 'BOOL'}
+        dtype_map = {302: 'COIN', 303: 'DIME', 304: 'PARCH', 305: 'SCROLL', 306: 'BOOL'}
+        token_map = {302: 'COIN', 303: 'DIME', 304: 'PARCH', 305: 'SCROLL', 306: 'BOOL'}
         dtype = dtype_map[prod]
         self.eat(token_map[prod])
         name_tok = self.current_token; self.eat('id')
@@ -992,9 +994,9 @@ class ASTParser:
         prod 310: λ
         """
         prod = self.get_production('<nonret-tail>')
-        if prod == 486:
+        if prod == 309:
             return self.nonret_stmnts()
-        return []  # prod 487: λ
+        return []  # prod 310: λ
 
     def nonret_back(self):
         """
@@ -1002,11 +1004,11 @@ class ASTParser:
         prod 324: λ       → None
         """
         prod = self.get_production('<nonret-back>')
-        if prod == 488:
+        if prod == 323:
             tok = self.current_token
             self.eat('BACK'); self.eat('!!')
             return BackNode(tok)
-        return None  # prod 489: λ
+        return None  # prod 324: λ
 
     # ─────────────────────────────────────────────────────────────────────────
     # PARAMETERS
@@ -1019,7 +1021,7 @@ class ASTParser:
 
     def params(self):
         prod = self.get_production('<params>')
-        if prod == 331:
+        if prod == 215:
             dtype = self.d_type()
             name_tok = self.current_token; self.eat('id')
             first = ParamNode(dtype, name_tok.value, name_tok)
@@ -1028,10 +1030,10 @@ class ASTParser:
 
     def param_mult(self):
         prod = self.get_production('<param-mult>')
-        if prod == 333:
+        if prod == 217:
             self.eat(',')
             return self.params()
-        return []  # prod 334: λ
+        return []  # prod 218: λ
 
     def d_type(self):
         """Consume a type keyword and return it as a string."""
@@ -1050,24 +1052,24 @@ class ASTParser:
     def local_dec(self):
         nodes = []
         prod = self.get_production('<local-dec>')
-        while prod == 502:
+        while prod == 325:
             nodes.extend(self.var_arr_local())
             self.eat('!!')
             prod = self.get_production('<local-dec>')
-        if prod == 503:
+        if prod == 326:
             nodes.extend(self.struct_dec())
-        return nodes  # prod 504: λ
+        return nodes  # prod 327: λ
 
     def ahoy_local_dec(self):
         nodes = []
         prod = self.get_production('<ahoy-local-dec>')
-        while prod == 666:
+        while prod == 425:
             nodes.extend(self.var_arr_local())
             self.eat('!!')
             prod = self.get_production('<ahoy-local-dec>')
-        if prod == 667:
+        if prod == 426:
             nodes.extend(self.ahoy_struct_dec())
-        return nodes  # prod 668: λ
+        return nodes  # prod 427: λ
 
     def var_arr_local(self):
         """
@@ -1075,23 +1077,23 @@ class ASTParser:
         prod 328–332 (same non-terminal <var-arr> as syn_parser)
         """
         prod = self.get_production('<var-arr>')
-        if prod == 505:
+        if prod == 328:
             self.eat('COIN')
             name_tok = self.current_token; self.eat('id')
             return self.coin_var_arr('COIN', name_tok)
-        elif prod == 506:
+        elif prod == 329:
             self.eat('DIME')
             name_tok = self.current_token; self.eat('id')
             return self.dime_var_arr('DIME', name_tok)
-        elif prod == 507:
+        elif prod == 330:
             self.eat('PARCH')
             name_tok = self.current_token; self.eat('id')
             return self.parch_var_arr('PARCH', name_tok)
-        elif prod == 508:
+        elif prod == 331:
             self.eat('SCROLL')
             name_tok = self.current_token; self.eat('id')
             return self.scroll_var_arr('SCROLL', name_tok)
-        elif prod == 509:
+        elif prod == 332:
             self.eat('BOOL')
             name_tok = self.current_token; self.eat('id')
             return self.bool_var_arr('BOOL', name_tok)
@@ -1105,7 +1107,7 @@ class ASTParser:
         """
         nodes = []
         prod = self.get_production('<struct-dec>')
-        while prod == 510:
+        while prod == 333:
             self.eat('MAST')
             type_tok = self.current_token; self.eat('id')
             var_tok = self.current_token; self.eat('id')
@@ -1115,7 +1117,7 @@ class ASTParser:
             for extra_name in extra_names:
                 nodes.append(StructVarDeclNode(type_tok.value, extra_name, None, var_tok))
             prod = self.get_production('<struct-dec>')
-        return nodes  # prod 511: λ
+        return nodes  # prod 334: λ
 
     def ahoy_struct_dec(self):
         """
@@ -1125,7 +1127,7 @@ class ASTParser:
         """
         nodes = []
         prod = self.get_production('<ahoy-struct-dec>')
-        while prod == 669:
+        while prod == 428:
             self.eat('MAST')
             type_tok = self.current_token; self.eat('id')
             var_tok = self.current_token; self.eat('id')
@@ -1135,7 +1137,7 @@ class ASTParser:
             for extra_name in extra_names:
                 nodes.append(StructVarDeclNode(type_tok.value, extra_name, None, var_tok))
             prod = self.get_production('<ahoy-struct-dec>')
-        return nodes  # prod 670: λ
+        return nodes  # prod 429: λ
 
     def str_dec_init(self):
         """
@@ -1145,19 +1147,19 @@ class ASTParser:
         Returns (inits, extra_names)
         """
         prod = self.get_production('<str-dec-init>')
-        if prod == 512:
+        if prod == 335:
             extra_names = []
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             extra_names.append(name_tok.value)
             extra_names.extend(self.str_dec_tail())
             return None, extra_names
-        elif prod == 513:
+        elif prod == 336:
             self.eat('='); self.eat('[')
             inits = self.str_val_list()
             self.eat(']')
             return inits, []
-        return None, []  # prod 514: λ
+        return None, []  # prod 337: λ
 
     def str_dec_tail(self):
         """
@@ -1165,11 +1167,11 @@ class ASTParser:
         prod 339: λ
         """
         prod = self.get_production('<str-dec-tail>')
-        if prod == 515:
+        if prod == 338:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             return [name_tok.value] + self.str_dec_tail()
-        return []  # prod 516: λ
+        return []  # prod 339: λ
 
     def str_val_list(self):
         """Collect str_val entries separated by commas.
@@ -1180,11 +1182,11 @@ class ASTParser:
         """
         inits = [self.str_val()]
         prod = self.get_production('<str-val-tail>')
-        while prod == 519:
+        while prod == 342:
             self.eat(',')
             inits.append(self.str_val())
             prod = self.get_production('<str-val-tail>')
-        return inits  # prod 520: λ stops loop
+        return inits  # prod 343: λ stops loop
 
     def str_val(self):
         """
@@ -1192,13 +1194,13 @@ class ASTParser:
         prod 341: $id = value      → NamedInitNode
         """
         prod = self.get_production('<str-val>')
-        if prod == 518:
+        if prod == 341:
             self.eat('$')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
             val = self.value()
             return NamedInitNode(name_tok.value, val, name_tok)
-        else:  # prod 517
+        else:  # prod 340
             val = self.value()
             return PositionalInitNode(val, self.current_token)
 
@@ -1214,20 +1216,20 @@ class ASTParser:
         """
         stmts = []
         prod = self.get_production('<ret-stmnts>')
-        while prod == 340:
+        while prod == 224:
             stmts.append(self.statements())
             prod = self.get_production('<ret-stmnts>')
-        return stmts  # prod 341: λ
+        return stmts  # prod 225: λ
 
     def ahoy_stmnts(self):
         """
-        prod 671: ahoy_stmnt ahoy_tail
+        prod 430: ahoy_stmnt ahoy_tail
         (syn_parser errors if no statement at all, but ahoy_tail handles repetition)
         """
         stmts = []
         prod = self.get_production('<ahoy-stmnts>')
-        if prod == 671:
-            stmts.append(self.ahoy_stmnt())
+        if prod == 430:
+            stmts.append(self.statements())
             stmts.extend(self.ahoy_tail())
         return stmts
 
@@ -1237,9 +1239,9 @@ class ASTParser:
         prod 432: λ
         """
         prod = self.get_production('<ahoy-tail>')
-        if prod == 672:
+        if prod == 431:
             return self.ahoy_stmnts()
-        return []  # prod 673: λ
+        return []  # prod 432: λ
 
     def statements(self):
         """
@@ -1257,23 +1259,23 @@ class ASTParser:
         prod 352: unary_exp!!
         """
         prod = self.get_production('<statements>')
-        if prod == 553:
+        if prod == 344:
             return self.assign_stmnt()
-        elif prod == 554:
+        elif prod == 345:
             return self.ask_stmnt()
-        elif prod == 555:
+        elif prod == 346:
             return self.echo_stmnt()
-        elif prod == 556:
+        elif prod == 347:
             return self.look_stmnt()
-        elif prod == 557:
+        elif prod == 348:
             return self.chart_stmnt()
-        elif prod == 558:
+        elif prod == 349:
             return self.hoist_stmnt()
-        elif prod == 559:
+        elif prod == 350:
             return self.heave_stmnt()
-        elif prod == 560:
+        elif prod == 351:
             return self.haul_stmnt()
-        elif prod == 561:
+        elif prod == 352:
             node = self.unary_exp()
             self.eat('!!')
             return node
@@ -1295,10 +1297,10 @@ class ASTParser:
 
     def assign_tail(self, name_tok):
         prod = self.get_production('<assign-tail>')
-        if prod == 563:
+        if prod == 354:
             target_kind, idx1, idx2, member = self.arr_str()
             return self.assign_body(name_tok, target_kind, idx1, idx2, member)
-        elif prod == 564:
+        elif prod == 355:
             self.eat('(')
             args = self.args()
             self.eat(')')
@@ -1312,23 +1314,23 @@ class ASTParser:
         Returns (target_kind, index1, index2, member)
         """
         prod = self.get_production('<arr-str>')
-        if prod == 565:
+        if prod == 356:
             self.eat('{')
             idx1 = self.index_expr()
             self.eat('}')
-            # arr_str_tail: prod 568 → second dimension, prod 569 → λ
-            prod2 = self.get_production('<arr-str-tail>')
-            if prod2 == 568:
+            # elmt2: prod 230 → second dimension, prod 231 → λ
+            prod2 = self.get_production('<elmt2>')
+            if prod2 == 230:
                 self.eat('{')
                 idx2 = self.index_expr()
                 self.eat('}')
                 return 'array2d', idx1, idx2, None
             return 'array1d', idx1, None, None
-        elif prod == 566:
+        elif prod == 357:
             self.eat('$')
             member_tok = self.current_token; self.eat('id')
             return 'member', None, None, member_tok.value
-        return 'var', None, None, None  # prod 567: λ
+        return 'var', None, None, None  # prod 358: λ
 
     def assign_body(self, name_tok, target_kind, idx1, idx2, member):
         """
@@ -1336,11 +1338,11 @@ class ASTParser:
         prod 360: arith_assign_op dime_ope dime_arith
         """
         prod = self.get_production('<assign-body>')
-        if prod == 570:
+        if prod == 359:
             self.eat('=')
             val = self.value()
             return AssignNode(name_tok.value, target_kind, idx1, idx2, member, val, name_tok)
-        elif prod == 571:
+        elif prod == 360:
             op_tok = self.current_token
             op = self.arith_assign_op()
             val = self.dime_val()
@@ -1375,11 +1377,11 @@ class ASTParser:
         """Collect all @id targets using addr and addr_tail."""
         targets = [self.addr()]
         prod = self.get_production('<addr-tail>')
-        while prod == 612:
+        while prod == 369:
             self.eat(',')
             targets.append(self.addr())
             prod = self.get_production('<addr-tail>')
-        return targets  # prod 613: λ
+        return targets  # prod 370: λ
 
     def addr(self):
         """
@@ -1408,11 +1410,11 @@ class ASTParser:
         """Reuses args_mult logic: prod 236/237."""
         args = []
         prod = self.get_production('<args-mult>')
-        while prod == 350:
+        while prod == 236:
             self.eat(',')
             args.append(self.value())
             prod = self.get_production('<args-mult>')
-        return args  # prod 351: λ
+        return args  # prod 237: λ
 
     # ─────────────────────────────────────────────────────────────────────────
     # CONDITIONAL: LOOK / DROPLOOK / DROP
@@ -1448,10 +1450,10 @@ class ASTParser:
         """
         stmts = []
         prod = self.get_production('<look-body>')
-        while prod == 617:
+        while prod == 374:
             stmts.append(self.statements())
             prod = self.get_production('<look-body>')
-        return stmts  # prod 618: λ
+        return stmts  # prod 375: λ
 
     def jump_stmnt(self):
         """
@@ -1461,13 +1463,13 @@ class ASTParser:
         """
         prod = self.get_production('<jump-stmnt>')
         tok = self.current_token
-        if prod == 619:
+        if prod == 376:
             self.eat('SAIL'); self.eat('!!')
             return SailNode(tok)
-        elif prod == 620:
+        elif prod == 377:
             self.eat('LAND'); self.eat('!!')
             return LandNode(tok)
-        return None  # prod 621: λ
+        return None  # prod 378: λ
 
     def look_tail(self):
         """
@@ -1479,7 +1481,7 @@ class ASTParser:
         droplooks = []
         drop_body = None
         prod = self.get_production('<look-tail>')
-        while prod == 622:
+        while prod == 379:
             self.eat('DROPLOOK'); self.eat('(')
             cond = self.condition()
             self.eat(')'); self.eat('[')
@@ -1490,14 +1492,14 @@ class ASTParser:
             self.eat(']')
             droplooks.append((cond, body))
             prod = self.get_production('<look-tail>')
-        if prod == 623:
+        if prod == 380:
             self.eat('DROP'); self.eat('[')
             drop_body = self.look_body()
             jump = self.jump_stmnt()
             if jump:
                 drop_body.append(jump)
             self.eat(']')
-        return droplooks, drop_body  # prod 624: λ
+        return droplooks, drop_body  # prod 381: λ
 
     # ─────────────────────────────────────────────────────────────────────────
     # SWITCH: CHART
@@ -1530,7 +1532,7 @@ class ASTParser:
         prod 384: chart_const
         """
         prod = self.get_production('<chart-cond>')
-        if prod == 626:
+        if prod == 383:
             tok = self.current_token; self.eat('id')
             return self.id_tail(tok.value, tok)
         else:
@@ -1544,13 +1546,13 @@ class ASTParser:
         """
         prod = self.get_production('<chart-const>')
         tok = self.current_token
-        if prod == 628:
+        if prod == 385:
             self.eat('COIN-lit')
             return LiteralNode('COIN', int(tok.value), tok)
-        elif prod == 629:
+        elif prod == 386:
             self.eat('PARCH-lit')
             return LiteralNode('PARCH', tok.value, tok)
-        else:  # prod 630: SCROLL-lit with optional {idx}
+        else:  # prod 387: SCROLL-lit with optional {idx}
             self.eat('SCROLL-lit')
             base = LiteralNode('SCROLL', tok.value, tok)
             return self.scr_id_const(base, tok)
@@ -1574,10 +1576,10 @@ class ASTParser:
         """
         stmts = []
         prod = self.get_production('<course-body>')
-        while prod == 632:
+        while prod == 389:
             stmts.append(self.statements())
             prod = self.get_production('<course-body>')
-        return stmts  # prod 633: λ
+        return stmts  # prod 390: λ
 
     def course_jmp(self):
         """
@@ -1587,13 +1589,13 @@ class ASTParser:
         """
         prod = self.get_production('<course-jmp>')
         tok = self.current_token
-        if prod == 634:
+        if prod == 391:
             self.eat('SAIL'); self.eat('!!')
             return SailNode(tok)
-        elif prod == 635:
+        elif prod == 392:
             self.eat('LAND'); self.eat('!!')
             return LandNode(tok)
-        return None  # prod 636: λ
+        return None  # prod 393: λ
 
     def course_tail(self):
         """
@@ -1602,10 +1604,10 @@ class ASTParser:
         """
         courses = []
         prod = self.get_production('<course-tail>')
-        while prod == 637:
+        while prod == 394:
             courses.append(self.courses())
             prod = self.get_production('<course-tail>')
-        return courses  # prod 638: λ
+        return courses  # prod 395: λ
 
     def adrift_case(self):
         """
@@ -1613,12 +1615,12 @@ class ASTParser:
         prod 397: λ
         """
         prod = self.get_production('<adrift-case>')
-        if prod == 639:
+        if prod == 396:
             self.eat('ADRIFT'); self.eat(':')
             body = self.adrift_body()
             self.eat('LAND'); self.eat('!!')
             return body
-        return None  # prod 640: λ
+        return None  # prod 397: λ
 
     def adrift_body(self):
         """
@@ -1627,10 +1629,10 @@ class ASTParser:
         """
         stmts = []
         prod = self.get_production('<adrift-body>')
-        while prod == 641:
+        while prod == 398:
             stmts.append(self.statements())
             prod = self.get_production('<adrift-body>')
-        return stmts  # prod 642: λ
+        return stmts  # prod 399: λ
 
     # ─────────────────────────────────────────────────────────────────────────
     # LOOPS
@@ -1665,7 +1667,7 @@ class ASTParser:
         """
         prod = self.get_production('<hoist-init>')
         inits = []
-        if prod == 644:
+        if prod == 401:
             self.eat('COIN')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
@@ -1673,7 +1675,7 @@ class ASTParser:
             inits.append(HoistInitNode(True, name_tok.value,
                                        LiteralNode('COIN', int(val_tok.value), val_tok), name_tok))
             inits.extend(self.init1_mult())
-        elif prod == 645:
+        elif prod == 402:
             name_tok = self.current_token; self.eat('id')
             self.arr_str()
             self.eat('=')
@@ -1681,7 +1683,7 @@ class ASTParser:
             inits.append(HoistInitNode(False, name_tok.value,
                                        LiteralNode('COIN', int(val_tok.value), val_tok), name_tok))
             inits.extend(self.init2_mult())
-        return inits  # prod 646: λ → empty list
+        return inits  # prod 403: λ → empty list
 
     def init1_mult(self):
         """
@@ -1690,7 +1692,7 @@ class ASTParser:
         """
         inits = []
         prod = self.get_production('<init1-mult>')
-        while prod == 647:
+        while prod == 404:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             self.eat('=')
@@ -1698,7 +1700,7 @@ class ASTParser:
             inits.append(HoistInitNode(True, name_tok.value,
                                        LiteralNode('COIN', int(val_tok.value), val_tok), name_tok))
             prod = self.get_production('<init1-mult>')
-        return inits  # prod 648: λ
+        return inits  # prod 405: λ
 
     def init2_mult(self):
         """
@@ -1707,7 +1709,7 @@ class ASTParser:
         """
         inits = []
         prod = self.get_production('<init2-mult>')
-        while prod == 649:
+        while prod == 406:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             self.arr_str()
@@ -1716,7 +1718,7 @@ class ASTParser:
             inits.append(HoistInitNode(False, name_tok.value,
                                        LiteralNode('COIN', int(val_tok.value), val_tok), name_tok))
             prod = self.get_production('<init2-mult>')
-        return inits  # prod 650: λ
+        return inits  # prod 407: λ
 
     def hoist_cond(self):
         """
@@ -1747,12 +1749,12 @@ class ASTParser:
         prod 412: λ
         """
         prod = self.get_production('<hoist-log>')
-        if prod == 654:
+        if prod == 411:
             op_tok = self.current_token
             op = self.log_op()
             right_cond = self.hoist_cond()
             return BinaryOpNode(node, op, right_cond, op_tok)
-        return node  # prod 655: λ
+        return node  # prod 412: λ
 
     def hoist_upd(self):
         """
@@ -1761,11 +1763,11 @@ class ASTParser:
         """
         updates = [self.upd()]
         prod = self.get_production('<upd-mult>')
-        while prod == 659:
+        while prod == 418:
             self.eat(',')
             updates.append(self.upd())
             prod = self.get_production('<upd-mult>')
-        return updates  # prod 660: λ
+        return updates  # prod 419: λ
 
     def upd(self):
         """
@@ -1773,7 +1775,7 @@ class ASTParser:
         prod 415: hoist_assign
         """
         prod = self.get_production('<upd>')
-        if prod == 657:
+        if prod == 414:
             return self.hoist_unary_upd()
         else:
             return self.hoist_assign_upd()
@@ -1861,28 +1863,28 @@ class ASTParser:
 
     def value(self):
         prod = self.get_production('<value>')
-        if prod == 352:
+        if prod == 238:
             tok = self.current_token; self.eat('id')
             node = self.id_tail(tok.value, tok)
             return self.var_exp(node)
-        elif prod == 353:
+        elif prod == 239:
             self.eat('(')
             node = self.value()
             self.eat(')')
             return self.var_exp(node)
-        elif prod == 354:
+        elif prod == 240:
             node = self.var_digit()
             return self.digit_tail(node)
-        elif prod == 355:
+        elif prod == 241:
             tok = self.current_token; self.eat('PARCH-lit')
             node = LiteralNode('PARCH', tok.value, tok)
             return self.parch_eq_opt(node)
-        elif prod == 356:
+        elif prod == 242:
             tok = self.current_token; self.eat('SCROLL-lit')
             base = LiteralNode('SCROLL', tok.value, tok)
             node = self.scr_char_opt(base, tok)
             return self.scroll_tail(node)
-        else:  # prod 357: bool bool_eq bool_exp
+        else:  # prod 243: bool bool_eq bool_exp
             return self.bool_val()
 
     def var_digit(self):
@@ -1917,10 +1919,10 @@ class ASTParser:
         prod 245: λ
         """
         prod = self.get_production('<digit-tail>')
-        if prod == 358:
+        if prod == 244:
             left = self.var_arith_fold(left)
             return self.var_releq(left)
-        return left  # prod 359: λ
+        return left  # prod 245: λ
 
     def var_arith_fold(self, left):
         """
@@ -1928,12 +1930,12 @@ class ASTParser:
         prod 247: λ
         """
         prod = self.get_production('<var-arith>')
-        if prod == 360:
+        if prod == 246:
             op_tok = self.current_token
             op = self.arith_op()
             right = self.dime_ope()
             return self.var_arith_fold(BinaryOpNode(left, op, right, op_tok))
-        return left  # prod 361: λ
+        return left  # prod 247: λ
 
     def var_releq(self, left):
         """
@@ -1942,18 +1944,18 @@ class ASTParser:
         prod 250: λ
         """
         prod = self.get_production('<var-releq>')
-        if prod == 362:
+        if prod == 248:
             op_tok = self.current_token; op = self.rel_op()
             right = self.dime_ope()
             right = self.arith_fold(right)
             node = BinaryOpNode(left, op, right, op_tok)
             return self.var_logeq(node)
-        elif prod == 363:
+        elif prod == 249:
             op_tok = self.current_token; op = self.eq_op()
             right = self.eq_ope()
             node = BinaryOpNode(left, op, right, op_tok)
             return self.bool_exp_fold(node)
-        return left  # prod 364: λ
+        return left  # prod 250: λ
 
     def var_logeq(self, left):
         """
@@ -1961,18 +1963,18 @@ class ASTParser:
         prod 252: eq_op eq_ope bool_exp
         prod 253: λ
         """
-        prod = self.get_production('<logeq-var>')
-        if prod == 369:
-            op_tok = self.current_token
-            if self.current_token.type in ('||', '&&'):
-                op = self.log_op()
-                right = self.bool_ope()
-            else:
-                op = self.eq_op()
-                right = self.eq_ope()
+        prod = self.get_production('<var-logeq>')
+        if prod == 251:
+            op_tok = self.current_token; op = self.log_op()
+            right = self.bool_ope()
             node = BinaryOpNode(left, op, right, op_tok)
             return self.bool_exp_fold(node)
-        return left  # prod 370: λ
+        elif prod == 252:
+            op_tok = self.current_token; op = self.eq_op()
+            right = self.eq_ope()
+            node = BinaryOpNode(left, op, right, op_tok)
+            return self.bool_exp_fold(node)
+        return left  # prod 253: λ
 
     def var_exp(self, left):
         """
@@ -1985,28 +1987,28 @@ class ASTParser:
         Handle any operator that can follow an id or grouped expression.
         """
         prod = self.get_production('<exp>')
-        if prod == 382:
+        if prod == 259:
             left = self.var_arith_fold(left)
             return self.var_releq(left)
-        elif prod == 383:
+        elif prod == 260:
             op_tok = self.current_token; op = self.rel_op()
             right = self.dime_ope()
             right = self.arith_fold(right)
             node = BinaryOpNode(left, op, right, op_tok)
             return self.var_logeq(node)
-        elif prod == 384:
+        elif prod == 261:
             op_tok = self.current_token; op = self.log_op()
             right = self.bool_ope()
             node = BinaryOpNode(left, op, right, op_tok)
             return self.bool_exp_fold(node)
-        elif prod == 385:
+        elif prod == 262:
             op_tok = self.current_token; op = self.eq_op()
             right = self.eq_ope()
             node = BinaryOpNode(left, op, right, op_tok)
             return self.bool_exp_fold(node)
-        elif prod == 386:
+        elif prod == 263:
             return self.scroll_concat_fold(left)
-        return left  # prod 387: λ
+        return left  # prod 264: λ
 
     def parch_eq_opt(self, left):
         """
@@ -2014,12 +2016,12 @@ class ASTParser:
         prod 255: λ
         """
         prod = self.get_production('<parch-tail>')
-        if prod == 375:
+        if prod == 254:
             op_tok = self.current_token; op = self.eq_op()
             right = self.parch_val()
             node = BinaryOpNode(left, op, right, op_tok)
             return self.bool_exp_fold(node)
-        return left  # prod 376: λ
+        return left  # prod 255: λ
 
     def scroll_tail(self, left):
         """
@@ -2028,14 +2030,14 @@ class ASTParser:
         prod 258: λ
         """
         prod = self.get_production('<scroll-tail>')
-        if prod == 377:
+        if prod == 256:
             return self.scroll_concat_fold(left)
-        elif prod == 378:
+        elif prod == 257:
             op_tok = self.current_token; op = self.eq_op()
             right = self.scroll_ope()
             node = BinaryOpNode(left, op, right, op_tok)
             return self.bool_exp_fold(node)
-        return left  # prod 379: λ
+        return left  # prod 258: λ
 
     # ─────────────────────────────────────────────────────────────────────────
     # ID-TAIL DISAMBIGUATION
@@ -2047,28 +2049,28 @@ class ASTParser:
 
     def id_tail(self, name, tok):
         prod = self.get_production('<id-tail>')
-        if prod == 342:
+        if prod == 226:
             self.eat('{')
             idx1 = self.index_expr()
             self.eat('}')
-            # elmt2 (now arr-str-tail for id context): prod 346 → {index}, prod 347 → λ
+            # elmt2: prod 230 → {index}, prod 231 → λ
             prod2 = self.get_production('<elmt2>')
-            if prod2 == 346:
+            if prod2 == 230:
                 self.eat('{')
                 idx2 = self.index_expr()
                 self.eat('}')
                 return ArrayAccessNode(name, [idx1, idx2], tok)
             return ArrayAccessNode(name, [idx1], tok)
-        elif prod == 343:
+        elif prod == 227:
             self.eat('$')
             member_tok = self.current_token; self.eat('id')
             return MemberAccessNode(name, member_tok.value, tok)
-        elif prod == 344:
+        elif prod == 228:
             self.eat('(')
             args = self.args()
             self.eat(')')
             return FuncCallNode(name, args, tok)
-        else:  # prod 345: λ → plain variable
+        else:  # prod 229: λ → plain variable
             return IdentNode(name, tok)
 
     def index_expr(self):
@@ -2079,10 +2081,10 @@ class ASTParser:
         """
         prod = self.get_production('<index>')
         tok = self.current_token
-        if prod == 138:
+        if prod == 119:
             self.eat('id')
             return IdentNode(tok.value, tok)
-        else:  # prod 137
+        else:  # prod 118
             self.eat('COIN-lit')
             return LiteralNode('COIN', int(tok.value), tok)
 
@@ -2093,11 +2095,11 @@ class ASTParser:
         Returns list of argument expression nodes.
         """
         prod = self.get_production('<args>')
-        if prod == 348:
+        if prod == 234:
             first = self.value()
             rest = self.args_mult()
             return [first] + rest
-        return []  # prod 349: λ
+        return []  # prod 235: λ
 
     def args_mult(self):
         """
@@ -2105,10 +2107,10 @@ class ASTParser:
         prod 237: λ
         """
         prod = self.get_production('<args-mult>')
-        if prod == 350:
+        if prod == 236:
             self.eat(',')
             return self.args()
-        return []  # prod 351: λ
+        return []  # prod 237: λ
 
     # ─────────────────────────────────────────────────────────────────────────
     # TYPE-SPECIFIC EXPRESSION BUILDERS
@@ -2252,12 +2254,12 @@ class ASTParser:
         prod 117: λ        → base unchanged
         """
         prod = self.get_production('<scr-char>')
-        if prod == 135:
+        if prod == 116:
             self.eat('{')
             idx = self.index_expr()
             self.eat('}')
             return ScrollCharAccessNode(base, idx, tok)
-        return base  # prod 136: λ
+        return base  # prod 117: λ
 
     def scroll_concat_fold(self, left):
         """
@@ -2305,28 +2307,28 @@ class ASTParser:
         """
         prod = self.get_production('<bool-ope>')
         tok = self.current_token
-        if prod == 174:
+        if prod == 145:
+            return self.bool_literal_and_eq()
+        elif prod == 146:
             self.eat('id')
             node = self.id_tail(tok.value, tok)
             return self.bool_exp2(node)
-        elif prod == 175:
+        elif prod == 147:
             self.eat('(')
             inner = self.value()
             self.eat(')')
             return self.bool_exp2(inner)
-        elif prod == 176:
-            return self.bool_literal_and_eq()
-        elif prod == 177:
+        elif prod == 148:
             left = self.var_digit()
             left = self.arith_fold(left)
             return self.rel_eq_fold(left)
-        elif prod == 178:
+        elif prod == 149:
             self.eat('PARCH-lit')
             left = LiteralNode('PARCH', tok.value, tok)
             op_tok = self.current_token; op = self.eq_op()
             right = self.parch_val()
             return BinaryOpNode(left, op, right, op_tok)
-        elif prod == 179:
+        elif prod == 150:
             self.eat('SCROLL-lit')
             base = LiteralNode('SCROLL', tok.value, tok)
             left = self.scr_char_opt(base, tok)
@@ -2341,13 +2343,13 @@ class ASTParser:
         prod 160/161: bool_eq → eq_op bool_ope | λ
         """
         prod = self.get_production('<bool>')
-        if prod == 180:
+        if prod == 151:
             # bool_lit
             tok = self.current_token
             val = True if tok.type == 'AYE' else False
             self.eat(tok.type)
             node = LiteralNode('BOOL', val, tok)
-        elif prod == 181:
+        elif prod == 152:
             # not_op not_ope
             node = self.not_expr()
         else:
@@ -2355,13 +2357,13 @@ class ASTParser:
             val = True if tok.type == 'AYE' else False
             self.eat(tok.type)
             node = LiteralNode('BOOL', val, tok)
-        # bool_eq: prod 189 | 190
+        # bool_eq: prod 160 | 161
         prod_eq = self.get_production('<bool-eq>')
-        if prod_eq == 189:
+        if prod_eq == 160:
             op_tok = self.current_token; op = self.eq_op()
             right = self.bool_ope()
             return BinaryOpNode(node, op, right, op_tok)
-        return node  # prod 190: λ
+        return node  # prod 161: λ
 
     def not_expr(self):
         """prod 152: not_op not_ope"""
@@ -2379,15 +2381,15 @@ class ASTParser:
         """
         prod = self.get_production('<not-ope>')
         tok = self.current_token
-        if prod == 186:
+        if prod == 157:
             self.eat('id')
             return self.id_tail(tok.value, tok)
-        elif prod == 187:
+        elif prod == 158:
             self.eat('(')
             val = self.bool_val()
             self.eat(')')
             return val
-        else:  # prod 188: bool_lit
+        else:  # prod 159: bool_lit
             val = True if tok.type == 'AYE' else False
             self.eat(tok.type)
             return LiteralNode('BOOL', val, tok)
@@ -2400,26 +2402,26 @@ class ASTParser:
         prod 184: λ
         """
         prod = self.get_production('<bool-exp2>')
-        if prod == 212:
+        if prod == 181:
             left = self.arith_fold(left)
             return self.rel_eq_fold(left)
-        elif prod == 213:
+        elif prod == 182:
             op_tok = self.current_token; op = self.rel_op()
             right = self.dime_ope()
             right = self.arith_fold(right)
             node = BinaryOpNode(left, op, right, op_tok)
             # bool_eq: optional == or !=
             prod_eq = self.get_production('<bool-eq>')
-            if prod_eq == 189:
+            if prod_eq == 160:
                 op_tok2 = self.current_token; op2 = self.eq_op()
                 right2 = self.bool_ope()
                 return BinaryOpNode(node, op2, right2, op_tok2)
             return node
-        elif prod == 214:
+        elif prod == 183:
             op_tok = self.current_token; op = self.eq_op()
             right = self.eq_ope()
             return BinaryOpNode(left, op, right, op_tok)
-        return left  # prod 215: λ
+        return left  # prod 184: λ
 
     def rel_eq_fold(self, left):
         """
@@ -2427,19 +2429,19 @@ class ASTParser:
         prod 170: eq_op dime_ope bool_arith3
         """
         prod = self.get_production('<rel-eq>')
-        if prod == 198:
+        if prod == 169:
             op_tok = self.current_token; op = self.rel_op()
             right = self.dime_ope()
             right = self.arith_fold(right)
             node = BinaryOpNode(left, op, right, op_tok)
-            # bool_eq: prod 189 | 190
+            # bool_eq: prod 160 | 161
             prod_eq = self.get_production('<bool-eq>')
-            if prod_eq == 189:
+            if prod_eq == 160:
                 op_tok2 = self.current_token; op2 = self.eq_op()
                 right2 = self.bool_ope()
                 return BinaryOpNode(node, op2, right2, op_tok2)
             return node
-        elif prod == 199:
+        elif prod == 170:
             op_tok = self.current_token; op = self.eq_op()
             right = self.dime_ope()
             right = self.arith_fold(right)
@@ -2457,37 +2459,34 @@ class ASTParser:
         """
         prod = self.get_production('<eq-ope>')
         tok = self.current_token
-        if prod == 216:
+        if prod == 185:
             self.eat('id')
             node = self.id_tail(tok.value, tok)
             return self.bool_exp3(node)
-        elif prod == 217:
+        elif prod == 186:
             self.eat('(')
             val = self.value()
             self.eat(')')
             return self.bool_exp3(val)
-        elif prod == 218:
+        elif prod == 187:
             left = self.var_digit()
             left = self.arith_fold(left)
-            # bool_rel: prod 225 rel_op | prod 226 λ
+            # bool_rel: prod 193 rel_op | prod 194 λ
             if self.current_token and self.current_token.type in ('<', '>', '<=', '>='):
                 op_tok = self.current_token; op = self.rel_op()
                 right = self.dime_ope()
                 right = self.arith_fold(right)
                 return BinaryOpNode(left, op, right, op_tok)
             return left
-        elif prod == 219:
-            # eq_ope1: 220=PARCH, 221=SCROLL, 222=bool
-            tok = self.current_token
-            if tok.type == 'PARCH-lit':
-                self.eat('PARCH-lit')
-                return LiteralNode('PARCH', tok.value, tok)
-            elif tok.type == 'SCROLL-lit':
-                self.eat('SCROLL-lit')
-                base = LiteralNode('SCROLL', tok.value, tok)
-                return self.scr_char_opt(base, tok)
-            else:
-                return self.bool_literal_and_eq()
+        elif prod == 188:
+            self.eat('PARCH-lit')
+            return LiteralNode('PARCH', tok.value, tok)
+        elif prod == 189:
+            self.eat('SCROLL-lit')
+            base = LiteralNode('SCROLL', tok.value, tok)
+            return self.scr_char_opt(base, tok)
+        elif prod == 190:
+            return self.bool_literal_and_eq()
 
     def bool_exp3(self, left):
         """
@@ -2496,15 +2495,20 @@ class ASTParser:
         prod 197: λ
         """
         prod = self.get_production('<bool-exp3>')
-        # Handles optional arith ops and rel ops after an id/grouped expression in eq_ope context
-        if self.current_token and self.current_token.type in ('+', '-', '*', '/', '%', '^'):
+        if prod == 195:
             left = self.arith_fold(left)
-        if self.current_token and self.current_token.type in ('<', '>', '<=', '>='):
+            if self.current_token and self.current_token.type in ('<', '>', '<=', '>='):
+                op_tok = self.current_token; op = self.rel_op()
+                right = self.dime_ope()
+                right = self.arith_fold(right)
+                return BinaryOpNode(left, op, right, op_tok)
+            return left
+        elif prod == 196:
             op_tok = self.current_token; op = self.rel_op()
             right = self.dime_ope()
             right = self.arith_fold(right)
             return BinaryOpNode(left, op, right, op_tok)
-        return left
+        return left  # prod 197: λ
 
     def bool_exp_fold(self, left):
         """
@@ -2512,13 +2516,13 @@ class ASTParser:
         prod 199: λ
         """
         prod = self.get_production('<bool-exp>')
-        if prod == 227:
+        if prod == 198:
             op_tok = self.current_token
             op = self.log_op()
             right = self.bool_ope()
             node = BinaryOpNode(left, op, right, op_tok)
             return self.bool_exp_fold(node)
-        return left  # prod 228: λ
+        return left  # prod 199: λ
 
     def rel_op(self):
         """prods 171–174: <, >, <=, >="""
