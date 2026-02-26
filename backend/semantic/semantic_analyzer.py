@@ -53,7 +53,12 @@
 #
 # TYPE COMPATIBILITY:
 #   SeaStack's rules:
-#     COIN / DIME are compatible ONLY in arithmetic and equality (==,!=)
+#     COIN  — integer
+#     DIME  — floating-point
+#     PARCH — single-character LITERAL (written with single quotes, e.g. 'A')
+#     SCROLL — string; SCROLL{i} (character index) returns SCROLL, not PARCH,
+#              because an indexed character is still a one-character SCROLL value
+#     BOOL  — boolean
 #       expressions — _compatible_expr() handles this case.
 #     In assignment / initialization contexts (variables, array elements,
 #       struct members, function parameters, return values):
@@ -139,12 +144,6 @@ class SemanticAnalyzer:
 
         # True when we are analyzing the ADRIFT body of a CHART statement.
         self.in_adrift = False
-
-        # True only while visit_FuncCallStmtNode is dispatching into
-        # visit_FuncCallNode.  Lets visit_FuncCallNode know it is being called
-        # as a standalone statement, so the ABYSS-in-expression error is
-        # correctly suppressed for valid calls like  log()!!
-        self._in_stmt_call = False
 
     # =========================================================================
     # ENTRY POINT
@@ -1339,12 +1338,8 @@ class SemanticAnalyzer:
                 f"but '{node.var_name}' is '{sym.dtype}'. ")
 
     def visit_FuncCallStmtNode(self, node):
-        """A function call used as a statement (return value discarded).
-        ABYSS functions are perfectly valid here — only expression use is banned.
-        """
-        self._in_stmt_call = True
+        """A function call used as a statement (return value discarded)."""
         self.visit(node.call_expr)
-        self._in_stmt_call = False
 
     # =========================================================================
     # EXPRESSIONS  (all return a dtype string or None on error)
@@ -1449,7 +1444,9 @@ class SemanticAnalyzer:
         Checks:
           • The scroll expression must be SCROLL type.
           • The index must be COIN type.
-        Returns PARCH (a single character).
+        Returns SCROLL — a single-character indexed access yields a one-character
+        SCROLL value, NOT a PARCH.  PARCH is a character literal written with
+        single quotes (e.g. 'A'); SCROLL{i} produces a length-1 SCROLL.
         """
         scroll_type = self.visit(node.scroll_expr)
         if scroll_type and scroll_type != 'SCROLL':
@@ -1463,7 +1460,7 @@ class SemanticAnalyzer:
                 f"SCROLL character index must be COIN, "
                 f"got '{self._type_name(idx_type)}'.")
 
-        return 'PARCH'   # always returns a single character
+        return 'SCROLL'   # a single-character index yields a one-char SCROLL
 
     def visit_StringConcatNode(self, node):
         """
@@ -1516,15 +1513,11 @@ class SemanticAnalyzer:
                         f"expected '{param.dtype}', "
                         f"got '{self._type_name(arg_type)}'.")
 
-        # ABYSS functions cannot produce a value, so using one inside an
-        # expression is an error.  However, calling one as a standalone
-        # statement (log()!!) is perfectly valid — _in_stmt_call is True
-        # in that case, so we skip the error and just return None quietly.
+        # ABYSS return used in an expression context is a type error
         if sym.return_type == 'ABYSS':
-            if not self._in_stmt_call:
-                self.error(node.token,
-                    f"Function '{node.name}' is declared ABYSS "
-                    f"and cannot be used as an expression.")
+            self.error(node.token,
+                f"Function '{node.name}' is declared ABYSS"
+                f"and cannot be used as an expression. ")
             return None
 
         return sym.return_type
