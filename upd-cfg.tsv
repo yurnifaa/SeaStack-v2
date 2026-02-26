@@ -1,3 +1,4 @@
+prod_num	non_terminal	body
 1	<program>	<global-dec> AHOY() [ <ahoy-local-dec> <ahoy-stmnts> ]
 2	<global-dec>	<var-arr-func> 
 3	<global-dec>	<const><global-dec>
@@ -383,7 +384,7 @@
 383	<exp>	<rel><arith-var2><logeq-var>
 384	<exp>	<log-op><log-ope><log-var>
 385	<exp>	<eq-op><eq-var><log-var>
-386	<exp>	& <scroll-val><scroll-var>
+386	<exp>	& <scroll-val><concat-var>
 387	<exp>	λ
 388	<log-ope>	id<id-tail><log-exp>
 389	<log-ope>	(<value-grp>)<log-exp>
@@ -437,7 +438,7 @@
 437	<exp-grp>	<rel><arith-grp2><logeq-grp>
 438	<exp-grp>	<log-op><bool-ope-grp><bool-exp-grp>
 439	<exp-grp>	<eq-op><eq-ope-grp><bool-exp-grp>
-440	<exp-grp>	& <scroll-val><scroll-grp>
+440	<exp-grp>	& <scroll-val><concat-grp>
 441	<exp-grp>	λ
 442	<const>	LOCKE <const-init>!!
 443	<const-init>	COIN <coin-locke><coin-locke-mult>
@@ -466,7 +467,7 @@
 466	<locke-bool>	NAY
 467	<bool-locke-mult>	, <bool-locke> <bool-locke-mult>
 468	<bool-locke-mult>	λ
-469	<struct>	MAST id [    <mem-dec>    <mem-dec-tail> ] !! <struct>
+469	<struct>	MAST id [ <mem-dec> <mem-dec-tail> ] !! <struct>
 470	<struct>	λ
 471	<mem-dec>	<d-type> id <mem-mult>!! 
 472	<mem-mult>	, id <mem-mult>
@@ -481,23 +482,23 @@
 481	<return-func>	PARCH id<parch-func>
 482	<return-func>	SCROLL id<scroll-func>
 483	<return-func>	BOOL id<bool-func>
-484	<nonreturn-func>	ABYSS id (<params>) [   <ahoy-local-dec>   <nonret-stmnts>   <nonret-back> ] <sub-func>
+484	<nonreturn-func>	ABYSS id (<params>) [ <ahoy-local-dec> <nonret-stmnts> <nonret-back> ] <sub-func>
 485	<nonret-stmnts>	<nonret-stmnt><nonret-tail>
 486	<nonret-tail>	<nonret-stmnts>
 487	<nonret-tail>	λ
 488	<nonret-back>	BACK!!
 489	<nonret-back>	λ
-490	<nonret-stmnt>	id<assign-tail>!!
-491	<nonret-stmnt>	ASK(SCROLL-lit, <addr>)!!
-492	<nonret-stmnt>	ECHO(SCROLL-lit<args-mult>)!!
-493	<nonret-stmnt>	LOOK(<condition>) [    <look-body>    <jump-stmnt> ] <nonret-look-tail>
-494	<nonret-stmnt>	CHART(<chart-cond>) [    <courses>    <course-tail>    <adrift-case> ]
-495	<nonret-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [    <look-body>    <jump-stmnt> ]
-496	<nonret-stmnt>	HEAVE (<condition>) [    <look-body>    <jump-stmnt> ]
-497	<nonret-stmnt>	HAUL [     <look-body>    <jump-stmnt> ] HEAVE (<condition>)!!
+490	<nonret-stmnt>	id <assign-tail> !!
+491	<nonret-stmnt>	ASK ( SCROLL-lit, <addr> ) !!
+492	<nonret-stmnt>	ECHO ( SCROLL-lit <args-mult> ) !!
+493	<nonret-stmnt>	LOOK (<condition>) [ <look-body> <jump-stmnt> ] <nonret-look-tail>
+494	<nonret-stmnt>	CHART (<chart-cond>) [ <courses> <course-tail> <adrift-case> ]
+495	<nonret-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [ <look-body> <jump-stmnt> ]
+496	<nonret-stmnt>	HEAVE (<condition>) [ <look-body> <jump-stmnt> ]
+497	<nonret-stmnt>	HAUL [ <look-body> <jump-stmnt> ] HEAVE (<condition>)!!
 498	<nonret-stmnt>	<unary-exp>!!
-499	<nonret-look-tail>	DROPLOOK(<condition>) [    <look-body>    <jump-stmnt> ] <nonret-look-tail>
-500	<nonret-look-tail>	DROP [    <look-body>    <jump-stmnt> ]
+499	<nonret-look-tail>	DROPLOOK (<condition>) [ <look-body> <jump-stmnt> ] <nonret-look-tail>
+500	<nonret-look-tail>	DROP [ <look-body> <jump-stmnt> ]
 501	<nonret-look-tail>	λ
 502	<local-dec>	<var-arr><local-dec>
 503	<local-dec>	<struct-dec>
@@ -570,7 +571,7 @@
 570	<assign-body>	= <value-as>
 571	<assign-body>	<arith-assign-op><dime-ret-val>
 572	<value-as>	id<id-tail><exp-as>
-573	<value-as>	(<var-grp>)<exp-as>
+573	<value-as>	(<value-grp>)<exp-as>
 574	<value-as>	<digit><digit-tail-as>
 575	<value-as>	PARCH-lit<parch-tail-as>
 576	<value-as>	SCROLL-lit<scr-char><scroll-tail-as>
@@ -607,28 +608,28 @@
 607	<arith-assign-op>	/=
 608	<arith-assign-op>	%=
 609	<arith-assign-op>	^=
-610	<ask-stmnt>	ASK(SCROLL-lit, <addr>)!!
+610	<ask-stmnt>	ASK ( SCROLL-lit, <addr> ) !!
 611	<addr>	@id<arr-str><addr-tail>
 612	<addr-tail>	, <addr>
 613	<addr-tail>	λ
-614	<echo-stmnt>	ECHO(SCROLL-lit<args-mult>)!!
-615	<look-stmnt>	LOOK(<condition>) [    <look-body>    <jump-stmnt> ] <look-tail>
+614	<echo-stmnt>	ECHO ( SCROLL-lit <args-mult> ) !!
+615	<look-stmnt>	LOOK (<condition>) [ <look-body> <jump-stmnt> ] <look-tail>
 616	<condition>	<bool-grp-val>
 617	<look-body>	<statements><look-body>
 618	<look-body>	λ
 619	<jump-stmnt>	SAIL!!
 620	<jump-stmnt>	LAND!!
 621	<jump-stmnt>	λ
-622	<look-tail>	DROPLOOK(<condition>) [    <look-body>    <jump-stmnt> ] <look-tail>
-623	<look-tail>	DROP [    <look-body>    <jump-stmnt> ]
+622	<look-tail>	DROPLOOK (<condition>) [ <look-body> <jump-stmnt> ] <look-tail>
+623	<look-tail>	DROP [ <look-body> <jump-stmnt> ]
 624	<look-tail>	λ
-625	<chart-stmnt>	CHART(<chart-cond>) [    <courses>    <course-tail>    <adrift-case> ]
+625	<chart-stmnt>	CHART (<chart-cond>) [ <courses> <course-tail> <adrift-case> ]
 626	<chart-cond>	id<id-tail>
 627	<chart-cond>	<chart-const>
 628	<chart-const>	COIN-lit
 629	<chart-const>	PARCH-lit
 630	<chart-const>	SCROLL-lit<scr-id>
-631	<courses>	COURSE <chart-const>:    <course-body>    <course-jmp>
+631	<courses>	COURSE <chart-const> : <course-body> <course-jmp>
 632	<course-body>	<statements><course-body>
 633	<course-body>	λ
 634	<course-jmp>	SAIL!!
@@ -636,11 +637,11 @@
 636	<course-jmp>	λ
 637	<course-tail>	<courses><course-tail>
 638	<course-tail>	λ
-639	<adrift-case>	ADRIFT:    <adrift-body>    LAND!!
+639	<adrift-case>	ADRIFT : <adrift-body> LAND!!
 640	<adrift-case>	λ
 641	<adrift-body>	<statements><adrift-body>
 642	<adrift-body>	λ
-643	<hoist-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [    <look-body>    <jump-stmnt> ]
+643	<hoist-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [ <look-body> <jump-stmnt> ]
 644	<hoist-init>	COIN id = COIN-lit <init1-mult>
 645	<hoist-init>	id<arr-str> = COIN-lit <init2-mult>
 646	<hoist-init>	λ
@@ -658,8 +659,8 @@
 658	<upd>	id<arr-str><arith-assign-op><dime-grp-val>
 659	<upd-mult>	, <upd><upd-mult>
 660	<upd-mult>	λ
-661	<heave-stmnt>	HEAVE (<condition>) [    <look-body>    <jump-stmnt> ]
-662	<haul-stmnt>	HAUL [     <look-body>    <jump-stmnt> ] HEAVE (<condition>)!!
+661	<heave-stmnt>	HEAVE (<condition>) [ <look-body> <jump-stmnt> ]
+662	<haul-stmnt>	HAUL [ <look-body> <jump-stmnt> ] HEAVE (<condition>)!!
 663	<unary-exp>	<unary-op>id<arr-str>
 664	<unary-op>	+#
 665	<unary-op>	-#
@@ -672,8 +673,8 @@
 672	<ahoy-tail>	<ahoy-stmnts>
 673	<ahoy-tail>	λ
 674	<ahoy-stmnt>	id<assign-tail>!!
-675	<ahoy-stmnt>	ASK(SCROLL-lit, <addr>)!!
-676	<ahoy-stmnt>	ECHO(SCROLL-lit<args-mult>)!!
+675	<ahoy-stmnt>	ASK ( SCROLL-lit, <addr> ) !!
+676	<ahoy-stmnt>	ECHO ( SCROLL-lit <args-mult> ) !!
 677	<ahoy-stmnt>	LOOK (<condition>) [ <look-body> <jump-stmnt> ] <ahoy-look-tail>
 678	<ahoy-stmnt>	CHART (<chart-cond>) [ <courses> <course-tail> <adrift-case> ]
 679	<ahoy-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [ <look-body> <jump-stmnt> ]

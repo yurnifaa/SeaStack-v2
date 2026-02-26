@@ -2413,7 +2413,7 @@ class Parser:
         elif prod == 386:
             self.eat('&')
             self.scroll_val()
-            self.scroll_var()
+            self.concat_var()
         elif prod == 387:
             pass  # Lambda
         else:
@@ -2682,7 +2682,7 @@ class Parser:
         elif prod == 440:
             self.eat('&')
             self.scroll_val()
-            self.scroll_grp()
+            self.concat_grp()
         elif prod == 441:
             pass  # Lambda
         else:
@@ -3486,7 +3486,7 @@ class Parser:
             self.exp_as()
         elif prod == 573:
             self.eat('(')
-            self.var_grp()
+            self.value_grp()
             self.eat(')')
             self.exp_as()
         elif prod == 574:
