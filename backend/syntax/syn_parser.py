@@ -58,16 +58,6 @@ class Parser:
         expected = list(PREDICT.get(non_terminal, {}).keys())
         raise Exception(self.err_handler.get_invalid_token_error(self.current_token, expected))
 
-    def error_invalid_token_ctx(self, expected):
-        """Raise an invalid-token error using a caller-supplied expected-token list.
-
-        Used by nullable non-terminals when their caller provides the FIRST set
-        of the production suffix that follows the nullable call — giving a precise,
-        context-aware "expected ..." message instead of the generic PREDICT-based one.
-        """
-        raise Exception(self.err_handler.get_invalid_token_error(
-            self.current_token, list(expected)))
-
     # =========================================
     # Entry Point
     # =========================================
@@ -104,18 +94,18 @@ class Parser:
         # <program>
         prod = self.get_production('<program>')
         if prod == 1:
-            self.global_dec(_ctx_expected=('AHOY',))
+            self.global_dec()
             self.eat('AHOY')
             self.eat('(')
             self.eat(')')
             self.eat('[')
-            self.ahoy_local_dec(_ctx_expected=('+#', '-#', 'ASK', 'CHART', 'ECHO', 'HAUL', 'HEAVE', 'HOIST', 'LOOK', 'id'))
+            self.ahoy_local_dec()
             self.ahoy_stmnts()
             self.eat(']')
         else:
             self.error_invalid_token('<program>')
 
-    def global_dec(self, _ctx_expected=()):
+    def global_dec(self):
         # <global-dec>
         prod = self.get_production('<global-dec>')
         if prod == 2:
@@ -124,16 +114,14 @@ class Parser:
             self.const()
             self.global_dec()
         elif prod == 4:
-            self.struct(_ctx_expected=('ABYSS', 'BOOL', 'COIN', 'DIME', 'PARCH', 'SCROLL'))
+            self.struct()
             self.sub_func()
         elif prod == 5:
             self.nonreturn_func()
         elif prod == 6:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<global-dec>')
 
     def var_arr_func(self):
         # <var-arr-func>
@@ -141,29 +129,29 @@ class Parser:
         if prod == 7:
             self.eat('COIN')
             self.eat('id')
-            self.coin_dec()
+            self.coin_var_arr_func()
         elif prod == 8:
             self.eat('DIME')
             self.eat('id')
-            self.dime_dec()
+            self.dime_var_arr_func()
         elif prod == 9:
             self.eat('PARCH')
             self.eat('id')
-            self.parch_dec()
+            self.parch_var_arr_func()
         elif prod == 10:
             self.eat('SCROLL')
             self.eat('id')
-            self.scroll_dec()
+            self.scroll_var_arr_func()
         elif prod == 11:
             self.eat('BOOL')
             self.eat('id')
-            self.bool_dec()
+            self.bool_var_arr_func()
         else:
             self.error_invalid_token('<var-arr-func>')
 
-    def coin_dec(self):
-        # <coin-dec>
-        prod = self.get_production('<coin-dec>')
+    def coin_var_arr_func(self):
+        # <coin-var-arr-func>
+        prod = self.get_production('<coin-var-arr-func>')
         if prod == 12:
             self.coin_var_arr()
             self.eat('!!')
@@ -171,7 +159,7 @@ class Parser:
         elif prod == 13:
             self.coin_func()
         else:
-            self.error_invalid_token('<coin-dec>')
+            self.error_invalid_token('<coin-var-arr-func>')
 
     def coin_var_arr(self):
         # <coin-var-arr>
@@ -187,112 +175,124 @@ class Parser:
         # <coin-var>
         prod = self.get_production('<coin-var>')
         if prod == 16:
-            self.coin_init(_ctx_expected=(',',))
+            self.coin_init()
             self.coin_init_mult()
         else:
             self.error_invalid_token('<coin-var>')
 
-    def coin_init(self, _ctx_expected=()):
+    def coin_init(self):
         # <coin-init>
         prod = self.get_production('<coin-init>')
         if prod == 17:
             self.eat('=')
             self.coin_val()
+            self.coin_exp()
         elif prod == 18:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<coin-init>')
 
-    def coin_init_mult(self, _ctx_expected=()):
+    def coin_init_mult(self):
         # <coin-init-mult>
         prod = self.get_production('<coin-init-mult>')
         if prod == 19:
             self.eat(',')
             self.eat('id')
-            self.coin_init(_ctx_expected=(',',))
+            self.coin_init()
             self.coin_init_mult()
         elif prod == 20:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<coin-init-mult>')
 
     def coin_val(self):
         # <coin-val>
         prod = self.get_production('<coin-val>')
         if prod == 21:
-            self.coin_ope()
-            self.coin_arith()
+            self.eat('COIN-lit')
+        elif prod == 22:
+            self.neg()
+            self.neg_coin_val()
         else:
             self.error_invalid_token('<coin-val>')
 
-    def coin_ope(self):
-        # <coin-ope>
-        prod = self.get_production('<coin-ope>')
-        if prod == 22:
-            self.eat('COIN-lit')
-        elif prod == 23:
-            self.neg(_ctx_expected=('(', 'id'))
-            self.neg_coin_ope()
-        else:
-            self.error_invalid_token('<coin-ope>')
-
-    def neg(self, _ctx_expected=()):
+    def neg(self):
         # <neg>
         prod = self.get_production('<neg>')
-        if prod == 24:
+        if prod == 23:
             self.eat('-')
-        elif prod == 25:
+        elif prod == 24:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<neg>')
 
-    def neg_coin_ope(self):
-        # <neg-coin-ope>
-        prod = self.get_production('<neg-coin-ope>')
-        if prod == 26:
+    def neg_coin_val(self):
+        # <neg-coin-val>
+        prod = self.get_production('<neg-coin-val>')
+        if prod == 25:
             self.eat('id')
             self.id_tail()
-        elif prod == 27:
+        elif prod == 26:
             self.eat('(')
-            self.coin_val()
+            self.coin_val_grp()
             self.eat(')')
         else:
-            self.error_invalid_token('<neg-coin-ope>')
+            self.error_invalid_token('<neg-coin-val>')
 
-    def coin_arith(self, _ctx_expected=()):
-        # <coin-arith>
-        prod = self.get_production('<coin-arith>')
-        if prod == 28:
-            self.arith_op()
-            self.coin_ope()
+    def coin_exp(self):
+        # <coin-exp>
+        prod = self.get_production('<coin-exp>')
+        if prod == 27:
             self.coin_arith()
-        elif prod == 29:
+            self.coin_exp()
+        elif prod == 28:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<coin-exp>')
+
+    def coin_arith(self):
+        # <coin-arith>
+        prod = self.get_production('<coin-arith>')
+        if prod == 29:
+            self.arith_op()
+            self.coin_val()
+        else:
+            self.error_invalid_token('<coin-arith>')
+
+    def coin_val_grp(self):
+        # <coin-val-grp>
+        prod = self.get_production('<coin-val-grp>')
+        if prod == 30:
+            self.coin_val()
+            self.coin_exp_grp()
+        else:
+            self.error_invalid_token('<coin-val-grp>')
+
+    def coin_grp_exp(self):
+        # <coin-grp-exp>
+        prod = self.get_production('<coin-grp-exp>')
+        if prod == 31:
+            self.coin_arith()
+            self.coin_grp_exp()
+        elif prod == 32:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<coin-grp-exp>')
 
     def arith_op(self):
         # <arith-op>
         prod = self.get_production('<arith-op>')
-        if prod == 30:
+        if prod == 33:
             self.eat('+')
-        elif prod == 31:
-            self.eat('-')
-        elif prod == 32:
-            self.eat('*')
-        elif prod == 33:
-            self.eat('/')
         elif prod == 34:
-            self.eat('%')
+            self.eat('-')
         elif prod == 35:
+            self.eat('*')
+        elif prod == 36:
+            self.eat('/')
+        elif prod == 37:
+            self.eat('%')
+        elif prod == 38:
             self.eat('^')
         else:
             self.error_invalid_token('<arith-op>')
@@ -300,7 +300,7 @@ class Parser:
     def coin_arr(self):
         # <coin-arr>
         prod = self.get_production('<coin-arr>')
-        if prod == 36:
+        if prod == 39:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
@@ -308,67 +308,81 @@ class Parser:
         else:
             self.error_invalid_token('<coin-arr>')
 
-    def coin_arr_tail(self, _ctx_expected=()):
+    def coin_arr_tail(self):
         # <coin-arr-tail>
         prod = self.get_production('<coin-arr-tail>')
-        if prod == 37:
+        if prod == 40:
             self.eat('=')
             self.eat('[')
             self.coin_arr1()
             self.eat(']')
-        elif prod == 38:
+        elif prod == 41:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
             self.coin_arr2_tail()
-        elif prod == 39:
+        elif prod == 42:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<coin-arr-tail>')
 
     def coin_arr1(self):
         # <coin-arr1>
         prod = self.get_production('<coin-arr1>')
-        if prod == 40:
-            self.coin_val()
+        if prod == 43:
+            self.coin_arr_val()
             self.cav_tail()
         else:
             self.error_invalid_token('<coin-arr1>')
 
-    def cav_tail(self, _ctx_expected=()):
-        # <cav-tail>
-        prod = self.get_production('<cav-tail>')
-        if prod == 41:
-            self.eat(',')
-            self.coin_arr1()
-        elif prod == 42:
+    def coin_arr_val(self):
+        # <coin-arr-val>
+        prod = self.get_production('<coin-arr-val>')
+        if prod == 44:
+            self.coin_val()
+            self.coin_arr_exp()
+        else:
+            self.error_invalid_token('<coin-arr-val>')
+
+    def coin_arr_exp(self):
+        # <coin-arr-exp>
+        prod = self.get_production('<coin-arr-exp>')
+        if prod == 45:
+            self.coin_arith()
+            self.coin_arr_exp()
+        elif prod == 46:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<coin-arr-exp>')
 
-    def coin_arr2_tail(self, _ctx_expected=()):
+    def cav_tail(self):
+        # <cav-tail>
+        prod = self.get_production('<cav-tail>')
+        if prod == 47:
+            self.eat(',')
+            self.coin_arr1()
+        elif prod == 48:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<cav-tail>')
+
+    def coin_arr2_tail(self):
         # <coin-arr2-tail>
         prod = self.get_production('<coin-arr2-tail>')
-        if prod == 43:
+        if prod == 49:
             self.eat('=')
             self.eat('[')
             self.coin_arr2()
             self.eat(']')
-        elif prod == 44:
+        elif prod == 50:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<coin-arr2-tail>')
 
     def coin_arr2(self):
         # <coin-arr2>
         prod = self.get_production('<coin-arr2>')
-        if prod == 45:
+        if prod == 51:
             self.eat('[')
             self.coin_arr1()
             self.eat(']')
@@ -376,55 +390,73 @@ class Parser:
         else:
             self.error_invalid_token('<coin-arr2>')
 
-    def cav2_tail(self, _ctx_expected=()):
+    def cav2_tail(self):
         # <cav2-tail>
         prod = self.get_production('<cav2-tail>')
-        if prod == 46:
+        if prod == 52:
             self.eat(',')
             self.coin_arr2()
-        elif prod == 47:
+        elif prod == 53:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<cav2-tail>')
 
     def coin_func(self):
         # <coin-func>
         prod = self.get_production('<coin-func>')
-        if prod == 48:
+        if prod == 54:
             self.eat('(')
-            self.params(_ctx_expected=(')',))
+            self.params()
             self.eat(')')
             self.eat('[')
-            self.local_dec(_ctx_expected=('+#', '-#', 'ASK', 'BACK', 'CHART', 'ECHO', 'HAUL', 'HEAVE', 'HOIST', 'LOOK', 'id'))
-            self.ret_stmnts(_ctx_expected=('BACK',))
+            self.local_dec()
+            self.ret_stmnts()
             self.eat('BACK')
-            self.coin_val()
+            self.coin_ret_val()
             self.eat('!!')
             self.eat(']')
             self.sub_func()
         else:
             self.error_invalid_token('<coin-func>')
 
-    def dime_dec(self):
-        # <dime-dec>
-        prod = self.get_production('<dime-dec>')
-        if prod == 49:
+    def coin_ret_val(self):
+        # <coin-ret-val>
+        prod = self.get_production('<coin-ret-val>')
+        if prod == 55:
+            self.coin_val()
+            self.coin_ret_exp()
+        else:
+            self.error_invalid_token('<coin-ret-val>')
+
+    def coin_ret_exp(self):
+        # <coin-ret-exp>
+        prod = self.get_production('<coin-ret-exp>')
+        if prod == 56:
+            self.coin_arith()
+            self.coin_ret_exp()
+        elif prod == 57:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<coin-ret-exp>')
+
+    def dime_var_arr_func(self):
+        # <dime-var-arr-func>
+        prod = self.get_production('<dime-var-arr-func>')
+        if prod == 58:
             self.dime_var_arr()
             self.eat('!!')
             self.global_dec()
-        elif prod == 50:
+        elif prod == 59:
             self.dime_func()
         else:
-            self.error_invalid_token('<dime-dec>')
+            self.error_invalid_token('<dime-var-arr-func>')
 
     def dime_var_arr(self):
         # <dime-var-arr>
         prod = self.get_production('<dime-var-arr>')
-        if prod == 51:
+        if prod == 60:
             self.dime_var()
-        elif prod == 52:
+        elif prod == 61:
             self.dime_arr()
         else:
             self.error_invalid_token('<dime-var-arr>')
@@ -432,93 +464,115 @@ class Parser:
     def dime_var(self):
         # <dime-var>
         prod = self.get_production('<dime-var>')
-        if prod == 53:
-            self.dime_init(_ctx_expected=(',',))
+        if prod == 62:
+            self.dime_init()
             self.dime_init_mult()
         else:
             self.error_invalid_token('<dime-var>')
 
-    def dime_init(self, _ctx_expected=()):
+    def dime_init(self):
         # <dime-init>
         prod = self.get_production('<dime-init>')
-        if prod == 54:
+        if prod == 63:
             self.eat('=')
-            self.dime_val()
-        elif prod == 55:
+            self.dime_init_val()
+        elif prod == 64:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dime-init>')
 
-    def dime_init_mult(self, _ctx_expected=()):
+    def dime_init_mult(self):
         # <dime-init-mult>
         prod = self.get_production('<dime-init-mult>')
-        if prod == 56:
+        if prod == 65:
             self.eat(',')
             self.eat('id')
-            self.dime_init(_ctx_expected=(',',))
+            self.dime_init()
             self.dime_init_mult()
-        elif prod == 57:
+        elif prod == 66:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dime-init-mult>')
+
+    def dime_init_val(self):
+        # <dime-init-val>
+        prod = self.get_production('<dime-init-val>')
+        if prod == 67:
+            self.dime_val()
+            self.dime_exp()
+        else:
+            self.error_invalid_token('<dime-init-val>')
 
     def dime_val(self):
         # <dime-val>
         prod = self.get_production('<dime-val>')
-        if prod == 58:
-            self.dime_ope()
-            self.dime_arith()
+        if prod == 68:
+            self.eat('DIME-lit')
+        elif prod == 69:
+            self.eat('COIN-lit')
+        elif prod == 70:
+            self.neg()
+            self.neg_dime_val()
         else:
             self.error_invalid_token('<dime-val>')
 
-    def dime_ope(self):
-        # <dime-ope>
-        prod = self.get_production('<dime-ope>')
-        if prod == 59:
-            self.eat('DIME-lit')
-        elif prod == 60:
-            self.eat('COIN-lit')
-        elif prod == 61:
-            self.neg(_ctx_expected=('(', 'id'))
-            self.neg_dime_ope()
-        else:
-            self.error_invalid_token('<dime-ope>')
-
-    def neg_dime_ope(self):
-        # <neg-dime-ope>
-        prod = self.get_production('<neg-dime-ope>')
-        if prod == 62:
+    def neg_dime_val(self):
+        # <neg-dime-val>
+        prod = self.get_production('<neg-dime-val>')
+        if prod == 71:
             self.eat('id')
             self.id_tail()
-        elif prod == 63:
+        elif prod == 72:
             self.eat('(')
-            self.dime_val()
+            self.dime_grp_val()
             self.eat(')')
         else:
-            self.error_invalid_token('<neg-dime-ope>')
+            self.error_invalid_token('<neg-dime-val>')
 
-    def dime_arith(self, _ctx_expected=()):
-        # <dime-arith>
-        prod = self.get_production('<dime-arith>')
-        if prod == 64:
-            self.arith_op()
-            self.dime_ope()
+    def dime_exp(self):
+        # <dime-exp>
+        prod = self.get_production('<dime-exp>')
+        if prod == 73:
             self.dime_arith()
-        elif prod == 65:
+            self.dime_exp()
+        elif prod == 74:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dime-exp>')
+
+    def dime_arith(self):
+        # <dime-arith>
+        prod = self.get_production('<dime-arith>')
+        if prod == 75:
+            self.arith_op()
+            self.dime_val()
+        else:
+            self.error_invalid_token('<dime-arith>')
+
+    def dime_grp_val(self):
+        # <dime-grp-val>
+        prod = self.get_production('<dime-grp-val>')
+        if prod == 76:
+            self.dime_val()
+            self.dime_grp_exp()
+        else:
+            self.error_invalid_token('<dime-grp-val>')
+
+    def dime_grp_exp(self):
+        # <dime-grp-exp>
+        prod = self.get_production('<dime-grp-exp>')
+        if prod == 77:
+            self.dime_arith()
+            self.dime_grp_exp()
+        elif prod == 78:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<dime-grp-exp>')
 
     def dime_arr(self):
         # <dime-arr>
         prod = self.get_production('<dime-arr>')
-        if prod == 66:
+        if prod == 79:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
@@ -526,67 +580,81 @@ class Parser:
         else:
             self.error_invalid_token('<dime-arr>')
 
-    def dime_arr_tail(self, _ctx_expected=()):
+    def dime_arr_tail(self):
         # <dime-arr-tail>
         prod = self.get_production('<dime-arr-tail>')
-        if prod == 67:
+        if prod == 80:
             self.eat('=')
             self.eat('[')
             self.dime_arr1()
             self.eat(']')
-        elif prod == 68:
+        elif prod == 81:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
             self.dime_arr2_tail()
-        elif prod == 69:
+        elif prod == 82:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dime-arr-tail>')
 
     def dime_arr1(self):
         # <dime-arr1>
         prod = self.get_production('<dime-arr1>')
-        if prod == 70:
-            self.dime_val()
+        if prod == 83:
+            self.dime_arr_val()
             self.dav_tail()
         else:
             self.error_invalid_token('<dime-arr1>')
 
-    def dav_tail(self, _ctx_expected=()):
-        # <dav-tail>
-        prod = self.get_production('<dav-tail>')
-        if prod == 71:
-            self.eat(',')
-            self.dime_arr1()
-        elif prod == 72:
+    def dime_arr_val(self):
+        # <dime-arr-val>
+        prod = self.get_production('<dime-arr-val>')
+        if prod == 84:
+            self.dime_val()
+            self.dime_arr_exp()
+        else:
+            self.error_invalid_token('<dime-arr-val>')
+
+    def dime_arr_exp(self):
+        # <dime-arr-exp>
+        prod = self.get_production('<dime-arr-exp>')
+        if prod == 85:
+            self.dime_arith()
+            self.dime_arr_exp()
+        elif prod == 86:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dime-arr-exp>')
 
-    def dime_arr2_tail(self, _ctx_expected=()):
+    def dav_tail(self):
+        # <dav-tail>
+        prod = self.get_production('<dav-tail>')
+        if prod == 87:
+            self.eat(',')
+            self.dime_arr1()
+        elif prod == 88:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<dav-tail>')
+
+    def dime_arr2_tail(self):
         # <dime-arr2-tail>
         prod = self.get_production('<dime-arr2-tail>')
-        if prod == 73:
+        if prod == 89:
             self.eat('=')
             self.eat('[')
             self.dime_arr2()
             self.eat(']')
-        elif prod == 74:
+        elif prod == 90:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dime-arr2-tail>')
 
     def dime_arr2(self):
         # <dime-arr2>
         prod = self.get_production('<dime-arr2>')
-        if prod == 75:
+        if prod == 91:
             self.eat('[')
             self.dime_arr1()
             self.eat(']')
@@ -594,55 +662,73 @@ class Parser:
         else:
             self.error_invalid_token('<dime-arr2>')
 
-    def dav2_tail(self, _ctx_expected=()):
+    def dav2_tail(self):
         # <dav2-tail>
         prod = self.get_production('<dav2-tail>')
-        if prod == 76:
+        if prod == 92:
             self.eat(',')
             self.dime_arr2()
-        elif prod == 77:
+        elif prod == 93:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dav2-tail>')
 
     def dime_func(self):
         # <dime-func>
         prod = self.get_production('<dime-func>')
-        if prod == 78:
+        if prod == 94:
             self.eat('(')
-            self.params(_ctx_expected=(')',))
+            self.params()
             self.eat(')')
             self.eat('[')
-            self.local_dec(_ctx_expected=('+#', '-#', 'ASK', 'BACK', 'CHART', 'ECHO', 'HAUL', 'HEAVE', 'HOIST', 'LOOK', 'id'))
-            self.ret_stmnts(_ctx_expected=('BACK',))
+            self.local_dec()
+            self.ret_stmnts()
             self.eat('BACK')
-            self.dime_val()
+            self.dime_ret_val()
             self.eat('!!')
             self.eat(']')
             self.sub_func()
         else:
             self.error_invalid_token('<dime-func>')
 
-    def parch_dec(self):
-        # <parch-dec>
-        prod = self.get_production('<parch-dec>')
-        if prod == 79:
+    def dime_ret_val(self):
+        # <dime-ret-val>
+        prod = self.get_production('<dime-ret-val>')
+        if prod == 95:
+            self.dime_val()
+            self.dime_ret_exp()
+        else:
+            self.error_invalid_token('<dime-ret-val>')
+
+    def dime_ret_exp(self):
+        # <dime-ret-exp>
+        prod = self.get_production('<dime-ret-exp>')
+        if prod == 96:
+            self.dime_arith()
+            self.dime_ret_exp()
+        elif prod == 97:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<dime-ret-exp>')
+
+    def parch_var_arr_func(self):
+        # <parch-var-arr-func>
+        prod = self.get_production('<parch-var-arr-func>')
+        if prod == 98:
             self.parch_var_arr()
             self.eat('!!')
             self.global_dec()
-        elif prod == 80:
+        elif prod == 99:
             self.parch_func()
         else:
-            self.error_invalid_token('<parch-dec>')
+            self.error_invalid_token('<parch-var-arr-func>')
 
     def parch_var_arr(self):
         # <parch-var-arr>
         prod = self.get_production('<parch-var-arr>')
-        if prod == 81:
+        if prod == 100:
             self.parch_var()
-        elif prod == 82:
+        elif prod == 101:
             self.parch_arr()
         else:
             self.error_invalid_token('<parch-var-arr>')
@@ -650,46 +736,42 @@ class Parser:
     def parch_var(self):
         # <parch-var>
         prod = self.get_production('<parch-var>')
-        if prod == 83:
-            self.parch_init(_ctx_expected=(',',))
+        if prod == 102:
+            self.parch_init()
             self.parch_init_mult()
         else:
             self.error_invalid_token('<parch-var>')
 
-    def parch_init(self, _ctx_expected=()):
+    def parch_init(self):
         # <parch-init>
         prod = self.get_production('<parch-init>')
-        if prod == 84:
+        if prod == 103:
             self.eat('=')
             self.parch_val()
-        elif prod == 85:
+        elif prod == 104:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<parch-init>')
 
-    def parch_init_mult(self, _ctx_expected=()):
+    def parch_init_mult(self):
         # <parch-init-mult>
         prod = self.get_production('<parch-init-mult>')
-        if prod == 86:
+        if prod == 105:
             self.eat(',')
             self.eat('id')
-            self.parch_init(_ctx_expected=(',',))
+            self.parch_init()
             self.parch_init_mult()
-        elif prod == 87:
+        elif prod == 106:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<parch-init-mult>')
 
     def parch_val(self):
         # <parch-val>
         prod = self.get_production('<parch-val>')
-        if prod == 88:
+        if prod == 107:
             self.eat('PARCH-lit')
-        elif prod == 89:
+        elif prod == 108:
             self.eat('id')
             self.id_tail()
         else:
@@ -698,7 +780,7 @@ class Parser:
     def parch_arr(self):
         # <parch-arr>
         prod = self.get_production('<parch-arr>')
-        if prod == 90:
+        if prod == 109:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
@@ -706,67 +788,61 @@ class Parser:
         else:
             self.error_invalid_token('<parch-arr>')
 
-    def parch_arr_tail(self, _ctx_expected=()):
+    def parch_arr_tail(self):
         # <parch-arr-tail>
         prod = self.get_production('<parch-arr-tail>')
-        if prod == 91:
+        if prod == 110:
             self.eat('=')
             self.eat('[')
             self.parch_arr1()
             self.eat(']')
-        elif prod == 92:
+        elif prod == 111:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
             self.parch_arr2_tail()
-        elif prod == 93:
+        elif prod == 112:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<parch-arr-tail>')
 
     def parch_arr1(self):
         # <parch-arr1>
         prod = self.get_production('<parch-arr1>')
-        if prod == 94:
+        if prod == 113:
             self.parch_val()
             self.pav_tail()
         else:
             self.error_invalid_token('<parch-arr1>')
 
-    def pav_tail(self, _ctx_expected=()):
+    def pav_tail(self):
         # <pav-tail>
         prod = self.get_production('<pav-tail>')
-        if prod == 95:
+        if prod == 114:
             self.eat(',')
             self.parch_arr1()
-        elif prod == 96:
+        elif prod == 115:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<pav-tail>')
 
-    def parch_arr2_tail(self, _ctx_expected=()):
+    def parch_arr2_tail(self):
         # <parch-arr2-tail>
         prod = self.get_production('<parch-arr2-tail>')
-        if prod == 97:
+        if prod == 116:
             self.eat('=')
             self.eat('[')
             self.parch_arr2()
             self.eat(']')
-        elif prod == 98:
+        elif prod == 117:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<parch-arr2-tail>')
 
     def parch_arr2(self):
         # <parch-arr2>
         prod = self.get_production('<parch-arr2>')
-        if prod == 99:
+        if prod == 118:
             self.eat('[')
             self.parch_arr1()
             self.eat(']')
@@ -774,29 +850,27 @@ class Parser:
         else:
             self.error_invalid_token('<parch-arr2>')
 
-    def pav2_tail(self, _ctx_expected=()):
+    def pav2_tail(self):
         # <pav2-tail>
         prod = self.get_production('<pav2-tail>')
-        if prod == 100:
+        if prod == 119:
             self.eat(',')
             self.parch_arr2()
-        elif prod == 101:
+        elif prod == 120:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<pav2-tail>')
 
     def parch_func(self):
         # <parch-func>
         prod = self.get_production('<parch-func>')
-        if prod == 102:
+        if prod == 121:
             self.eat('(')
-            self.params(_ctx_expected=(')',))
+            self.params()
             self.eat(')')
             self.eat('[')
-            self.local_dec(_ctx_expected=('+#', '-#', 'ASK', 'BACK', 'CHART', 'ECHO', 'HAUL', 'HEAVE', 'HOIST', 'LOOK', 'id'))
-            self.ret_stmnts(_ctx_expected=('BACK',))
+            self.local_dec()
+            self.ret_stmnts()
             self.eat('BACK')
             self.parch_val()
             self.eat('!!')
@@ -805,25 +879,25 @@ class Parser:
         else:
             self.error_invalid_token('<parch-func>')
 
-    def scroll_dec(self):
-        # <scroll-dec>
-        prod = self.get_production('<scroll-dec>')
-        if prod == 103:
+    def scroll_var_arr_func(self):
+        # <scroll-var-arr-func>
+        prod = self.get_production('<scroll-var-arr-func>')
+        if prod == 122:
             self.scroll_var_arr()
             self.eat('!!')
             self.global_dec()
-        elif prod == 104:
+        elif prod == 123:
             self.scroll_func()
             self.sub_func()
         else:
-            self.error_invalid_token('<scroll-dec>')
+            self.error_invalid_token('<scroll-var-arr-func>')
 
     def scroll_var_arr(self):
         # <scroll-var-arr>
         prod = self.get_production('<scroll-var-arr>')
-        if prod == 105:
+        if prod == 124:
             self.scroll_var()
-        elif prod == 106:
+        elif prod == 125:
             self.scroll_arr()
         else:
             self.error_invalid_token('<scroll-var-arr>')
@@ -831,107 +905,127 @@ class Parser:
     def scroll_var(self):
         # <scroll-var>
         prod = self.get_production('<scroll-var>')
-        if prod == 107:
-            self.scroll_init(_ctx_expected=(',',))
+        if prod == 126:
+            self.scroll_init()
             self.scroll_init_mult()
         else:
             self.error_invalid_token('<scroll-var>')
 
-    def scroll_init(self, _ctx_expected=()):
+    def scroll_init(self):
         # <scroll-init>
         prod = self.get_production('<scroll-init>')
-        if prod == 108:
+        if prod == 127:
             self.eat('=')
-            self.scroll_val()
-        elif prod == 109:
+            self.scroll_init_val()
+        elif prod == 128:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-init>')
 
-    def scroll_init_mult(self, _ctx_expected=()):
+    def scroll_init_mult(self):
         # <scroll-init-mult>
         prod = self.get_production('<scroll-init-mult>')
-        if prod == 110:
+        if prod == 129:
             self.eat(',')
             self.eat('id')
-            self.scroll_init(_ctx_expected=(',',))
+            self.scroll_init()
             self.scroll_init_mult()
-        elif prod == 111:
+        elif prod == 130:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-init-mult>')
+
+    def scroll_init_val(self):
+        # <scroll-init-val>
+        prod = self.get_production('<scroll-init-val>')
+        if prod == 131:
+            self.scroll_val()
+            self.scroll_exp()
+        else:
+            self.error_invalid_token('<scroll-init-val>')
 
     def scroll_val(self):
         # <scroll-val>
         prod = self.get_production('<scroll-val>')
-        if prod == 112:
-            self.scroll_ope()
-            self.scroll_concat()
+        if prod == 132:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+        elif prod == 133:
+            self.eat('id')
+            self.id_tail()
+        elif prod == 134:
+            self.eat('(')
+            self.scroll_grp_val()
+            self.eat(')')
         else:
             self.error_invalid_token('<scroll-val>')
 
-    def scroll_ope(self):
-        # <scroll-ope>
-        prod = self.get_production('<scroll-ope>')
-        if prod == 113:
-            self.eat('SCROLL-lit')
-            self.scr_char()
-        elif prod == 114:
-            self.eat('id')
-            self.id_tail()
-        elif prod == 115:
-            self.eat('(')
-            self.scroll_val()
-            self.eat(')')
-        else:
-            self.error_invalid_token('<scroll-ope>')
-
-    def scr_char(self, _ctx_expected=()):
+    def scr_char(self):
         # <scr-char>
         prod = self.get_production('<scr-char>')
-        if prod == 116:
+        if prod == 135:
             self.eat('{')
             self.index()
             self.eat('}')
-        elif prod == 117:
+        elif prod == 136:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scr-char>')
 
     def index(self):
         # <index>
         prod = self.get_production('<index>')
-        if prod == 118:
-            self.eat('COIN-lit')
-        elif prod == 119:
+        if prod == 137:
             self.eat('id')
+        elif prod == 138:
+            self.eat('COIN-lit')
         else:
             self.error_invalid_token('<index>')
 
-    def scroll_concat(self, _ctx_expected=()):
-        # <scroll-concat>
-        prod = self.get_production('<scroll-concat>')
-        if prod == 120:
-            self.eat('&')
-            self.scroll_ope()
+    def scroll_exp(self):
+        # <scroll-exp>
+        prod = self.get_production('<scroll-exp>')
+        if prod == 139:
             self.scroll_concat()
-        elif prod == 121:
+            self.scroll_exp()
+        elif prod == 140:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-exp>')
+
+    def scroll_concat(self):
+        # <scroll-concat>
+        prod = self.get_production('<scroll-concat>')
+        if prod == 141:
+            self.eat('&')
+            self.scroll_val()
+        else:
+            self.error_invalid_token('<scroll-concat>')
+
+    def scroll_grp_val(self):
+        # <scroll-grp-val>
+        prod = self.get_production('<scroll-grp-val>')
+        if prod == 142:
+            self.scroll_val()
+            self.scroll_grp_exp()
+        else:
+            self.error_invalid_token('<scroll-grp-val>')
+
+    def scroll_grp_exp(self):
+        # <scroll-grp-exp>
+        prod = self.get_production('<scroll-grp-exp>')
+        if prod == 143:
+            self.scroll_concat()
+            self.scroll_grp_exp()
+        elif prod == 144:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<scroll-grp-exp>')
 
     def scroll_arr(self):
         # <scroll-arr>
         prod = self.get_production('<scroll-arr>')
-        if prod == 122:
+        if prod == 145:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
@@ -939,67 +1033,81 @@ class Parser:
         else:
             self.error_invalid_token('<scroll-arr>')
 
-    def scroll_arr_tail(self, _ctx_expected=()):
+    def scroll_arr_tail(self):
         # <scroll-arr-tail>
         prod = self.get_production('<scroll-arr-tail>')
-        if prod == 123:
+        if prod == 146:
             self.eat('=')
             self.eat('[')
             self.scroll_arr1()
             self.eat(']')
-        elif prod == 124:
+        elif prod == 147:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
             self.scroll_arr2_tail()
-        elif prod == 125:
+        elif prod == 148:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-arr-tail>')
 
     def scroll_arr1(self):
         # <scroll-arr1>
         prod = self.get_production('<scroll-arr1>')
-        if prod == 126:
-            self.scroll_val()
+        if prod == 149:
+            self.scroll_arr_val()
             self.sav_tail()
         else:
             self.error_invalid_token('<scroll-arr1>')
 
-    def sav_tail(self, _ctx_expected=()):
-        # <sav-tail>
-        prod = self.get_production('<sav-tail>')
-        if prod == 127:
-            self.eat(',')
-            self.scroll_arr1()
-        elif prod == 128:
+    def scroll_arr_val(self):
+        # <scroll-arr-val>
+        prod = self.get_production('<scroll-arr-val>')
+        if prod == 150:
+            self.scroll_val()
+            self.scroll_arr_exp()
+        else:
+            self.error_invalid_token('<scroll-arr-val>')
+
+    def scroll_arr_exp(self):
+        # <scroll-arr-exp>
+        prod = self.get_production('<scroll-arr-exp>')
+        if prod == 151:
+            self.scroll_concat()
+            self.scroll_arr_exp()
+        elif prod == 152:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-arr-exp>')
 
-    def scroll_arr2_tail(self, _ctx_expected=()):
+    def sav_tail(self):
+        # <sav-tail>
+        prod = self.get_production('<sav-tail>')
+        if prod == 153:
+            self.eat(',')
+            self.scroll_arr1()
+        elif prod == 154:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<sav-tail>')
+
+    def scroll_arr2_tail(self):
         # <scroll-arr2-tail>
         prod = self.get_production('<scroll-arr2-tail>')
-        if prod == 129:
+        if prod == 155:
             self.eat('=')
             self.eat('[')
             self.scroll_arr2()
             self.eat(']')
-        elif prod == 130:
+        elif prod == 156:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-arr2-tail>')
 
     def scroll_arr2(self):
         # <scroll-arr2>
         prod = self.get_production('<scroll-arr2>')
-        if prod == 131:
+        if prod == 157:
             self.eat('[')
             self.scroll_arr1()
             self.eat(']')
@@ -1007,55 +1115,73 @@ class Parser:
         else:
             self.error_invalid_token('<scroll-arr2>')
 
-    def sav2_tail(self, _ctx_expected=()):
+    def sav2_tail(self):
         # <sav2-tail>
         prod = self.get_production('<sav2-tail>')
-        if prod == 132:
+        if prod == 158:
             self.eat(',')
             self.scroll_arr2()
-        elif prod == 133:
+        elif prod == 159:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<sav2-tail>')
 
     def scroll_func(self):
         # <scroll-func>
         prod = self.get_production('<scroll-func>')
-        if prod == 134:
+        if prod == 160:
             self.eat('(')
-            self.params(_ctx_expected=(')',))
+            self.params()
             self.eat(')')
             self.eat('[')
-            self.local_dec(_ctx_expected=('+#', '-#', 'ASK', 'BACK', 'CHART', 'ECHO', 'HAUL', 'HEAVE', 'HOIST', 'LOOK', 'id'))
-            self.ret_stmnts(_ctx_expected=('BACK',))
+            self.local_dec()
+            self.ret_stmnts()
             self.eat('BACK')
-            self.scroll_val()
+            self.scroll_ret_val()
             self.eat('!!')
             self.eat(']')
             self.sub_func()
         else:
             self.error_invalid_token('<scroll-func>')
 
-    def bool_dec(self):
-        # <bool-dec>
-        prod = self.get_production('<bool-dec>')
-        if prod == 135:
+    def scroll_ret_val(self):
+        # <scroll-ret-val>
+        prod = self.get_production('<scroll-ret-val>')
+        if prod == 161:
+            self.scroll_val()
+            self.scroll_ret_exp()
+        else:
+            self.error_invalid_token('<scroll-ret-val>')
+
+    def scroll_ret_exp(self):
+        # <scroll-ret-exp>
+        prod = self.get_production('<scroll-ret-exp>')
+        if prod == 162:
+            self.scroll_concat()
+            self.scroll_ret_exp()
+        elif prod == 163:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<scroll-ret-exp>')
+
+    def bool_var_arr_func(self):
+        # <bool-var-arr-func>
+        prod = self.get_production('<bool-var-arr-func>')
+        if prod == 164:
             self.bool_var_arr()
             self.eat('!!')
             self.global_dec()
-        elif prod == 136:
+        elif prod == 165:
             self.bool_func()
         else:
-            self.error_invalid_token('<bool-dec>')
+            self.error_invalid_token('<bool-var-arr-func>')
 
     def bool_var_arr(self):
         # <bool-var-arr>
         prod = self.get_production('<bool-var-arr>')
-        if prod == 137:
+        if prod == 166:
             self.bool_var()
-        elif prod == 138:
+        elif prod == 167:
             self.bool_arr()
         else:
             self.error_invalid_token('<bool-var-arr>')
@@ -1063,86 +1189,82 @@ class Parser:
     def bool_var(self):
         # <bool-var>
         prod = self.get_production('<bool-var>')
-        if prod == 139:
-            self.bool_init(_ctx_expected=(',',))
+        if prod == 168:
+            self.bool_init()
             self.bool_init_mult()
         else:
             self.error_invalid_token('<bool-var>')
 
-    def bool_init(self, _ctx_expected=()):
+    def bool_init(self):
         # <bool-init>
         prod = self.get_production('<bool-init>')
-        if prod == 140:
+        if prod == 169:
             self.eat('=')
-            self.bool_val()
-        elif prod == 141:
+            self.bool_init_val()
+        elif prod == 170:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-init>')
 
-    def bool_init_mult(self, _ctx_expected=()):
+    def bool_init_mult(self):
         # <bool-init-mult>
         prod = self.get_production('<bool-init-mult>')
-        if prod == 142:
+        if prod == 171:
             self.eat(',')
             self.eat('id')
-            self.bool_init(_ctx_expected=(',',))
+            self.bool_init()
             self.bool_init_mult()
-        elif prod == 143:
+        elif prod == 172:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-init-mult>')
+
+    def bool_init_val(self):
+        # <bool-init-val>
+        prod = self.get_production('<bool-init-val>')
+        if prod == 173:
+            self.bool_val()
+            self.bool_exp()
+        else:
+            self.error_invalid_token('<bool-init-val>')
 
     def bool_val(self):
         # <bool-val>
         prod = self.get_production('<bool-val>')
-        if prod == 144:
-            self.bool_ope()
-            self.bool_exp()
-        else:
-            self.error_invalid_token('<bool-val>')
-
-    def bool_ope(self):
-        # <bool-ope>
-        prod = self.get_production('<bool-ope>')
-        if prod == 145:
-            self.bool()
-            self.bool_eq()
-        elif prod == 146:
+        if prod == 174:
             self.eat('id')
-            self.id_tail(_ctx_expected=('!=', '%', '*', '+', '-', '/', '<', '<=', '==', '>', '>=', '^'))
+            self.id_tail()
             self.bool_exp2()
-        elif prod == 147:
+        elif prod == 175:
             self.eat('(')
-            self.value()
+            self.value_grp()
             self.eat(')')
             self.bool_exp2()
-        elif prod == 148:
+        elif prod == 176:
+            self.bool()
+            self.bool_eq()
+        elif prod == 177:
             self.digit()
-            self.bool_arith(_ctx_expected=('!=', '<', '<=', '==', '>', '>='))
+            self.bool_arith()
             self.rel_eq()
-        elif prod == 149:
+        elif prod == 178:
             self.eat('PARCH-lit')
             self.eq_op()
             self.parch_val()
-        elif prod == 150:
+        elif prod == 179:
             self.eat('SCROLL-lit')
-            self.scr_char(_ctx_expected=('!=', '=='))
+            self.scr_char()
             self.eq_op()
             self.scroll_val()
         else:
-            self.error_invalid_token('<bool-ope>')
+            self.error_invalid_token('<bool-val>')
 
     def bool(self):
         # <bool>
         prod = self.get_production('<bool>')
-        if prod == 151:
+        if prod == 180:
             self.bool_lit()
-        elif prod == 152:
+        elif prod == 181:
             self.not_op()
             self.not_ope()
         else:
@@ -1151,9 +1273,9 @@ class Parser:
     def bool_lit(self):
         # <bool-lit>
         prod = self.get_production('<bool-lit>')
-        if prod == 153:
+        if prod == 182:
             self.eat('AYE')
-        elif prod == 154:
+        elif prod == 183:
             self.eat('NAY')
         else:
             self.error_invalid_token('<bool-lit>')
@@ -1161,9 +1283,9 @@ class Parser:
     def not_op(self):
         # <not-op>
         prod = self.get_production('<not-op>')
-        if prod == 155:
+        if prod == 184:
             self.eat('!')
-        elif prod == 156:
+        elif prod == 185:
             self.eat('!#')
         else:
             self.error_invalid_token('<not-op>')
@@ -1171,39 +1293,37 @@ class Parser:
     def not_ope(self):
         # <not-ope>
         prod = self.get_production('<not-ope>')
-        if prod == 157:
+        if prod == 186:
             self.eat('id')
             self.id_tail()
-        elif prod == 158:
+        elif prod == 187:
             self.eat('(')
-            self.bool_val()
+            self.bool_grp_val()
             self.eat(')')
-        elif prod == 159:
+        elif prod == 188:
             self.bool_lit()
         else:
             self.error_invalid_token('<not-ope>')
 
-    def bool_eq(self, _ctx_expected=()):
+    def bool_eq(self):
         # <bool-eq>
         prod = self.get_production('<bool-eq>')
-        if prod == 160:
+        if prod == 189:
             self.eq_op()
-            self.bool_ope()
-        elif prod == 161:
+            self.bool_val()
+        elif prod == 190:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-eq>')
 
     def digit(self):
         # <digit>
         prod = self.get_production('<digit>')
-        if prod == 162:
+        if prod == 191:
             self.eat('COIN-lit')
-        elif prod == 163:
+        elif prod == 192:
             self.eat('DIME-lit')
-        elif prod == 164:
+        elif prod == 193:
             self.eat('-')
             self.neg_digit()
         else:
@@ -1212,220 +1332,390 @@ class Parser:
     def neg_digit(self):
         # <neg-digit>
         prod = self.get_production('<neg-digit>')
-        if prod == 165:
+        if prod == 194:
             self.eat('id')
             self.id_tail()
-        elif prod == 166:
+        elif prod == 195:
             self.eat('(')
-            self.dime_val()
+            self.dime_grp_val()
             self.eat(')')
         else:
             self.error_invalid_token('<neg-digit>')
 
-    def bool_arith(self, _ctx_expected=()):
+    def bool_arith(self):
         # <bool-arith>
         prod = self.get_production('<bool-arith>')
-        if prod == 167:
-            self.arith_op()
-            self.dime_ope()
+        if prod == 196:
+            self.dime_arith()
             self.bool_arith()
-        elif prod == 168:
+        elif prod == 197:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-arith>')
 
     def rel_eq(self):
         # <rel-eq>
         prod = self.get_production('<rel-eq>')
-        if prod == 169:
-            self.rel_op()
-            self.dime_ope()
-            self.bool_arith2(_ctx_expected=('!=', '=='))
+        if prod == 198:
+            self.rel()
+            self.bool_arith2()
             self.bool_eq()
-        elif prod == 170:
-            self.eq_op()
-            self.dime_ope()
+        elif prod == 199:
+            self.eq_digit()
             self.bool_arith3()
         else:
             self.error_invalid_token('<rel-eq>')
 
+    def rel(self):
+        # <rel>
+        prod = self.get_production('<rel>')
+        if prod == 200:
+            self.rel_op()
+            self.dime_val()
+        else:
+            self.error_invalid_token('<rel>')
+
     def rel_op(self):
         # <rel-op>
         prod = self.get_production('<rel-op>')
-        if prod == 171:
+        if prod == 201:
             self.eat('<')
-        elif prod == 172:
+        elif prod == 202:
             self.eat('>')
-        elif prod == 173:
+        elif prod == 203:
             self.eat('<=')
-        elif prod == 174:
+        elif prod == 204:
             self.eat('>=')
         else:
             self.error_invalid_token('<rel-op>')
 
-    def bool_arith2(self, _ctx_expected=()):
+    def bool_arith2(self):
         # <bool-arith2>
         prod = self.get_production('<bool-arith2>')
-        if prod == 175:
-            self.arith_op()
-            self.dime_ope()
+        if prod == 205:
+            self.dime_arith()
             self.bool_arith2()
-        elif prod == 176:
+        elif prod == 206:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-arith2>')
 
-    def bool_arith3(self, _ctx_expected=()):
-        # <bool-arith3>
-        prod = self.get_production('<bool-arith3>')
-        if prod == 177:
-            self.arith_op()
-            self.dime_ope()
-            self.bool_arith3()
-        elif prod == 178:
-            pass  # Lambda
+    def eq_digit(self):
+        # <eq-digit>
+        prod = self.get_production('<eq-digit>')
+        if prod == 207:
+            self.eq_op()
+            self.dime_val()
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<eq-digit>')
 
     def eq_op(self):
         # <eq-op>
         prod = self.get_production('<eq-op>')
-        if prod == 179:
+        if prod == 208:
             self.eat('==')
-        elif prod == 180:
+        elif prod == 209:
             self.eat('!=')
         else:
             self.error_invalid_token('<eq-op>')
 
-    def bool_exp2(self, _ctx_expected=()):
-        # <bool-exp2>
-        prod = self.get_production('<bool-exp2>')
-        if prod == 181:
-            self.arith_op()
-            self.dime_ope()
-            self.bool_arith(_ctx_expected=('!=', '<', '<=', '==', '>', '>='))
-            self.rel_eq()
-        elif prod == 182:
-            self.rel_op()
-            self.dime_ope()
-            self.bool_arith2(_ctx_expected=('!=', '=='))
-            self.bool_eq()
-        elif prod == 183:
-            self.eq_op()
-            self.eq_ope()
-        elif prod == 184:
+    def bool_arith3(self):
+        # <bool-arith3>
+        prod = self.get_production('<bool-arith3>')
+        if prod == 210:
+            self.dime_arith()
+            self.bool_arith3()
+        elif prod == 211:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-arith3>')
+
+    def bool_exp2(self):
+        # <bool-exp2>
+        prod = self.get_production('<bool-exp2>')
+        if prod == 212:
+            self.arith()
+            self.bool_arith()
+            self.rel_eq()
+        elif prod == 213:
+            self.rel()
+            self.bool_arith2()
+            self.bool_eq()
+        elif prod == 214:
+            self.eq_op()
+            self.eq_ope()
+        elif prod == 215:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-exp2>')
 
     def eq_ope(self):
         # <eq-ope>
         prod = self.get_production('<eq-ope>')
-        if prod == 185:
+        if prod == 216:
             self.eat('id')
-            self.id_tail(_ctx_expected=('%', '*', '+', '-', '/', '<', '<=', '>', '>=', '^'))
-            self.bool_exp3()
-        elif prod == 186:
-            self.eat('(')
-            self.value()
-            self.eat(')')
-            self.bool_exp3()
-        elif prod == 187:
-            self.digit()
-            self.bool_arith4(_ctx_expected=('<', '<=', '>', '>='))
+            self.id_tail()
+            self.bool_arith4()
             self.bool_rel()
-        elif prod == 188:
-            self.eat('PARCH-lit')
-        elif prod == 189:
-            self.eat('SCROLL-lit')
-            self.scr_char()
-        elif prod == 190:
-            self.bool()
+        elif prod == 217:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.bool_arith4()
+            self.bool_rel()
+        elif prod == 218:
+            self.digit()
+            self.bool_arith4()
+            self.bool_rel()
+        elif prod == 219:
+            self.eq_ope1()
         else:
             self.error_invalid_token('<eq-ope>')
 
-    def bool_arith4(self, _ctx_expected=()):
+    def eq_ope1(self):
+        # <eq-ope1>
+        prod = self.get_production('<eq-ope1>')
+        if prod == 220:
+            self.eat('PARCH-lit')
+        elif prod == 221:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+        elif prod == 222:
+            self.bool()
+        else:
+            self.error_invalid_token('<eq-ope1>')
+
+    def bool_arith4(self):
         # <bool-arith4>
         prod = self.get_production('<bool-arith4>')
-        if prod == 191:
-            self.arith_op()
-            self.dime_ope()
+        if prod == 223:
+            self.dime_arith()
             self.bool_arith4()
-        elif prod == 192:
+        elif prod == 224:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-arith4>')
 
-    def bool_rel(self, _ctx_expected=()):
+    def bool_rel(self):
         # <bool-rel>
         prod = self.get_production('<bool-rel>')
-        if prod == 193:
-            self.rel_op()
-            self.dime_ope()
+        if prod == 225:
+            self.rel()
             self.bool_arith3()
-        elif prod == 194:
+        elif prod == 226:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-rel>')
 
-    def bool_exp3(self, _ctx_expected=()):
-        # <bool-exp3>
-        prod = self.get_production('<bool-exp3>')
-        if prod == 195:
-            self.arith_op()
-            self.bool_arith4(_ctx_expected=('<', '<=', '>', '>='))
-            self.bool_rel()
-        elif prod == 196:
-            self.rel_op()
-            self.dime_ope()
-            self.bool_arith3()
-        elif prod == 197:
-            pass  # Lambda
-        else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
-
-    def bool_exp(self, _ctx_expected=()):
+    def bool_exp(self):
         # <bool-exp>
         prod = self.get_production('<bool-exp>')
-        if prod == 198:
+        if prod == 227:
             self.log_op()
-            self.bool_ope()
+            self.bool_val()
             self.bool_exp()
-        elif prod == 199:
+        elif prod == 228:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-exp>')
 
     def log_op(self):
         # <log-op>
         prod = self.get_production('<log-op>')
-        if prod == 200:
+        if prod == 229:
             self.eat('||')
-        elif prod == 201:
+        elif prod == 230:
             self.eat('&&')
         else:
             self.error_invalid_token('<log-op>')
 
+    def bool_grp_val(self):
+        # <bool-grp-val>
+        prod = self.get_production('<bool-grp-val>')
+        if prod == 231:
+            self.bool_ope_grp()
+            self.bool_exp_grp()
+        else:
+            self.error_invalid_token('<bool-grp-val>')
+
+    def bool_ope_grp(self):
+        # <bool-ope-grp>
+        prod = self.get_production('<bool-ope-grp>')
+        if prod == 232:
+            self.eat('id')
+            self.id_tail()
+            self.bool_exp2_grp()
+        elif prod == 233:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.bool_exp2_grp()
+        elif prod == 234:
+            self.bool()
+            self.bool_eq_grp()
+        elif prod == 235:
+            self.digit()
+            self.bool_arith()
+            self.releq_grp()
+        elif prod == 236:
+            self.eat('PARCH-lit')
+            self.eq_op()
+            self.parch_val()
+        elif prod == 237:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+            self.eq_op()
+            self.scroll_val()
+        else:
+            self.error_invalid_token('<bool-ope-grp>')
+
+    def bool_eq_grp(self):
+        # <bool-eq-grp>
+        prod = self.get_production('<bool-eq-grp>')
+        if prod == 238:
+            self.eq_op()
+            self.bool_ope_grp()
+        else:
+            self.error_invalid_token('<bool-eq-grp>')
+
+    def bool_eq_arr(self):
+        # <bool-eq-arr>
+        prod = self.get_production('<bool-eq-arr>')
+        if prod == 239:
+            pass  # Lambda
+        elif prod == 274:
+            self.eq_op()
+            self.bool_ope_arr()
+        elif prod == 275:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-eq-arr>')
+
+    def releq_grp(self):
+        # <releq-grp>
+        prod = self.get_production('<releq-grp>')
+        if prod == 240:
+            self.rel()
+            self.bool_arith2_grp()
+            self.bool_eq_grp()
+        elif prod == 241:
+            self.eq_digit()
+            self.bool_arith3_grp()
+        elif prod == 420:
+            self.rel()
+            self.arith_grp2()
+            self.logeq_grp()
+        elif prod == 421:
+            self.eq_digit()
+            self.arith_grp3()
+            self.bool_exp_grp()
+        elif prod == 422:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<releq-grp>')
+
+    def bool_arith2_grp(self):
+        # <bool-arith2-grp>
+        prod = self.get_production('<bool-arith2-grp>')
+        if prod == 242:
+            self.dime_arith()
+            self.bool_arith2_grp()
+        elif prod == 243:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith2-grp>')
+
+    def bool_arith3_grp(self):
+        # <bool-arith3-grp>
+        prod = self.get_production('<bool-arith3-grp>')
+        if prod == 244:
+            self.dime_arith()
+            self.bool_arith3_grp()
+        elif prod == 245:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith3-grp>')
+
+    def bool_exp2_grp(self):
+        # <bool-exp2-grp>
+        prod = self.get_production('<bool-exp2-grp>')
+        if prod == 246:
+            self.arith()
+            self.bool_arith()
+            self.releq_grp()
+        elif prod == 247:
+            self.rel()
+            self.bool_arith2_grp()
+            self.bool_eq_grp()
+        elif prod == 248:
+            self.eq_op()
+            self.eq_ope_grp()
+        elif prod == 249:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-exp2-grp>')
+
+    def eq_ope_grp(self):
+        # <eq-ope-grp>
+        prod = self.get_production('<eq-ope-grp>')
+        if prod == 250:
+            self.eat('id')
+            self.id_tail()
+            self.bool_arith4_grp()
+            self.bool_rel_grp()
+        elif prod == 251:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.bool_arith4_grp()
+            self.bool_rel_grp()
+        elif prod == 252:
+            self.digit()
+            self.bool_arith4_grp()
+            self.bool_rel_grp()
+        elif prod == 253:
+            self.eq_ope1()
+        else:
+            self.error_invalid_token('<eq-ope-grp>')
+
+    def bool_arith4_grp(self):
+        # <bool-arith4-grp>
+        prod = self.get_production('<bool-arith4-grp>')
+        if prod == 254:
+            self.dime_arith()
+            self.bool_arith4_grp()
+        elif prod == 255:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith4-grp>')
+
+    def bool_rel_grp(self):
+        # <bool-rel-grp>
+        prod = self.get_production('<bool-rel-grp>')
+        if prod == 256:
+            self.rel()
+            self.bool_arith3_grp()
+        elif prod == 257:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-rel-grp>')
+
+    def bool_exp_grp(self):
+        # <bool-exp-grp>
+        prod = self.get_production('<bool-exp-grp>')
+        if prod == 258:
+            self.log_op()
+            self.bool_ope_grp()
+            self.bool_exp_grp()
+        elif prod == 259:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-exp-grp>')
+
     def bool_arr(self):
         # <bool-arr>
         prod = self.get_production('<bool-arr>')
-        if prod == 202:
+        if prod == 260:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
@@ -1433,67 +1723,212 @@ class Parser:
         else:
             self.error_invalid_token('<bool-arr>')
 
-    def bool_arr_tail(self, _ctx_expected=()):
+    def bool_arr_tail(self):
         # <bool-arr-tail>
         prod = self.get_production('<bool-arr-tail>')
-        if prod == 203:
+        if prod == 261:
             self.eat('=')
             self.eat('[')
             self.bool_arr1()
             self.eat(']')
-        elif prod == 204:
+        elif prod == 262:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
             self.bool_arr2_tail()
-        elif prod == 205:
+        elif prod == 263:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-arr-tail>')
 
     def bool_arr1(self):
         # <bool-arr1>
         prod = self.get_production('<bool-arr1>')
-        if prod == 206:
-            self.bool_val()
+        if prod == 264:
+            self.bool_arr_val()
             self.bav_tail()
         else:
             self.error_invalid_token('<bool-arr1>')
 
-    def bav_tail(self, _ctx_expected=()):
+    def bav_tail(self):
         # <bav-tail>
         prod = self.get_production('<bav-tail>')
-        if prod == 207:
+        if prod == 265:
             self.eat(',')
             self.bool_arr1()
-        elif prod == 208:
+        elif prod == 266:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bav-tail>')
 
-    def bool_arr2_tail(self, _ctx_expected=()):
+    def bool_arr_val(self):
+        # <bool-arr-val>
+        prod = self.get_production('<bool-arr-val>')
+        if prod == 267:
+            self.bool_ope_arr()
+            self.bool_exp_arr()
+        else:
+            self.error_invalid_token('<bool-arr-val>')
+
+    def bool_ope_arr(self):
+        # <bool-ope-arr>
+        prod = self.get_production('<bool-ope-arr>')
+        if prod == 268:
+            self.eat('id')
+            self.id_tail()
+            self.bool_exp2_arr()
+        elif prod == 269:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.bool_exp2_arr()
+        elif prod == 270:
+            self.bool()
+            self.bool_eq_arr()
+        elif prod == 271:
+            self.digit()
+            self.bool_arith()
+            self.releq_arr()
+        elif prod == 272:
+            self.eat('PARCH-lit')
+            self.eq_op()
+            self.parch_val()
+        elif prod == 273:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+            self.eq_op()
+            self.scroll_val()
+        else:
+            self.error_invalid_token('<bool-ope-arr>')
+
+    def releq_arr(self):
+        # <releq-arr>
+        prod = self.get_production('<releq-arr>')
+        if prod == 276:
+            self.rel()
+            self.bool_arith2_arr()
+            self.bool_eq_arr()
+        elif prod == 277:
+            self.eq_digit()
+            self.bool_arith3_arr()
+        else:
+            self.error_invalid_token('<releq-arr>')
+
+    def bool_arith2_arr(self):
+        # <bool-arith2-arr>
+        prod = self.get_production('<bool-arith2-arr>')
+        if prod == 278:
+            self.dime_arith()
+            self.bool_arith2_arr()
+        elif prod == 279:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith2-arr>')
+
+    def bool_arith3_arr(self):
+        # <bool-arith3-arr>
+        prod = self.get_production('<bool-arith3-arr>')
+        if prod == 280:
+            self.dime_arith()
+            self.bool_arith3_arr()
+        elif prod == 281:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith3-arr>')
+
+    def bool_exp2_arr(self):
+        # <bool-exp2-arr>
+        prod = self.get_production('<bool-exp2-arr>')
+        if prod == 282:
+            self.arith()
+            self.bool_arith()
+            self.releq_arr()
+        elif prod == 283:
+            self.rel()
+            self.bool_arith2_arr()
+            self.bool_eq_arr()
+        elif prod == 284:
+            self.eq_op()
+            self.eq_ope_arr()
+        elif prod == 285:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-exp2-arr>')
+
+    def eq_ope_arr(self):
+        # <eq-ope-arr>
+        prod = self.get_production('<eq-ope-arr>')
+        if prod == 286:
+            self.eat('id')
+            self.id_tail()
+            self.bool_arith4_arr()
+            self.bool_rel_arr()
+        elif prod == 287:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.bool_arith4_arr()
+            self.bool_rel_arr()
+        elif prod == 288:
+            self.digit()
+            self.bool_arith4_arr()
+            self.bool_rel_arr()
+        elif prod == 289:
+            self.eq_ope1()
+        else:
+            self.error_invalid_token('<eq-ope-arr>')
+
+    def bool_arith4_arr(self):
+        # <bool-arith4-arr>
+        prod = self.get_production('<bool-arith4-arr>')
+        if prod == 290:
+            self.dime_arith()
+            self.bool_arith4_arr()
+        elif prod == 291:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith4-arr>')
+
+    def bool_rel_arr(self):
+        # <bool-rel-arr>
+        prod = self.get_production('<bool-rel-arr>')
+        if prod == 292:
+            self.rel()
+            self.bool_arith3_arr()
+        elif prod == 293:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-rel-arr>')
+
+    def bool_exp_arr(self):
+        # <bool-exp-arr>
+        prod = self.get_production('<bool-exp-arr>')
+        if prod == 294:
+            self.log_op()
+            self.bool_ope_arr()
+            self.bool_exp_arr()
+        elif prod == 295:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-exp-arr>')
+
+    def bool_arr2_tail(self):
         # <bool-arr2-tail>
         prod = self.get_production('<bool-arr2-tail>')
-        if prod == 209:
+        if prod == 296:
             self.eat('=')
             self.eat('[')
             self.bool_arr2()
             self.eat(']')
-        elif prod == 210:
+        elif prod == 297:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-arr2-tail>')
 
     def bool_arr2(self):
         # <bool-arr2>
         prod = self.get_production('<bool-arr2>')
-        if prod == 211:
+        if prod == 298:
             self.eat('[')
             self.bool_arr1()
             self.eat(']')
@@ -1501,336 +1936,762 @@ class Parser:
         else:
             self.error_invalid_token('<bool-arr2>')
 
-    def bav2_tail(self, _ctx_expected=()):
+    def bav2_tail(self):
         # <bav2-tail>
         prod = self.get_production('<bav2-tail>')
-        if prod == 212:
+        if prod == 299:
             self.eat(',')
             self.bool_arr2()
-        elif prod == 213:
+        elif prod == 300:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bav2-tail>')
 
     def bool_func(self):
         # <bool-func>
         prod = self.get_production('<bool-func>')
-        if prod == 214:
+        if prod == 301:
             self.eat('(')
-            self.params(_ctx_expected=(')',))
+            self.params()
             self.eat(')')
             self.eat('[')
             self.local_dec()
-            self.stmnts()
+            self.ret_stmnts()
             self.eat('BACK')
-            self.bool_val()
+            self.bool_ret_val()
             self.eat('!!')
             self.eat(']')
             self.sub_func()
         else:
             self.error_invalid_token('<bool-func>')
 
-    def params(self, _ctx_expected=()):
+    def bool_ret_val(self):
+        # <bool-ret-val>
+        prod = self.get_production('<bool-ret-val>')
+        if prod == 302:
+            self.bool_ope_ret()
+            self.bool_exp_ret()
+        else:
+            self.error_invalid_token('<bool-ret-val>')
+
+    def bool_ope_ret(self):
+        # <bool-ope-ret>
+        prod = self.get_production('<bool-ope-ret>')
+        if prod == 303:
+            self.eat('id')
+            self.id_tail()
+            self.bool_exp2_ret()
+        elif prod == 304:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.bool_exp2_ret()
+        elif prod == 305:
+            self.bool()
+            self.bool_eq_ret()
+        elif prod == 306:
+            self.digit()
+            self.bool_arith()
+            self.releq_ret()
+        elif prod == 307:
+            self.eat('PARCH-lit')
+            self.eq_op()
+            self.parch_val()
+        elif prod == 308:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+            self.eq_op()
+            self.scroll_val()
+        else:
+            self.error_invalid_token('<bool-ope-ret>')
+
+    def bool_eq_ret(self):
+        # <bool-eq-ret>
+        prod = self.get_production('<bool-eq-ret>')
+        if prod == 309:
+            self.eq_op()
+            self.bool_ope_ret()
+        elif prod == 310:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-eq-ret>')
+
+    def releq_ret(self):
+        # <releq-ret>
+        prod = self.get_production('<releq-ret>')
+        if prod == 311:
+            self.rel()
+            self.bool_arith2_ret()
+            self.bool_eq_ret()
+        elif prod == 312:
+            self.eq_digit()
+            self.bool_arith3_ret()
+        else:
+            self.error_invalid_token('<releq-ret>')
+
+    def bool_arith2_ret(self):
+        # <bool-arith2-ret>
+        prod = self.get_production('<bool-arith2-ret>')
+        if prod == 313:
+            self.dime_arith()
+            self.bool_arith2_ret()
+        elif prod == 314:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith2-ret>')
+
+    def bool_arith3_ret(self):
+        # <bool-arith3-ret>
+        prod = self.get_production('<bool-arith3-ret>')
+        if prod == 315:
+            self.dime_arith()
+            self.bool_arith3_ret()
+        elif prod == 316:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith3-ret>')
+
+    def bool_exp2_ret(self):
+        # <bool-exp2-ret>
+        prod = self.get_production('<bool-exp2-ret>')
+        if prod == 317:
+            self.arith()
+            self.bool_arith()
+            self.releq_ret()
+        elif prod == 318:
+            self.rel()
+            self.bool_arith2_ret()
+            self.bool_eq_ret()
+        elif prod == 319:
+            self.eq_op()
+            self.eq_ope_ret()
+        elif prod == 320:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-exp2-ret>')
+
+    def eq_ope_ret(self):
+        # <eq-ope-ret>
+        prod = self.get_production('<eq-ope-ret>')
+        if prod == 321:
+            self.eat('id')
+            self.id_tail()
+            self.bool_arith4_ret()
+            self.bool_rel_ret()
+        elif prod == 322:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.bool_arith4_ret()
+            self.bool_rel_ret()
+        elif prod == 323:
+            self.digit()
+            self.bool_arith4_ret()
+            self.bool_rel_ret()
+        elif prod == 324:
+            self.eq_ope1()
+        else:
+            self.error_invalid_token('<eq-ope-ret>')
+
+    def bool_arith4_ret(self):
+        # <bool-arith4-ret>
+        prod = self.get_production('<bool-arith4-ret>')
+        if prod == 325:
+            self.dime_arith()
+            self.bool_arith4_ret()
+        elif prod == 326:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-arith4-ret>')
+
+    def bool_rel_ret(self):
+        # <bool-rel-ret>
+        prod = self.get_production('<bool-rel-ret>')
+        if prod == 327:
+            self.rel()
+            self.bool_arith3_ret()
+        elif prod == 328:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-rel-ret>')
+
+    def bool_exp_ret(self):
+        # <bool-exp-ret>
+        prod = self.get_production('<bool-exp-ret>')
+        if prod == 329:
+            self.log_op()
+            self.bool_ope_ret()
+            self.bool_exp_ret()
+        elif prod == 330:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-exp-ret>')
+
+    def params(self):
         # <params>
         prod = self.get_production('<params>')
-        if prod == 215:
+        if prod == 331:
             self.d_type()
             self.eat('id')
             self.param_mult()
-        elif prod == 216:
+        elif prod == 332:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<params>')
 
-    def param_mult(self, _ctx_expected=()):
+    def param_mult(self):
         # <param-mult>
         prod = self.get_production('<param-mult>')
-        if prod == 217:
+        if prod == 333:
             self.eat(',')
             self.params()
-        elif prod == 218:
+        elif prod == 334:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<param-mult>')
 
     def d_type(self):
         # <d-type>
         prod = self.get_production('<d-type>')
-        if prod == 219:
+        if prod == 335:
             self.eat('COIN')
-        elif prod == 220:
+        elif prod == 336:
             self.eat('DIME')
-        elif prod == 221:
+        elif prod == 337:
             self.eat('PARCH')
-        elif prod == 222:
+        elif prod == 338:
             self.eat('SCROLL')
-        elif prod == 223:
+        elif prod == 339:
             self.eat('BOOL')
         else:
             self.error_invalid_token('<d-type>')
 
-    def ret_stmnts(self, _ctx_expected=()):
+    def ret_stmnts(self):
         # <ret-stmnts>
         prod = self.get_production('<ret-stmnts>')
-        if prod == 224:
+        if prod == 340:
             self.statements()
             self.ret_stmnts()
-        elif prod == 225:
+        elif prod == 341:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<ret-stmnts>')
 
-    def id_tail(self, _ctx_expected=()):
+    def id_tail(self):
         # <id-tail>
         prod = self.get_production('<id-tail>')
-        if prod == 226:
+        if prod == 342:
             self.eat('{')
             self.index()
             self.eat('}')
             self.elmt2()
-        elif prod == 227:
+        elif prod == 343:
             self.eat('$')
             self.eat('id')
-        elif prod == 228:
+        elif prod == 344:
             self.eat('(')
-            self.args(_ctx_expected=(')',))
+            self.args()
             self.eat(')')
-        elif prod == 229:
+        elif prod == 345:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<id-tail>')
 
-    def elmt2(self, _ctx_expected=()):
+    def elmt2(self):
         # <elmt2>
         prod = self.get_production('<elmt2>')
-        if prod == 230:
+        if prod == 346:
             self.eat('{')
             self.index()
             self.eat('}')
-        elif prod == 231:
+        elif prod == 347:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<elmt2>')
 
-    def mem(self):
-        # <mem>
-        prod = self.get_production('<mem>')
-        if prod == 232:
-            self.eat('$')
-            self.eat('id')
-        else:
-            self.error_invalid_token('<mem>')
-
-    def func(self):
-        # <func>
-        prod = self.get_production('<func>')
-        if prod == 233:
-            self.eat('(')
-            self.args(_ctx_expected=(')',))
-            self.eat(')')
-        else:
-            self.error_invalid_token('<func>')
-
-    def args(self, _ctx_expected=()):
+    def args(self):
         # <args>
         prod = self.get_production('<args>')
-        if prod == 234:
+        if prod == 348:
             self.value()
             self.args_mult()
-        elif prod == 235:
+        elif prod == 349:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<args>')
 
-    def args_mult(self, _ctx_expected=()):
+    def args_mult(self):
         # <args-mult>
         prod = self.get_production('<args-mult>')
-        if prod == 236:
+        if prod == 350:
             self.eat(',')
             self.args()
-        elif prod == 237:
+        elif prod == 351:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<args-mult>')
 
     def value(self):
         # <value>
         prod = self.get_production('<value>')
-        if prod == 238:
+        if prod == 352:
             self.eat('id')
-            self.id_tail(_ctx_expected=('!=', '%', '&', '&&', '*', '+', '-', '/', '<', '<=', '==', '>', '>=', '^', '||'))
+            self.id_tail()
             self.exp()
-        elif prod == 239:
+        elif prod == 353:
             self.eat('(')
-            self.value()
+            self.value_grp()
             self.eat(')')
             self.exp()
-        elif prod == 240:
+        elif prod == 354:
             self.digit()
             self.digit_tail()
-        elif prod == 241:
+        elif prod == 355:
             self.eat('PARCH-lit')
             self.parch_tail()
-        elif prod == 242:
+        elif prod == 356:
             self.eat('SCROLL-lit')
-            self.scr_char(_ctx_expected=('!=', '&', '=='))
+            self.scr_char()
             self.scroll_tail()
-        elif prod == 243:
+        elif prod == 357:
             self.bool()
-            self.bool_eq(_ctx_expected=('&&', '||'))
-            self.bool_exp()
+            self.logeq_var()
         else:
             self.error_invalid_token('<value>')
 
-    def digit_tail(self, _ctx_expected=()):
+    def digit_tail(self):
         # <digit-tail>
         prod = self.get_production('<digit-tail>')
-        if prod == 244:
-            self.var_arith(_ctx_expected=('!=', '<', '<=', '==', '>', '>='))
-            self.var_releq()
-        elif prod == 245:
+        if prod == 358:
+            self.arith_var()
+            self.releq_var()
+        elif prod == 359:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<digit-tail>')
 
-    def var_arith(self, _ctx_expected=()):
-        # <var-arith>
-        prod = self.get_production('<var-arith>')
-        if prod == 246:
-            self.arith_op()
-            self.dime_ope()
-            self.var_arith()
-        elif prod == 247:
+    def arith_var(self):
+        # <arith-var>
+        prod = self.get_production('<arith-var>')
+        if prod == 360:
+            self.dime_arith()
+            self.arith_var()
+        elif prod == 361:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<arith-var>')
 
-    def var_releq(self, _ctx_expected=()):
-        # <var-releq>
-        prod = self.get_production('<var-releq>')
-        if prod == 248:
-            self.rel_op()
-            self.dime_ope()
-            self.bool_arith2(_ctx_expected=('!=', '&&', '==', '||'))
-            self.var_logeq()
-        elif prod == 249:
-            self.eq_op()
-            self.dime_ope()
-            self.bool_arith3(_ctx_expected=('&&', '||'))
-            self.bool_exp()
-        elif prod == 250:
+    def releq_var(self):
+        # <releq-var>
+        prod = self.get_production('<releq-var>')
+        if prod == 362:
+            self.rel()
+            self.arith_var2()
+            self.logeq_var()
+        elif prod == 363:
+            self.eq_digit()
+            self.arith_var3()
+            self.log_var()
+        elif prod == 364:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<releq-var>')
 
-    def var_logeq(self, _ctx_expected=()):
-        # <var-logeq>
-        prod = self.get_production('<var-logeq>')
-        if prod == 251:
+    def arith_var2(self):
+        # <arith-var2>
+        prod = self.get_production('<arith-var2>')
+        if prod == 365:
+            self.dime_arith()
+            self.arith_var2()
+        elif prod == 366:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-var2>')
+
+    def arith_var3(self):
+        # <arith-var3>
+        prod = self.get_production('<arith-var3>')
+        if prod == 367:
+            self.dime_arith()
+            self.arith_var3()
+        elif prod == 368:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-var3>')
+
+    def logeq_var(self):
+        # <logeq-var>
+        prod = self.get_production('<logeq-var>')
+        if prod == 369:
+            self.logeq_op()
+            self.log_ope()
+            self.log_var()
+        elif prod == 370:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<logeq-var>')
+
+    def logeq_op(self):
+        # <logeq-op>
+        prod = self.get_production('<logeq-op>')
+        if prod == 371:
             self.log_op()
-            self.bool_ope()
-            self.bool_exp()
-        elif prod == 252:
+        elif prod == 372:
             self.eq_op()
-            self.eq_ope()
-            self.bool_exp()
-        elif prod == 253:
+        else:
+            self.error_invalid_token('<logeq-op>')
+
+    def log_var(self):
+        # <log-var>
+        prod = self.get_production('<log-var>')
+        if prod == 373:
+            self.log_op()
+            self.log_ope()
+            self.log_var()
+        elif prod == 374:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<log-var>')
 
-    def parch_tail(self, _ctx_expected=()):
+    def parch_tail(self):
         # <parch-tail>
         prod = self.get_production('<parch-tail>')
-        if prod == 254:
+        if prod == 375:
             self.eq_op()
-            self.parch_val()
-            self.bool_exp()
-        elif prod == 255:
+            self.eat('PARCH-lit')
+            self.log_var()
+        elif prod == 376:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<parch-tail>')
 
-    def scroll_tail(self, _ctx_expected=()):
+    def scroll_tail(self):
         # <scroll-tail>
         prod = self.get_production('<scroll-tail>')
-        if prod == 256:
-            self.eat('&')
-            self.scroll_ope()
-            self.scroll_concat()
-        elif prod == 257:
+        if prod == 377:
+            self.concat_var()
+        elif prod == 378:
             self.eq_op()
-            self.scroll_ope()
-            self.bool_exp()
-        elif prod == 258:
+            self.scroll_val()
+            self.log_var()
+        elif prod == 379:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-tail>')
 
-    def exp(self, _ctx_expected=()):
+    def concat_var(self):
+        # <concat-var>
+        prod = self.get_production('<concat-var>')
+        if prod == 380:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_var()
+        elif prod == 381:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<concat-var>')
+
+    def exp(self):
         # <exp>
         prod = self.get_production('<exp>')
-        if prod == 259:
-            self.arith_op()
-            self.dime_ope()
-            self.var_arith(_ctx_expected=('!=', '<', '<=', '==', '>', '>='))
-            self.var_releq()
-        elif prod == 260:
-            self.rel_op()
-            self.dime_ope()
-            self.bool_arith2(_ctx_expected=('!=', '&&', '==', '||'))
-            self.var_logeq()
-        elif prod == 261:
+        if prod == 382:
+            self.arith()
+            self.arith_var()
+            self.releq_var()
+        elif prod == 383:
+            self.rel()
+            self.arith_var2()
+            self.logeq_var()
+        elif prod == 384:
             self.log_op()
-            self.bool_ope()
-            self.bool_exp()
-        elif prod == 262:
+            self.log_ope()
+            self.log_var()
+        elif prod == 385:
             self.eq_op()
-            self.eq_ope()
-            self.bool_exp()
-        elif prod == 263:
+            self.eq_var()
+            self.log_var()
+        elif prod == 386:
             self.eat('&')
-            self.scroll_ope()
-            self.scroll_concat()
-        elif prod == 264:
+            self.scroll_val()
+            self.scroll_var()
+        elif prod == 387:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<exp>')
+
+    def log_ope(self):
+        # <log-ope>
+        prod = self.get_production('<log-ope>')
+        if prod == 388:
+            self.eat('id')
+            self.id_tail()
+            self.log_exp()
+        elif prod == 389:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.log_exp()
+        elif prod == 390:
+            self.bool()
+            self.log_booleq()
+        elif prod == 391:
+            self.digit()
+            self.bool_arith()
+            self.log_releq()
+        elif prod == 392:
+            self.eat('PARCH-lit')
+            self.eq_op()
+            self.parch_val()
+        elif prod == 393:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+            self.eq_op()
+            self.scroll_val()
+        else:
+            self.error_invalid_token('<log-ope>')
+
+    def log_booleq(self):
+        # <log-booleq>
+        prod = self.get_production('<log-booleq>')
+        if prod == 394:
+            self.eq_op()
+            self.log_ope()
+        elif prod == 395:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<log-booleq>')
+
+    def log_releq(self):
+        # <log-releq>
+        prod = self.get_production('<log-releq>')
+        if prod == 396:
+            self.rel()
+            self.arith_var2()
+            self.log_booleq()
+        elif prod == 397:
+            self.eq_digit()
+            self.arith_var3()
+        else:
+            self.error_invalid_token('<log-releq>')
+
+    def log_exp(self):
+        # <log-exp>
+        prod = self.get_production('<log-exp>')
+        if prod == 398:
+            self.arith()
+            self.arith_var()
+            self.log_releq()
+        elif prod == 399:
+            self.rel()
+            self.arith_var2()
+            self.log_booleq()
+        elif prod == 400:
+            self.eq_op()
+            self.eq_var()
+        elif prod == 401:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<log-exp>')
+
+    def eq_var(self):
+        # <eq-var>
+        prod = self.get_production('<eq-var>')
+        if prod == 402:
+            self.eat('id')
+            self.id_tail()
+            self.arith_var4()
+            self.rel_var()
+        elif prod == 403:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.arith_var4()
+            self.rel_var()
+        elif prod == 404:
+            self.digit()
+            self.arith_var4()
+            self.rel_var()
+        elif prod == 405:
+            self.eq_ope1()
+        else:
+            self.error_invalid_token('<eq-var>')
+
+    def arith_var4(self):
+        # <arith-var4>
+        prod = self.get_production('<arith-var4>')
+        if prod == 406:
+            self.dime_arith()
+            self.arith_var4()
+        elif prod == 407:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-var4>')
+
+    def rel_var(self):
+        # <rel-var>
+        prod = self.get_production('<rel-var>')
+        if prod == 408:
+            self.rel()
+            self.arith_var3()
+        elif prod == 409:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<rel-var>')
+
+    def value_grp(self):
+        # <value-grp>
+        prod = self.get_production('<value-grp>')
+        if prod == 410:
+            self.eat('id')
+            self.id_tail()
+            self.exp_grp()
+        elif prod == 411:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.exp_grp()
+        elif prod == 412:
+            self.digit()
+            self.digit_tail_grp()
+        elif prod == 413:
+            self.eat('PARCH-lit')
+            self.parch_tail_grp()
+        elif prod == 414:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+            self.scroll_tail_grp()
+        elif prod == 415:
+            self.bool()
+            self.logeq_grp()
+        else:
+            self.error_invalid_token('<value-grp>')
+
+    def digit_tail_grp(self):
+        # <digit-tail-grp>
+        prod = self.get_production('<digit-tail-grp>')
+        if prod == 416:
+            self.arith_grp()
+            self.releq_grp()
+        elif prod == 417:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<digit-tail-grp>')
+
+    def arith_grp(self):
+        # <arith-grp>
+        prod = self.get_production('<arith-grp>')
+        if prod == 418:
+            self.dime_arith()
+            self.arith_grp()
+        elif prod == 419:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-grp>')
+
+    def arith_grp2(self):
+        # <arith-grp2>
+        prod = self.get_production('<arith-grp2>')
+        if prod == 423:
+            self.dime_arith()
+            self.arith_grp2()
+        elif prod == 424:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-grp2>')
+
+    def arith_grp3(self):
+        # <arith-grp3>
+        prod = self.get_production('<arith-grp3>')
+        if prod == 425:
+            self.dime_arith()
+            self.arith_grp3()
+        elif prod == 426:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-grp3>')
+
+    def logeq_grp(self):
+        # <logeq-grp>
+        prod = self.get_production('<logeq-grp>')
+        if prod == 427:
+            self.logeq_op()
+            self.bool_ope_grp()
+            self.bool_exp_grp()
+        elif prod == 428:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<logeq-grp>')
+
+    def parch_tail_grp(self):
+        # <parch-tail-grp>
+        prod = self.get_production('<parch-tail-grp>')
+        if prod == 429:
+            self.eq_op()
+            self.eat('PARCH-lit')
+            self.bool_exp_grp()
+        elif prod == 430:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<parch-tail-grp>')
+
+    def scroll_tail_grp(self):
+        # <scroll-tail-grp>
+        prod = self.get_production('<scroll-tail-grp>')
+        if prod == 431:
+            self.concat_str()
+        elif prod == 432:
+            self.eq_op()
+            self.scroll_val()
+            self.bool_exp_grp()
+        elif prod == 433:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<scroll-tail-grp>')
+
+    def concat_grp(self):
+        # <concat-grp>
+        prod = self.get_production('<concat-grp>')
+        if prod == 434:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_grp()
+        elif prod == 435:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<concat-grp>')
+
+    def exp_grp(self):
+        # <exp-grp>
+        prod = self.get_production('<exp-grp>')
+        if prod == 436:
+            self.arith()
+            self.arith_grp()
+            self.releq_grp()
+        elif prod == 437:
+            self.rel()
+            self.arith_grp2()
+            self.logeq_grp()
+        elif prod == 438:
+            self.log_op()
+            self.bool_ope_grp()
+            self.bool_exp_grp()
+        elif prod == 439:
+            self.eq_op()
+            self.eq_ope_grp()
+            self.bool_exp_grp()
+        elif prod == 440:
+            self.eat('&')
+            self.scroll_val()
+            self.scroll_grp()
+        elif prod == 441:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<exp-grp>')
 
     def const(self):
         # <const>
         prod = self.get_production('<const>')
-        if prod == 265:
+        if prod == 442:
             self.eat('LOCKE')
             self.const_init()
             self.eat('!!')
@@ -1840,23 +2701,23 @@ class Parser:
     def const_init(self):
         # <const-init>
         prod = self.get_production('<const-init>')
-        if prod == 266:
+        if prod == 443:
             self.eat('COIN')
             self.coin_locke()
             self.coin_locke_mult()
-        elif prod == 267:
+        elif prod == 444:
             self.eat('DIME')
             self.dime_locke()
             self.dime_locke_mult()
-        elif prod == 268:
+        elif prod == 445:
             self.eat('PARCH')
             self.parch_locke()
             self.parch_locke_mult()
-        elif prod == 269:
+        elif prod == 446:
             self.eat('SCROLL')
             self.scroll_locke()
             self.scroll_locke_mult()
-        elif prod == 270:
+        elif prod == 447:
             self.eat('BOOL')
             self.bool_locke()
             self.bool_locke_mult()
@@ -1866,31 +2727,29 @@ class Parser:
     def coin_locke(self):
         # <coin-locke>
         prod = self.get_production('<coin-locke>')
-        if prod == 271:
+        if prod == 448:
             self.eat('id')
             self.eat('=')
             self.eat('COIN-lit')
         else:
             self.error_invalid_token('<coin-locke>')
 
-    def coin_locke_mult(self, _ctx_expected=()):
+    def coin_locke_mult(self):
         # <coin-locke-mult>
         prod = self.get_production('<coin-locke-mult>')
-        if prod == 272:
+        if prod == 449:
             self.eat(',')
             self.coin_locke()
             self.coin_locke_mult()
-        elif prod == 273:
+        elif prod == 450:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<coin-locke-mult>')
 
     def dime_locke(self):
         # <dime-locke>
         prod = self.get_production('<dime-locke>')
-        if prod == 274:
+        if prod == 451:
             self.eat('id')
             self.eat('=')
             self.locke_digit()
@@ -1900,55 +2759,51 @@ class Parser:
     def locke_digit(self):
         # <locke-digit>
         prod = self.get_production('<locke-digit>')
-        if prod == 275:
+        if prod == 452:
             self.eat('COIN-lit')
-        elif prod == 276:
+        elif prod == 453:
             self.eat('DIME-lit')
         else:
             self.error_invalid_token('<locke-digit>')
 
-    def dime_locke_mult(self, _ctx_expected=()):
+    def dime_locke_mult(self):
         # <dime-locke-mult>
         prod = self.get_production('<dime-locke-mult>')
-        if prod == 277:
+        if prod == 454:
             self.eat(',')
             self.dime_locke()
             self.dime_locke_mult()
-        elif prod == 278:
+        elif prod == 455:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<dime-locke-mult>')
 
     def parch_locke(self):
         # <parch-locke>
         prod = self.get_production('<parch-locke>')
-        if prod == 279:
+        if prod == 456:
             self.eat('id')
             self.eat('=')
             self.eat('PARCH-lit')
         else:
             self.error_invalid_token('<parch-locke>')
 
-    def parch_locke_mult(self, _ctx_expected=()):
+    def parch_locke_mult(self):
         # <parch-locke-mult>
         prod = self.get_production('<parch-locke-mult>')
-        if prod == 280:
+        if prod == 457:
             self.eat(',')
             self.parch_locke()
             self.parch_locke_mult()
-        elif prod == 281:
+        elif prod == 458:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<parch-locke-mult>')
 
     def scroll_locke(self):
         # <scroll-locke>
         prod = self.get_production('<scroll-locke>')
-        if prod == 282:
+        if prod == 459:
             self.eat('id')
             self.eat('=')
             self.eat('SCROLL-lit')
@@ -1956,38 +2811,34 @@ class Parser:
         else:
             self.error_invalid_token('<scroll-locke>')
 
-    def scr_id(self, _ctx_expected=()):
+    def scr_id(self):
         # <scr-id>
         prod = self.get_production('<scr-id>')
-        if prod == 283:
+        if prod == 460:
             self.eat('{')
             self.eat('COIN-lit')
             self.eat('}')
-        elif prod == 284:
+        elif prod == 461:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scr-id>')
 
-    def scroll_locke_mult(self, _ctx_expected=()):
+    def scroll_locke_mult(self):
         # <scroll-locke-mult>
         prod = self.get_production('<scroll-locke-mult>')
-        if prod == 285:
+        if prod == 462:
             self.eat(',')
             self.scroll_locke()
             self.scroll_locke_mult()
-        elif prod == 286:
+        elif prod == 463:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<scroll-locke-mult>')
 
     def bool_locke(self):
         # <bool-locke>
         prod = self.get_production('<bool-locke>')
-        if prod == 287:
+        if prod == 464:
             self.eat('id')
             self.eat('=')
             self.locke_bool()
@@ -1997,118 +2848,108 @@ class Parser:
     def locke_bool(self):
         # <locke-bool>
         prod = self.get_production('<locke-bool>')
-        if prod == 288:
+        if prod == 465:
             self.eat('AYE')
-        elif prod == 289:
+        elif prod == 466:
             self.eat('NAY')
         else:
             self.error_invalid_token('<locke-bool>')
 
-    def bool_locke_mult(self, _ctx_expected=()):
+    def bool_locke_mult(self):
         # <bool-locke-mult>
         prod = self.get_production('<bool-locke-mult>')
-        if prod == 290:
+        if prod == 467:
             self.eat(',')
             self.bool_locke()
             self.bool_locke_mult()
-        elif prod == 291:
+        elif prod == 468:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<bool-locke-mult>')
 
-    def struct(self, _ctx_expected=()):
+    def struct(self):
         # <struct>
         prod = self.get_production('<struct>')
-        if prod == 292:
+        if prod == 469:
             self.eat('MAST')
             self.eat('id')
             self.eat('[')
             self.mem_dec()
-            self.mem_dec_tail(_ctx_expected=(']',))
+            self.mem_dec_tail()
             self.eat(']')
             self.eat('!!')
             self.struct()
-        elif prod == 293:
+        elif prod == 470:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<struct>')
 
     def mem_dec(self):
         # <mem-dec>
         prod = self.get_production('<mem-dec>')
-        if prod == 294:
+        if prod == 471:
             self.d_type()
             self.eat('id')
-            self.mem_mult(_ctx_expected=('!!',))
+            self.mem_mult()
             self.eat('!!')
         else:
             self.error_invalid_token('<mem-dec>')
 
-    def mem_mult(self, _ctx_expected=()):
+    def mem_mult(self):
         # <mem-mult>
         prod = self.get_production('<mem-mult>')
-        if prod == 295:
+        if prod == 472:
             self.eat(',')
             self.eat('id')
             self.mem_mult()
-        elif prod == 296:
+        elif prod == 473:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<mem-mult>')
 
-    def mem_dec_tail(self, _ctx_expected=()):
+    def mem_dec_tail(self):
         # <mem-dec-tail>
         prod = self.get_production('<mem-dec-tail>')
-        if prod == 297:
+        if prod == 474:
             self.mem_dec()
             self.mem_dec_tail()
-        elif prod == 298:
+        elif prod == 475:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<mem-dec-tail>')
 
-    def sub_func(self, _ctx_expected=()):
+    def sub_func(self):
         # <sub-func>
         prod = self.get_production('<sub-func>')
-        if prod == 299:
+        if prod == 476:
             self.return_func()
-        elif prod == 300:
+        elif prod == 477:
             self.nonreturn_func()
-        elif prod == 301:
+        elif prod == 478:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<sub-func>')
 
     def return_func(self):
         # <return-func>
         prod = self.get_production('<return-func>')
-        if prod == 302:
+        if prod == 479:
             self.eat('COIN')
             self.eat('id')
             self.coin_func()
-        elif prod == 303:
+        elif prod == 480:
             self.eat('DIME')
             self.eat('id')
             self.dime_func()
-        elif prod == 304:
+        elif prod == 481:
             self.eat('PARCH')
             self.eat('id')
             self.parch_func()
-        elif prod == 305:
+        elif prod == 482:
             self.eat('SCROLL')
             self.eat('id')
             self.scroll_func()
-        elif prod == 306:
+        elif prod == 483:
             self.eat('BOOL')
             self.eat('id')
             self.bool_func()
@@ -2118,16 +2959,16 @@ class Parser:
     def nonreturn_func(self):
         # <nonreturn-func>
         prod = self.get_production('<nonreturn-func>')
-        if prod == 307:
+        if prod == 484:
             self.eat('ABYSS')
             self.eat('id')
             self.eat('(')
-            self.params(_ctx_expected=(')',))
+            self.params()
             self.eat(')')
             self.eat('[')
-            self.ahoy_local_dec(_ctx_expected=('+#', '-#', 'ASK', 'CHART', 'ECHO', 'HAUL', 'HEAVE', 'HOIST', 'LOOK', 'id'))
+            self.ahoy_local_dec()
             self.nonret_stmnts()
-            self.nonret_back(_ctx_expected=(']',))
+            self.nonret_back()
             self.eat(']')
             self.sub_func()
         else:
@@ -2136,32 +2977,41 @@ class Parser:
     def nonret_stmnts(self):
         # <nonret-stmnts>
         prod = self.get_production('<nonret-stmnts>')
-        if prod == 308:
+        if prod == 485:
             self.nonret_stmnt()
             self.nonret_tail()
         else:
             self.error_invalid_token('<nonret-stmnts>')
 
-    def nonret_tail(self, _ctx_expected=()):
+    def nonret_tail(self):
         # <nonret-tail>
         prod = self.get_production('<nonret-tail>')
-        if prod == 309:
+        if prod == 486:
             self.nonret_stmnts()
-        elif prod == 310:
+        elif prod == 487:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<nonret-tail>')
+
+    def nonret_back(self):
+        # <nonret-back>
+        prod = self.get_production('<nonret-back>')
+        if prod == 488:
+            self.eat('BACK')
+            self.eat('!!')
+        elif prod == 489:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<nonret-back>')
 
     def nonret_stmnt(self):
         # <nonret-stmnt>
         prod = self.get_production('<nonret-stmnt>')
-        if prod == 311:
+        if prod == 490:
             self.eat('id')
             self.assign_tail()
             self.eat('!!')
-        elif prod == 312:
+        elif prod == 491:
             self.eat('ASK')
             self.eat('(')
             self.eat('SCROLL-lit')
@@ -2169,251 +3019,396 @@ class Parser:
             self.addr()
             self.eat(')')
             self.eat('!!')
-        elif prod == 313:
+        elif prod == 492:
             self.eat('ECHO')
             self.eat('(')
             self.eat('SCROLL-lit')
-            self.args_mult(_ctx_expected=(')',))
+            self.args_mult()
             self.eat(')')
             self.eat('!!')
-        elif prod == 314:
+        elif prod == 493:
             self.eat('LOOK')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.nonret_look_tail()
-        elif prod == 315:
+        elif prod == 494:
             self.eat('CHART')
             self.eat('(')
             self.chart_cond()
             self.eat(')')
             self.eat('[')
             self.courses()
-            self.course_tail(_ctx_expected=('ADRIFT', ']'))
-            self.adrift_case(_ctx_expected=(']',))
+            self.course_tail()
+            self.adrift_case()
             self.eat(']')
-        elif prod == 316:
+        elif prod == 495:
             self.eat('HOIST')
             self.eat('(')
-            self.hoist_init(_ctx_expected=('!!',))
+            self.hoist_init()
             self.eat('!!')
             self.hoist_cond()
             self.eat('!!')
             self.hoist_upd()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-        elif prod == 317:
+        elif prod == 496:
             self.eat('HEAVE')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-        elif prod == 318:
+        elif prod == 497:
             self.eat('HAUL')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.eat('HEAVE')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('!!')
-        elif prod == 319:
+        elif prod == 498:
             self.unary_exp()
             self.eat('!!')
         else:
             self.error_invalid_token('<nonret-stmnt>')
 
-    def nonret_look_tail(self, _ctx_expected=()):
+    def nonret_look_tail(self):
         # <nonret-look-tail>
         prod = self.get_production('<nonret-look-tail>')
-        if prod == 320:
+        if prod == 499:
             self.eat('DROPLOOK')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-            self.ahoy_look_tail()
-        elif prod == 321:
+            self.nonret_look_tail()
+        elif prod == 500:
             self.eat('DROP')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-        elif prod == 322:
+        elif prod == 501:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<nonret-look-tail>')
 
-    def nonret_back(self, _ctx_expected=()):
-        # <nonret-back>
-        prod = self.get_production('<nonret-back>')
-        if prod == 323:
-            self.eat('BACK')
-            self.eat('!!')
-        elif prod == 324:
-            pass  # Lambda
-        else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
-
-    def local_dec(self, _ctx_expected=()):
+    def local_dec(self):
         # <local-dec>
         prod = self.get_production('<local-dec>')
-        if prod == 325:
+        if prod == 502:
             self.var_arr()
-            self.eat('!!')
             self.local_dec()
-        elif prod == 326:
+        elif prod == 503:
             self.struct_dec()
-        elif prod == 327:
+        elif prod == 504:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<local-dec>')
 
     def var_arr(self):
         # <var-arr>
         prod = self.get_production('<var-arr>')
-        if prod == 328:
+        if prod == 505:
             self.eat('COIN')
             self.eat('id')
             self.coin_var_arr()
-        elif prod == 329:
+            self.eat('!!')
+        elif prod == 506:
             self.eat('DIME')
             self.eat('id')
             self.dime_var_arr()
-        elif prod == 330:
+            self.eat('!!')
+        elif prod == 507:
             self.eat('PARCH')
             self.eat('id')
             self.parch_var_arr()
-        elif prod == 331:
+            self.eat('!!')
+        elif prod == 508:
             self.eat('SCROLL')
             self.eat('id')
             self.scroll_var_arr()
-        elif prod == 332:
+            self.eat('!!')
+        elif prod == 509:
             self.eat('BOOL')
             self.eat('id')
             self.bool_var_arr()
+            self.eat('!!')
         else:
             self.error_invalid_token('<var-arr>')
 
-    def struct_dec(self, _ctx_expected=()):
+    def struct_dec(self):
         # <struct-dec>
         prod = self.get_production('<struct-dec>')
-        if prod == 333:
+        if prod == 510:
             self.eat('MAST')
             self.eat('id')
             self.eat('id')
-            self.str_dec_init(_ctx_expected=('!!',))
+            self.str_dec_init()
             self.eat('!!')
             self.struct_dec()
-        elif prod == 334:
+        elif prod == 511:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<struct-dec>')
 
-    def str_dec_init(self, _ctx_expected=()):
+    def str_dec_init(self):
         # <str-dec-init>
         prod = self.get_production('<str-dec-init>')
-        if prod == 335:
+        if prod == 512:
             self.eat(',')
             self.eat('id')
             self.str_dec_tail()
-        elif prod == 336:
+        elif prod == 513:
             self.eat('=')
             self.eat('[')
             self.str_val()
-            self.str_val_tail(_ctx_expected=(']',))
+            self.str_val_tail()
             self.eat(']')
-        elif prod == 337:
+        elif prod == 514:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<str-dec-init>')
 
-    def str_dec_tail(self, _ctx_expected=()):
+    def str_dec_tail(self):
         # <str-dec-tail>
         prod = self.get_production('<str-dec-tail>')
-        if prod == 338:
+        if prod == 515:
             self.eat(',')
             self.eat('id')
             self.str_dec_tail()
-        elif prod == 339:
+        elif prod == 516:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<str-dec-tail>')
 
     def str_val(self):
         # <str-val>
         prod = self.get_production('<str-val>')
-        if prod == 340:
-            self.value()
-        elif prod == 341:
+        if prod == 517:
+            self.value_str()
+        elif prod == 518:
             self.eat('$')
             self.eat('id')
             self.eat('=')
-            self.value()
+            self.value_str()
         else:
             self.error_invalid_token('<str-val>')
 
-    def str_val_tail(self, _ctx_expected=()):
+    def str_val_tail(self):
         # <str-val-tail>
         prod = self.get_production('<str-val-tail>')
-        if prod == 342:
+        if prod == 519:
             self.eat(',')
             self.str_val()
             self.str_val_tail()
-        elif prod == 343:
+        elif prod == 520:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<str-val-tail>')
+
+    def value_str(self):
+        # <value-str>
+        prod = self.get_production('<value-str>')
+        if prod == 521:
+            self.eat('id')
+            self.id_tail()
+            self.exp_str()
+        elif prod == 522:
+            self.eat('(')
+            self.value_grp()
+            self.eat(')')
+            self.exp_str()
+        elif prod == 523:
+            self.digit()
+            self.digit_tail_str()
+        elif prod == 524:
+            self.eat('PARCH-lit')
+            self.parch_tail_str()
+        elif prod == 525:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+            self.scroll_tail_str()
+        elif prod == 526:
+            self.bool()
+            self.logeq_str()
+        else:
+            self.error_invalid_token('<value-str>')
+
+    def digit_tail_str(self):
+        # <digit-tail-str>
+        prod = self.get_production('<digit-tail-str>')
+        if prod == 527:
+            self.arith_str()
+            self.releq_str()
+        elif prod == 528:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<digit-tail-str>')
+
+    def arith_str(self):
+        # <arith-str>
+        prod = self.get_production('<arith-str>')
+        if prod == 529:
+            self.dime_arith()
+            self.arith_str()
+        elif prod == 530:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-str>')
+
+    def releq_str(self):
+        # <releq-str>
+        prod = self.get_production('<releq-str>')
+        if prod == 531:
+            self.rel()
+            self.arith_str2()
+            self.logeq_str()
+        elif prod == 532:
+            self.eq_digit()
+            self.arith_str3()
+            self.bool_exp_arr()
+        elif prod == 533:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<releq-str>')
+
+    def arith_str2(self):
+        # <arith-str2>
+        prod = self.get_production('<arith-str2>')
+        if prod == 534:
+            self.dime_arith()
+            self.arith_str2()
+        elif prod == 535:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-str2>')
+
+    def arith_str3(self):
+        # <arith-str3>
+        prod = self.get_production('<arith-str3>')
+        if prod == 536:
+            self.dime_arith()
+            self.arith_str3()
+        elif prod == 537:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-str3>')
+
+    def logeq_str(self):
+        # <logeq-str>
+        prod = self.get_production('<logeq-str>')
+        if prod == 538:
+            self.logeq_op()
+            self.log_ope_str()
+            self.bool_exp_arr()
+        elif prod == 539:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<logeq-str>')
+
+    def parch_tail_str(self):
+        # <parch-tail-str>
+        prod = self.get_production('<parch-tail-str>')
+        if prod == 540:
+            self.eq_op()
+            self.eat('PARCH-lit')
+            self.bool_exp_arr()
+        elif prod == 541:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<parch-tail-str>')
+
+    def scroll_tail_str(self):
+        # <scroll-tail-str>
+        prod = self.get_production('<scroll-tail-str>')
+        if prod == 542:
+            self.concat_str()
+        elif prod == 543:
+            self.eq_op()
+            self.scroll_val()
+            self.bool_exp_arr()
+        elif prod == 544:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<scroll-tail-str>')
+
+    def concat_str(self):
+        # <concat-str>
+        prod = self.get_production('<concat-str>')
+        if prod == 545:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_str()
+        elif prod == 546:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<concat-str>')
+
+    def exp_str(self):
+        # <exp-str>
+        prod = self.get_production('<exp-str>')
+        if prod == 547:
+            self.arith()
+            self.arith_str()
+            self.releq_str()
+        elif prod == 548:
+            self.rel()
+            self.arith_str2()
+            self.logeq_str()
+        elif prod == 549:
+            self.log_op()
+            self.bool_ope_arr()
+            self.bool_exp_arr()
+        elif prod == 550:
+            self.eq_op()
+            self.eq_ope_arr()
+            self.bool_exp_arr()
+        elif prod == 551:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_str()
+        elif prod == 552:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<exp-str>')
 
     def statements(self):
         # <statements>
         prod = self.get_production('<statements>')
-        if prod == 344:
+        if prod == 553:
             self.assign_stmnt()
-        elif prod == 345:
+        elif prod == 554:
             self.ask_stmnt()
-        elif prod == 346:
+        elif prod == 555:
             self.echo_stmnt()
-        elif prod == 347:
+        elif prod == 556:
             self.look_stmnt()
-        elif prod == 348:
+        elif prod == 557:
             self.chart_stmnt()
-        elif prod == 349:
+        elif prod == 558:
             self.hoist_stmnt()
-        elif prod == 350:
+        elif prod == 559:
             self.heave_stmnt()
-        elif prod == 351:
+        elif prod == 560:
             self.haul_stmnt()
-        elif prod == 352:
+        elif prod == 561:
             self.unary_exp()
             self.eat('!!')
         else:
@@ -2422,7 +3417,7 @@ class Parser:
     def assign_stmnt(self):
         # <assign-stmnt>
         prod = self.get_production('<assign-stmnt>')
-        if prod == 353:
+        if prod == 562:
             self.eat('id')
             self.assign_tail()
             self.eat('!!')
@@ -2432,61 +3427,236 @@ class Parser:
     def assign_tail(self):
         # <assign-tail>
         prod = self.get_production('<assign-tail>')
-        if prod == 354:
-            self.arr_str(_ctx_expected=('%=', '*=', '+=', '-=', '/=', '=', '^='))
+        if prod == 563:
+            self.arr_str()
             self.assign_body()
-        elif prod == 355:
+        elif prod == 564:
             self.eat('(')
-            self.args(_ctx_expected=(')',))
+            self.args()
             self.eat(')')
         else:
             self.error_invalid_token('<assign-tail>')
 
-    def arr_str(self, _ctx_expected=()):
+    def arr_str(self):
         # <arr-str>
         prod = self.get_production('<arr-str>')
-        if prod == 356:
+        if prod == 565:
             self.eat('{')
             self.index()
             self.eat('}')
-            self.elmt2()
-        elif prod == 357:
+            self.arr_str_tail()
+        elif prod == 566:
             self.eat('$')
             self.eat('id')
-        elif prod == 358:
+        elif prod == 567:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<arr-str>')
+
+    def arr_str_tail(self):
+        # <arr-str-tail>
+        prod = self.get_production('<arr-str-tail>')
+        if prod == 568:
+            self.eat('{')
+            self.index()
+            self.eat('}')
+        elif prod == 569:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arr-str-tail>')
 
     def assign_body(self):
         # <assign-body>
         prod = self.get_production('<assign-body>')
-        if prod == 359:
+        if prod == 570:
             self.eat('=')
-            self.value()
-        elif prod == 360:
+            self.value_as()
+        elif prod == 571:
             self.arith_assign_op()
-            self.dime_ope()
-            self.dime_arith()
+            self.dime_ret_val()
         else:
             self.error_invalid_token('<assign-body>')
+
+    def value_as(self):
+        # <value-as>
+        prod = self.get_production('<value-as>')
+        if prod == 572:
+            self.eat('id')
+            self.id_tail()
+            self.exp_as()
+        elif prod == 573:
+            self.eat('(')
+            self.var_grp()
+            self.eat(')')
+            self.exp_as()
+        elif prod == 574:
+            self.digit()
+            self.digit_tail_as()
+        elif prod == 575:
+            self.eat('PARCH-lit')
+            self.parch_tail_as()
+        elif prod == 576:
+            self.eat('SCROLL-lit')
+            self.scr_char()
+            self.scroll_tail_as()
+        elif prod == 577:
+            self.bool()
+            self.logeq_as()
+        else:
+            self.error_invalid_token('<value-as>')
+
+    def digit_tail_as(self):
+        # <digit-tail-as>
+        prod = self.get_production('<digit-tail-as>')
+        if prod == 578:
+            self.arith_as()
+            self.releq_as()
+        elif prod == 579:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<digit-tail-as>')
+
+    def arith_as(self):
+        # <arith-as>
+        prod = self.get_production('<arith-as>')
+        if prod == 580:
+            self.dime_arith()
+            self.arith_as()
+        elif prod == 581:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-as>')
+
+    def releq_as(self):
+        # <releq-as>
+        prod = self.get_production('<releq-as>')
+        if prod == 582:
+            self.rel()
+            self.arith_as2()
+            self.logeq_as()
+        elif prod == 583:
+            self.eq_digit()
+            self.arith_as3()
+            self.bool_exp_ret()
+        elif prod == 584:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<releq-as>')
+
+    def arith_as2(self):
+        # <arith-as2>
+        prod = self.get_production('<arith-as2>')
+        if prod == 585:
+            self.dime_arith()
+            self.arith_as2()
+        elif prod == 586:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-as2>')
+
+    def arith_as3(self):
+        # <arith-as3>
+        prod = self.get_production('<arith-as3>')
+        if prod == 587:
+            self.dime_arith()
+            self.arith_as3()
+        elif prod == 588:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<arith-as3>')
+
+    def logeq_as(self):
+        # <logeq-as>
+        prod = self.get_production('<logeq-as>')
+        if prod == 589:
+            self.logeq_op()
+            self.bool_ope_ret()
+            self.bool_exp_ret()
+        elif prod == 590:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<logeq-as>')
+
+    def parch_tail_as(self):
+        # <parch-tail-as>
+        prod = self.get_production('<parch-tail-as>')
+        if prod == 591:
+            self.eq_op()
+            self.eat('PARCH-lit')
+            self.log_as()
+        elif prod == 592:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<parch-tail-as>')
+
+    def scroll_tail_as(self):
+        # <scroll-tail-as>
+        prod = self.get_production('<scroll-tail-as>')
+        if prod == 593:
+            self.concat_as()
+        elif prod == 594:
+            self.eq_op()
+            self.scroll_val()
+            self.bool_exp_ret()
+        elif prod == 595:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<scroll-tail-as>')
+
+    def concat_as(self):
+        # <concat-as>
+        prod = self.get_production('<concat-as>')
+        if prod == 596:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_as()
+        elif prod == 597:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<concat-as>')
+
+    def exp_as(self):
+        # <exp-as>
+        prod = self.get_production('<exp-as>')
+        if prod == 598:
+            self.arith()
+            self.arith_as()
+            self.releq_as()
+        elif prod == 599:
+            self.rel()
+            self.arith_as2()
+            self.logeq_as()
+        elif prod == 600:
+            self.log_op()
+            self.bool_ope_ret()
+            self.bool_exp_ret()
+        elif prod == 601:
+            self.eq_op()
+            self.eq_ope_ret()
+            self.bool_exp_ret()
+        elif prod == 602:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_as()
+        elif prod == 603:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<exp-as>')
 
     def arith_assign_op(self):
         # <arith-assign-op>
         prod = self.get_production('<arith-assign-op>')
-        if prod == 361:
+        if prod == 604:
             self.eat('+=')
-        elif prod == 362:
+        elif prod == 605:
             self.eat('-=')
-        elif prod == 363:
+        elif prod == 606:
             self.eat('*=')
-        elif prod == 364:
+        elif prod == 607:
             self.eat('/=')
-        elif prod == 365:
+        elif prod == 608:
             self.eat('%=')
-        elif prod == 366:
+        elif prod == 609:
             self.eat('^=')
         else:
             self.error_invalid_token('<arith-assign-op>')
@@ -2494,7 +3664,7 @@ class Parser:
     def ask_stmnt(self):
         # <ask-stmnt>
         prod = self.get_production('<ask-stmnt>')
-        if prod == 367:
+        if prod == 610:
             self.eat('ASK')
             self.eat('(')
             self.eat('SCROLL-lit')
@@ -2508,35 +3678,33 @@ class Parser:
     def addr(self):
         # <addr>
         prod = self.get_production('<addr>')
-        if prod == 368:
+        if prod == 611:
             self.eat('@')
             self.eat('id')
-            self.arr_str(_ctx_expected=(',',))
+            self.arr_str()
             self.addr_tail()
         else:
             self.error_invalid_token('<addr>')
 
-    def addr_tail(self, _ctx_expected=()):
+    def addr_tail(self):
         # <addr-tail>
         prod = self.get_production('<addr-tail>')
-        if prod == 369:
+        if prod == 612:
             self.eat(',')
             self.addr()
-        elif prod == 370:
+        elif prod == 613:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<addr-tail>')
 
     def echo_stmnt(self):
         # <echo-stmnt>
         prod = self.get_production('<echo-stmnt>')
-        if prod == 371:
+        if prod == 614:
             self.eat('ECHO')
             self.eat('(')
             self.eat('SCROLL-lit')
-            self.args_mult(_ctx_expected=(')',))
+            self.args_mult()
             self.eat(')')
             self.eat('!!')
         else:
@@ -2545,14 +3713,14 @@ class Parser:
     def look_stmnt(self):
         # <look-stmnt>
         prod = self.get_production('<look-stmnt>')
-        if prod == 372:
+        if prod == 615:
             self.eat('LOOK')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.look_tail()
         else:
@@ -2561,78 +3729,72 @@ class Parser:
     def condition(self):
         # <condition>
         prod = self.get_production('<condition>')
-        if prod == 373:
-            self.bool_val()
+        if prod == 616:
+            self.bool_grp_val()
         else:
             self.error_invalid_token('<condition>')
 
-    def look_body(self, _ctx_expected=()):
+    def look_body(self):
         # <look-body>
         prod = self.get_production('<look-body>')
-        if prod == 374:
+        if prod == 617:
             self.statements()
             self.look_body()
-        elif prod == 375:
+        elif prod == 618:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<look-body>')
 
-    def jump_stmnt(self, _ctx_expected=()):
+    def jump_stmnt(self):
         # <jump-stmnt>
         prod = self.get_production('<jump-stmnt>')
-        if prod == 376:
+        if prod == 619:
             self.eat('SAIL')
             self.eat('!!')
-        elif prod == 377:
+        elif prod == 620:
             self.eat('LAND')
             self.eat('!!')
-        elif prod == 378:
+        elif prod == 621:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<jump-stmnt>')
 
-    def look_tail(self, _ctx_expected=()):
+    def look_tail(self):
         # <look-tail>
         prod = self.get_production('<look-tail>')
-        if prod == 379:
+        if prod == 622:
             self.eat('DROPLOOK')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.look_tail()
-        elif prod == 380:
+        elif prod == 623:
             self.eat('DROP')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-        elif prod == 381:
+        elif prod == 624:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<look-tail>')
 
     def chart_stmnt(self):
         # <chart-stmnt>
         prod = self.get_production('<chart-stmnt>')
-        if prod == 382:
+        if prod == 625:
             self.eat('CHART')
             self.eat('(')
             self.chart_cond()
             self.eat(')')
             self.eat('[')
             self.courses()
-            self.course_tail(_ctx_expected=('ADRIFT', ']'))
-            self.adrift_case(_ctx_expected=(']',))
+            self.course_tail()
+            self.adrift_case()
             self.eat(']')
         else:
             self.error_invalid_token('<chart-stmnt>')
@@ -2640,10 +3802,10 @@ class Parser:
     def chart_cond(self):
         # <chart-cond>
         prod = self.get_production('<chart-cond>')
-        if prod == 383:
+        if prod == 626:
             self.eat('id')
             self.id_tail()
-        elif prod == 384:
+        elif prod == 627:
             self.chart_const()
         else:
             self.error_invalid_token('<chart-cond>')
@@ -2651,11 +3813,11 @@ class Parser:
     def chart_const(self):
         # <chart-const>
         prod = self.get_production('<chart-const>')
-        if prod == 385:
+        if prod == 628:
             self.eat('COIN-lit')
-        elif prod == 386:
+        elif prod == 629:
             self.eat('PARCH-lit')
-        elif prod == 387:
+        elif prod == 630:
             self.eat('SCROLL-lit')
             self.scr_id()
         else:
@@ -2664,169 +3826,153 @@ class Parser:
     def courses(self):
         # <courses>
         prod = self.get_production('<courses>')
-        if prod == 388:
+        if prod == 631:
             self.eat('COURSE')
             self.chart_const()
             self.eat(':')
-            self.course_body(_ctx_expected=('LAND', 'SAIL'))
+            self.course_body()
             self.course_jmp()
         else:
             self.error_invalid_token('<courses>')
 
-    def course_body(self, _ctx_expected=()):
+    def course_body(self):
         # <course-body>
         prod = self.get_production('<course-body>')
-        if prod == 389:
+        if prod == 632:
             self.statements()
             self.course_body()
-        elif prod == 390:
+        elif prod == 633:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<course-body>')
 
-    def course_jmp(self, _ctx_expected=()):
+    def course_jmp(self):
         # <course-jmp>
         prod = self.get_production('<course-jmp>')
-        if prod == 391:
+        if prod == 634:
             self.eat('SAIL')
             self.eat('!!')
-        elif prod == 392:
+        elif prod == 635:
             self.eat('LAND')
             self.eat('!!')
-        elif prod == 393:
+        elif prod == 636:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<course-jmp>')
 
-    def course_tail(self, _ctx_expected=()):
+    def course_tail(self):
         # <course-tail>
         prod = self.get_production('<course-tail>')
-        if prod == 394:
+        if prod == 637:
             self.courses()
             self.course_tail()
-        elif prod == 395:
+        elif prod == 638:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<course-tail>')
 
-    def adrift_case(self, _ctx_expected=()):
+    def adrift_case(self):
         # <adrift-case>
         prod = self.get_production('<adrift-case>')
-        if prod == 396:
+        if prod == 639:
             self.eat('ADRIFT')
             self.eat(':')
-            self.adrift_body(_ctx_expected=('LAND',))
+            self.adrift_body()
             self.eat('LAND')
             self.eat('!!')
-        elif prod == 397:
+        elif prod == 640:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<adrift-case>')
 
-    def adrift_body(self, _ctx_expected=()):
+    def adrift_body(self):
         # <adrift-body>
         prod = self.get_production('<adrift-body>')
-        if prod == 398:
+        if prod == 641:
             self.statements()
             self.adrift_body()
-        elif prod == 399:
+        elif prod == 642:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<adrift-body>')
 
     def hoist_stmnt(self):
         # <hoist-stmnt>
         prod = self.get_production('<hoist-stmnt>')
-        if prod == 400:
+        if prod == 643:
             self.eat('HOIST')
             self.eat('(')
-            self.hoist_init(_ctx_expected=('!!',))
+            self.hoist_init()
             self.eat('!!')
             self.hoist_cond()
             self.eat('!!')
             self.hoist_upd()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
         else:
             self.error_invalid_token('<hoist-stmnt>')
 
-    def hoist_init(self, _ctx_expected=()):
+    def hoist_init(self):
         # <hoist-init>
         prod = self.get_production('<hoist-init>')
-        if prod == 401:
+        if prod == 644:
             self.eat('COIN')
             self.eat('id')
             self.eat('=')
             self.eat('COIN-lit')
             self.init1_mult()
-        elif prod == 402:
+        elif prod == 645:
             self.eat('id')
-            self.arr_str(_ctx_expected=('=',))
+            self.arr_str()
             self.eat('=')
             self.eat('COIN-lit')
             self.init2_mult()
-        elif prod == 403:
+        elif prod == 646:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<hoist-init>')
 
-    def init1_mult(self, _ctx_expected=()):
+    def init1_mult(self):
         # <init1-mult>
         prod = self.get_production('<init1-mult>')
-        if prod == 404:
+        if prod == 647:
             self.eat(',')
             self.eat('id')
             self.eat('=')
             self.eat('COIN-lit')
             self.init1_mult()
-        elif prod == 405:
+        elif prod == 648:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<init1-mult>')
 
-    def init2_mult(self, _ctx_expected=()):
+    def init2_mult(self):
         # <init2-mult>
         prod = self.get_production('<init2-mult>')
-        if prod == 406:
+        if prod == 649:
             self.eat(',')
             self.eat('id')
-            self.arr_str(_ctx_expected=('=',))
+            self.arr_str()
             self.eat('=')
             self.eat('COIN-lit')
             self.init2_mult()
-        elif prod == 407:
+        elif prod == 650:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<init2-mult>')
 
     def hoist_cond(self):
         # <hoist-cond>
         prod = self.get_production('<hoist-cond>')
-        if prod == 408:
-            self.dime_ope()
-            self.bool_arith(_ctx_expected=('!=', '<', '<=', '==', '>', '>='))
+        if prod == 651:
+            self.dime_val()
+            self.bool_arith()
             self.releq_op()
-            self.dime_ope()
-            self.bool_arith3(_ctx_expected=('&&', '||'))
+            self.dime_val()
+            self.bool_arith3_grp()
             self.hoist_log()
         else:
             self.error_invalid_token('<hoist-cond>')
@@ -2834,30 +3980,28 @@ class Parser:
     def releq_op(self):
         # <releq-op>
         prod = self.get_production('<releq-op>')
-        if prod == 409:
+        if prod == 652:
             self.rel_op()
-        elif prod == 410:
+        elif prod == 653:
             self.eq_op()
         else:
             self.error_invalid_token('<releq-op>')
 
-    def hoist_log(self, _ctx_expected=()):
+    def hoist_log(self):
         # <hoist-log>
         prod = self.get_production('<hoist-log>')
-        if prod == 411:
+        if prod == 654:
             self.log_op()
             self.hoist_cond()
-        elif prod == 412:
+        elif prod == 655:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<hoist-log>')
 
     def hoist_upd(self):
         # <hoist-upd>
         prod = self.get_production('<hoist-upd>')
-        if prod == 413:
+        if prod == 656:
             self.upd()
             self.upd_mult()
         else:
@@ -2866,60 +4010,41 @@ class Parser:
     def upd(self):
         # <upd>
         prod = self.get_production('<upd>')
-        if prod == 414:
-            self.hoist_unary()
-        elif prod == 415:
-            self.hoist_assign()
-        else:
-            self.error_invalid_token('<upd>')
-
-    def hoist_unary(self):
-        # <hoist-unary>
-        prod = self.get_production('<hoist-unary>')
-        if prod == 416:
+        if prod == 657:
             self.unary_op()
             self.eat('id')
             self.arr_str()
-        else:
-            self.error_invalid_token('<hoist-unary>')
-
-    def hoist_assign(self):
-        # <hoist-assign>
-        prod = self.get_production('<hoist-assign>')
-        if prod == 417:
+        elif prod == 658:
             self.eat('id')
-            self.arr_str(_ctx_expected=('%=', '*=', '+=', '-=', '/=', '^='))
+            self.arr_str()
             self.arith_assign_op()
-            self.coin_ope()
-            self.coin_arith()
+            self.dime_grp_val()
         else:
-            self.error_invalid_token('<hoist-assign>')
+            self.error_invalid_token('<upd>')
 
-    def upd_mult(self, _ctx_expected=()):
+    def upd_mult(self):
         # <upd-mult>
         prod = self.get_production('<upd-mult>')
-        if prod == 418:
+        if prod == 659:
             self.eat(',')
             self.upd()
             self.upd_mult()
-        elif prod == 419:
+        elif prod == 660:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<upd-mult>')
 
     def heave_stmnt(self):
         # <heave-stmnt>
         prod = self.get_production('<heave-stmnt>')
-        if prod == 420:
+        if prod == 661:
             self.eat('HEAVE')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
         else:
             self.error_invalid_token('<heave-stmnt>')
@@ -2927,11 +4052,11 @@ class Parser:
     def haul_stmnt(self):
         # <haul-stmnt>
         prod = self.get_production('<haul-stmnt>')
-        if prod == 421:
+        if prod == 662:
             self.eat('HAUL')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.eat('HEAVE')
             self.eat('(')
@@ -2944,7 +4069,7 @@ class Parser:
     def unary_exp(self):
         # <unary-exp>
         prod = self.get_production('<unary-exp>')
-        if prod == 422:
+        if prod == 663:
             self.unary_op()
             self.eat('id')
             self.arr_str()
@@ -2954,75 +4079,68 @@ class Parser:
     def unary_op(self):
         # <unary-op>
         prod = self.get_production('<unary-op>')
-        if prod == 423:
+        if prod == 664:
             self.eat('+#')
-        elif prod == 424:
+        elif prod == 665:
             self.eat('-#')
         else:
             self.error_invalid_token('<unary-op>')
 
-    def ahoy_local_dec(self, _ctx_expected=()):
+    def ahoy_local_dec(self):
         # <ahoy-local-dec>
         prod = self.get_production('<ahoy-local-dec>')
-        if prod == 425:
+        if prod == 666:
             self.var_arr()
-            self.eat('!!')
             self.ahoy_local_dec()
-        elif prod == 426:
+        elif prod == 667:
             self.ahoy_struct_dec()
-        elif prod == 427:
+        elif prod == 668:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<ahoy-local-dec>')
 
-    def ahoy_struct_dec(self, _ctx_expected=()):
+    def ahoy_struct_dec(self):
         # <ahoy-struct-dec>
         prod = self.get_production('<ahoy-struct-dec>')
-        if prod == 428:
+        if prod == 669:
             self.eat('MAST')
             self.eat('id')
             self.eat('id')
-            self.str_dec_init(_ctx_expected=('!!',))
+            self.str_dec_init()
             self.eat('!!')
             self.ahoy_struct_dec()
-        elif prod == 429:
+        elif prod == 670:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<ahoy-struct-dec>')
 
     def ahoy_stmnts(self):
         # <ahoy-stmnts>
         prod = self.get_production('<ahoy-stmnts>')
-        if prod == 430:
+        if prod == 671:
             self.ahoy_stmnt()
             self.ahoy_tail()
         else:
             self.error_invalid_token('<ahoy-stmnts>')
 
-    def ahoy_tail(self, _ctx_expected=()):
+    def ahoy_tail(self):
         # <ahoy-tail>
         prod = self.get_production('<ahoy-tail>')
-        if prod == 431:
+        if prod == 672:
             self.ahoy_stmnts()
-        elif prod == 432:
+        elif prod == 673:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<ahoy-tail>')
 
     def ahoy_stmnt(self):
         # <ahoy-stmnt>
         prod = self.get_production('<ahoy-stmnt>')
-        if prod == 433:
+        if prod == 674:
             self.eat('id')
             self.assign_tail()
             self.eat('!!')
-        elif prod == 434:
+        elif prod == 675:
             self.eat('ASK')
             self.eat('(')
             self.eat('SCROLL-lit')
@@ -3030,94 +4148,92 @@ class Parser:
             self.addr()
             self.eat(')')
             self.eat('!!')
-        elif prod == 435:
+        elif prod == 676:
             self.eat('ECHO')
             self.eat('(')
             self.eat('SCROLL-lit')
-            self.args_mult(_ctx_expected=(')',))
+            self.args_mult()
             self.eat(')')
             self.eat('!!')
-        elif prod == 436:
+        elif prod == 677:
             self.eat('LOOK')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.ahoy_look_tail()
-        elif prod == 437:
+        elif prod == 678:
             self.eat('CHART')
             self.eat('(')
             self.chart_cond()
             self.eat(')')
             self.eat('[')
             self.courses()
-            self.course_tail(_ctx_expected=('ADRIFT', ']'))
-            self.adrift_case(_ctx_expected=(']',))
+            self.course_tail()
+            self.adrift_case()
             self.eat(']')
-        elif prod == 438:
+        elif prod == 679:
             self.eat('HOIST')
             self.eat('(')
-            self.hoist_init(_ctx_expected=('!!',))
+            self.hoist_init()
             self.eat('!!')
             self.hoist_cond()
             self.eat('!!')
             self.hoist_upd()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-        elif prod == 439:
+        elif prod == 680:
             self.eat('HEAVE')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-        elif prod == 440:
+        elif prod == 681:
             self.eat('HAUL')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.eat('HEAVE')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('!!')
-        elif prod == 441:
+        elif prod == 682:
             self.unary_exp()
             self.eat('!!')
         else:
             self.error_invalid_token('<ahoy-stmnt>')
 
-    def ahoy_look_tail(self, _ctx_expected=()):
+    def ahoy_look_tail(self):
         # <ahoy-look-tail>
         prod = self.get_production('<ahoy-look-tail>')
-        if prod == 442:
+        if prod == 683:
             self.eat('DROPLOOK')
             self.eat('(')
             self.condition()
             self.eat(')')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
             self.ahoy_look_tail()
-        elif prod == 443:
+        elif prod == 684:
             self.eat('DROP')
             self.eat('[')
-            self.look_body(_ctx_expected=('LAND', 'SAIL', ']'))
-            self.jump_stmnt(_ctx_expected=(']',))
+            self.look_body()
+            self.jump_stmnt()
             self.eat(']')
-        elif prod == 444:
+        elif prod == 685:
             pass  # Lambda
         else:
-            if _ctx_expected:
-                self.error_invalid_token_ctx(_ctx_expected)
-            # else: no following context — silent lambda (Blind Lambda Trick)
+            self.error_invalid_token('<ahoy-look-tail>')

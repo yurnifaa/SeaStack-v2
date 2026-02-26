@@ -1,0 +1,685 @@
+1	<program>	<global-dec> AHOY() [ <ahoy-local-dec> <ahoy-stmnts> ]
+2	<global-dec>	<var-arr-func> 
+3	<global-dec>	<const><global-dec>
+4	<global-dec>	<struct><sub-func>
+5	<global-dec>	<nonreturn-func> 
+6	<global-dec>	λ
+7	<var-arr-func> 	COIN id <coin-var-arr-func>
+8	<var-arr-func> 	DIME id <dime-var-arr-func>
+9	<var-arr-func> 	PARCH id <parch-var-arr-func>
+10	<var-arr-func> 	SCROLL id <scroll-var-arr-func>
+11	<var-arr-func> 	BOOL id <bool-var-arr-func>
+12	<coin-var-arr-func>	<coin-var-arr>!! <global-dec>
+13	<coin-var-arr-func>	<coin-func>
+14	<coin-var-arr>	<coin-var>
+15	<coin-var-arr>	<coin-arr>
+16	<coin-var>	<coin-init><coin-init-mult>
+17	<coin-init>	=<coin-val><coin-exp>
+18	<coin-init>	λ
+19	<coin-init-mult>	, id <coin-init><coin-init-mult>
+20	<coin-init-mult>	λ
+21	<coin-val>	COIN-lit
+22	<coin-val>	<neg><neg-coin-val>
+23	<neg>	- 
+24	<neg>	λ
+25	<neg-coin-val>	id<id-tail>
+26	<neg-coin-val>	(<coin-val-grp>)
+27	<coin-exp>	<coin-arith><coin-exp>
+28	<coin-exp>	λ
+29	<coin-arith>	<arith-op><coin-val>
+30	<coin-val-grp>	<coin-val><coin-exp-grp>
+31	<coin-grp-exp>	<coin-arith><coin-grp-exp>
+32	<coin-grp-exp>	λ
+33	<arith-op>	+
+34	<arith-op>	-
+35	<arith-op>	*
+36	<arith-op>	/
+37	<arith-op>	%
+38	<arith-op>	^
+39	<coin-arr>	{COIN-lit} <coin-arr-tail>
+40	<coin-arr-tail>	=[<coin-arr1>]
+41	<coin-arr-tail>	{COIN-lit}<coin-arr2-tail>
+42	<coin-arr-tail>	λ
+43	<coin-arr1>	<coin-arr-val><cav-tail>
+44	<coin-arr-val>	<coin-val><coin-arr-exp>
+45	<coin-arr-exp>	<coin-arith><coin-arr-exp>
+46	<coin-arr-exp>	λ
+47	<cav-tail>	, <coin-arr1>
+48	<cav-tail>	λ
+49	<coin-arr2-tail>	=[<coin-arr2>]
+50	<coin-arr2-tail>	λ
+51	<coin-arr2>	[<coin-arr1>]<cav2-tail>
+52	<cav2-tail>	, <coin-arr2>
+53	<cav2-tail>	λ
+54	<coin-func>	(<params>) [ <local-dec> <ret-stmnts> BACK <coin-ret-val>!! ] <sub-func>
+55	<coin-ret-val>	<coin-val><coin-ret-exp>
+56	<coin-ret-exp>	<coin-arith><coin-ret-exp>
+57	<coin-ret-exp>	λ
+58	<dime-var-arr-func>	<dime-var-arr>!! <global-dec>
+59	<dime-var-arr-func>	<dime-func>
+60	<dime-var-arr>	<dime-var>
+61	<dime-var-arr>	<dime-arr>
+62	<dime-var>	<dime-init><dime-init-mult>
+63	<dime-init>	=<dime-init-val>
+64	<dime-init>	λ
+65	<dime-init-mult>	, id <dime-init><dime-init-mult>
+66	<dime-init-mult>	λ
+67	<dime-init-val>	<dime-val><dime-exp>
+68	<dime-val>	DIME-lit
+69	<dime-val>	COIN-lit
+70	<dime-val>	<neg><neg-dime-val>
+71	<neg-dime-val>	id<id-tail>
+72	<neg-dime-val>	(<dime-grp-val>)
+73	<dime-exp>	<dime-arith><dime-exp>
+74	<dime-exp>	λ
+75	<dime-arith>	<arith-op><dime-val>
+76	<dime-grp-val>	<dime-val><dime-grp-exp>
+77	<dime-grp-exp>	<dime-arith><dime-grp-exp>
+78	<dime-grp-exp>	λ
+79	<dime-arr>	{COIN-lit}<dime-arr-tail>
+80	<dime-arr-tail>	=[<dime-arr1>]
+81	<dime-arr-tail>	{COIN-lit}<dime-arr2-tail>
+82	<dime-arr-tail>	λ
+83	<dime-arr1>	<dime-arr-val><dav-tail>
+84	<dime-arr-val>	<dime-val><dime-arr-exp>
+85	<dime-arr-exp>	<dime-arith><dime-arr-exp>
+86	<dime-arr-exp>	λ
+87	<dav-tail>	, <dime-arr1>
+88	<dav-tail>	λ
+89	<dime-arr2-tail>	=[<dime-arr2>]
+90	<dime-arr2-tail>	λ
+91	<dime-arr2>	[<dime-arr1>]<dav2-tail>
+92	<dav2-tail>	, <dime-arr2>
+93	<dav2-tail>	λ
+94	<dime-func>	(<params>) [ <local-dec> <ret-stmnts> BACK <dime-ret-val>!! ] <sub-func>
+95	<dime-ret-val>	<dime-val><dime-ret-exp>
+96	<dime-ret-exp>	<dime-arith><dime-ret-exp>
+97	<dime-ret-exp>	λ
+98	<parch-var-arr-func>	<parch-var-arr>!! <global-dec>
+99	<parch-var-arr-func>	<parch-func>
+100	<parch-var-arr>	<parch-var>
+101	<parch-var-arr>	<parch-arr>
+102	<parch-var>	<parch-init><parch-init-mult>
+103	<parch-init>	=<parch-val>
+104	<parch-init>	λ
+105	<parch-init-mult>	, id <parch-init><parch-init-mult>
+106	<parch-init-mult>	λ
+107	<parch-val>	PARCH-lit
+108	<parch-val>	id<id-tail>
+109	<parch-arr>	{COIN-lit}<parch-arr-tail>
+110	<parch-arr-tail>	=[<parch-arr1>] 
+111	<parch-arr-tail>	{COIN-lit}<parch-arr2-tail>
+112	<parch-arr-tail>	λ
+113	<parch-arr1>	<parch-val><pav-tail>
+114	<pav-tail>	, <parch-arr1>
+115	<pav-tail>	λ
+116	<parch-arr2-tail>	=[<parch-arr2>] 
+117	<parch-arr2-tail>	λ
+118	<parch-arr2>	[<parch-arr1>]<pav2-tail>
+119	<pav2-tail>	, <parch-arr2>
+120	<pav2-tail>	λ
+121	<parch-func>	(<params>) [ <local-dec> <ret-stmnts> BACK <parch-val>!! ] <sub-func>
+122	<scroll-var-arr-func>	<scroll-var-arr>!! <global-dec>
+123	<scroll-var-arr-func>	<scroll-func><sub-func>
+124	<scroll-var-arr>	<scroll-var>
+125	<scroll-var-arr>	<scroll-arr>
+126	<scroll-var>	<scroll-init><scroll-init-mult>
+127	<scroll-init>	=<scroll-init-val> 
+128	<scroll-init>	λ
+129	<scroll-init-mult>	, id <scroll-init><scroll-init-mult>
+130	<scroll-init-mult>	λ
+131	<scroll-init-val>	<scroll-val><scroll-exp>
+132	<scroll-val>	SCROLL-lit<scr-char>
+133	<scroll-val>	id<id-tail>
+134	<scroll-val>	(<scroll-grp-val>)
+135	<scr-char>	{<index>}
+136	<scr-char>	λ
+137	<index>	id
+138	<index>	COIN-lit
+139	<scroll-exp>	<scroll-concat><scroll-exp>
+140	<scroll-exp>	λ
+141	<scroll-concat>	& <scroll-val>
+142	<scroll-grp-val>	<scroll-val><scroll-grp-exp>
+143	<scroll-grp-exp>	<scroll-concat><scroll-grp-exp>
+144	<scroll-grp-exp>	λ
+145	<scroll-arr>	{COIN-lit}<scroll-arr-tail>
+146	<scroll-arr-tail>	=[<scroll-arr1>] 
+147	<scroll-arr-tail>	{COIN-lit}<scroll-arr2-tail>
+148	<scroll-arr-tail>	λ
+149	<scroll-arr1>	<scroll-arr-val><sav-tail>
+150	<scroll-arr-val>	<scroll-val><scroll-arr-exp>
+151	<scroll-arr-exp>	<scroll-concat><scroll-arr-exp>
+152	<scroll-arr-exp>	λ
+153	<sav-tail>	, <scroll-arr1>
+154	<sav-tail>	λ
+155	<scroll-arr2-tail>	=[<scroll-arr2>]
+156	<scroll-arr2-tail>	λ
+157	<scroll-arr2>	[<scroll-arr1>]<sav2-tail>
+158	<sav2-tail>	, <scroll-arr2>
+159	<sav2-tail>	λ
+160	<scroll-func>	(<params>) [ <local-dec> <ret-stmnts> BACK <scroll-ret-val>!! ] <sub-func>
+161	<scroll-ret-val>	<scroll-val><scroll-ret-exp>
+162	<scroll-ret-exp>	<scroll-concat><scroll-ret-exp>
+163	<scroll-ret-exp>	λ
+164	<bool-var-arr-func>	<bool-var-arr>!! <global-dec>
+165	<bool-var-arr-func>	<bool-func>
+166	<bool-var-arr>	<bool-var>
+167	<bool-var-arr>	<bool-arr>
+168	<bool-var>	<bool-init><bool-init-mult>
+169	<bool-init>	=<bool-init-val>
+170	<bool-init>	λ
+171	<bool-init-mult>	, id <bool-init><bool-init-mult>
+172	<bool-init-mult>	λ
+173	<bool-init-val>	<bool-val><bool-exp>
+174	<bool-val>	id<id-tail><bool-exp2>
+175	<bool-val>	(<value-grp>)<bool-exp2>
+176	<bool-val>	<bool><bool-eq>
+177	<bool-val>	<digit><bool-arith><rel-eq>
+178	<bool-val>	PARCH-lit<eq-op><parch-val>
+179	<bool-val>	SCROLL-lit<scr-char><eq-op><scroll-val>
+180	<bool>	<bool-lit>
+181	<bool>	<not-op><not-ope>
+182	<bool-lit>	AYE
+183	<bool-lit>	NAY
+184	<not-op>	!
+185	<not-op>	!#
+186	<not-ope>	id<id-tail>
+187	<not-ope>	(<bool-grp-val>)
+188	<not-ope>	<bool-lit>
+189	<bool-eq>	<eq-op><bool-val>
+190	<bool-eq>	λ
+191	<digit>	COIN-lit
+192	<digit>	DIME-lit
+193	<digit>	-<neg-digit>
+194	<neg-digit>	id<id-tail>
+195	<neg-digit>	(<dime-grp-val>)
+196	<bool-arith>	<dime-arith><bool-arith>
+197	<bool-arith>	λ
+198	<rel-eq>	<rel><bool-arith2><bool-eq>
+199	<rel-eq>	<eq-digit><bool-arith3>
+200	<rel>	<rel-op><dime-val>
+201	<rel-op>	<
+202	<rel-op>	>
+203	<rel-op>	<=
+204	<rel-op>	>=
+205	<bool-arith2>	<dime-arith><bool-arith2>
+206	<bool-arith2>	λ
+207	<eq-digit>	<eq-op><dime-val>
+208	<eq-op>	==
+209	<eq-op>	!=
+210	<bool-arith3>	<dime-arith><bool-arith3>
+211	<bool-arith3>	λ
+212	<bool-exp2>	<arith><bool-arith><rel-eq>
+213	<bool-exp2>	<rel><bool-arith2><bool-eq>
+214	<bool-exp2>	<eq-op><eq-ope>
+215	<bool-exp2>	λ
+216	<eq-ope>	id<id-tail><bool-arith4><bool-rel>
+217	<eq-ope>	(<value-grp>)<bool-arith4><bool-rel>
+218	<eq-ope>	<digit><bool-arith4><bool-rel>
+219	<eq-ope>	<eq-ope1>
+220	<eq-ope1>	PARCH-lit
+221	<eq-ope1>	SCROLL-lit<scr-char>
+222	<eq-ope1>	<bool>
+223	<bool-arith4>	<dime-arith><bool-arith4>
+224	<bool-arith4>	λ
+225	<bool-rel>	<rel><bool-arith3>
+226	<bool-rel>	λ
+227	<bool-exp>	<log-op><bool-val><bool-exp>
+228	<bool-exp>	λ
+229	<log-op>	||
+230	<log-op>	&&
+231	<bool-grp-val>	<bool-ope-grp><bool-exp-grp>
+232	<bool-ope-grp>	id<id-tail><bool-exp2-grp>
+233	<bool-ope-grp>	(<value-grp>)<bool-exp2-grp>
+234	<bool-ope-grp>	<bool><bool-eq-grp>
+235	<bool-ope-grp>	<digit><bool-arith><releq-grp>
+236	<bool-ope-grp>	PARCH-lit<eq-op><parch-val>
+237	<bool-ope-grp>	SCROLL-lit<scr-char><eq-op><scroll-val>
+238	<bool-eq-grp>	<eq-op><bool-ope-grp>
+239	<bool-eq-arr>	λ
+240	<releq-grp>	<rel><bool-arith2-grp><bool-eq-grp>
+241	<releq-grp>	<eq-digit><bool-arith3-grp>
+242	<bool-arith2-grp>	<dime-arith><bool-arith2-grp>
+243	<bool-arith2-grp>	λ
+244	<bool-arith3-grp>	<dime-arith><bool-arith3-grp>
+245	<bool-arith3-grp>	λ
+246	<bool-exp2-grp>	<arith><bool-arith><releq-grp>
+247	<bool-exp2-grp>	<rel><bool-arith2-grp><bool-eq-grp>
+248	<bool-exp2-grp>	<eq-op><eq-ope-grp>
+249	<bool-exp2-grp>	λ
+250	<eq-ope-grp>	id<id-tail><bool-arith4-grp><bool-rel-grp>
+251	<eq-ope-grp>	(<value-grp>)<bool-arith4-grp><bool-rel-grp>
+252	<eq-ope-grp>	<digit><bool-arith4-grp><bool-rel-grp>
+253	<eq-ope-grp>	<eq-ope1>
+254	<bool-arith4-grp>	<dime-arith><bool-arith4-grp>
+255	<bool-arith4-grp>	λ
+256	<bool-rel-grp>	<rel><bool-arith3-grp>
+257	<bool-rel-grp>	λ
+258	<bool-exp-grp>	<log-op><bool-ope-grp><bool-exp-grp>
+259	<bool-exp-grp>	λ
+260	<bool-arr>	{COIN-lit}<bool-arr-tail>
+261	<bool-arr-tail>	=[<bool-arr1>]
+262	<bool-arr-tail>	{COIN-lit}<bool-arr2-tail>
+263	<bool-arr-tail>	λ
+264	<bool-arr1>	<bool-arr-val><bav-tail>
+265	<bav-tail>	, <bool-arr1>
+266	<bav-tail>	λ
+267	<bool-arr-val>	<bool-ope-arr><bool-exp-arr>
+268	<bool-ope-arr>	id<id-tail><bool-exp2-arr>
+269	<bool-ope-arr>	(<value-grp>)<bool-exp2-arr>
+270	<bool-ope-arr>	<bool><bool-eq-arr>
+271	<bool-ope-arr>	<digit><bool-arith><releq-arr>
+272	<bool-ope-arr>	PARCH-lit<eq-op><parch-val>
+273	<bool-ope-arr>	SCROLL-lit<scr-char><eq-op><scroll-val>
+274	<bool-eq-arr>	<eq-op><bool-ope-arr>
+275	<bool-eq-arr>	λ
+276	<releq-arr>	<rel><bool-arith2-arr><bool-eq-arr>
+277	<releq-arr>	<eq-digit><bool-arith3-arr>
+278	<bool-arith2-arr>	<dime-arith><bool-arith2-arr>
+279	<bool-arith2-arr>	λ
+280	<bool-arith3-arr>	<dime-arith><bool-arith3-arr>
+281	<bool-arith3-arr>	λ
+282	<bool-exp2-arr>	<arith><bool-arith><releq-arr>
+283	<bool-exp2-arr>	<rel><bool-arith2-arr><bool-eq-arr>
+284	<bool-exp2-arr>	<eq-op><eq-ope-arr>
+285	<bool-exp2-arr>	λ
+286	<eq-ope-arr>	id<id-tail><bool-arith4-arr><bool-rel-arr>
+287	<eq-ope-arr>	(<value-grp>)<bool-arith4-arr><bool-rel-arr>
+288	<eq-ope-arr>	<digit><bool-arith4-arr><bool-rel-arr>
+289	<eq-ope-arr>	<eq-ope1>
+290	<bool-arith4-arr>	<dime-arith><bool-arith4-arr>
+291	<bool-arith4-arr>	λ
+292	<bool-rel-arr>	<rel><bool-arith3-arr>
+293	<bool-rel-arr>	λ
+294	<bool-exp-arr>	<log-op><bool-ope-arr><bool-exp-arr>
+295	<bool-exp-arr>	λ
+296	<bool-arr2-tail>	=[<bool-arr2>]
+297	<bool-arr2-tail>	λ
+298	<bool-arr2>	[<bool-arr1>]<bav2-tail>
+299	<bav2-tail>	, <bool-arr2>
+300	<bav2-tail>	λ
+301	<bool-func>	(<params>) [ <local-dec> <ret-stmnts> BACK <bool-ret-val>!! ] <sub-func>
+302	<bool-ret-val>	<bool-ope-ret><bool-exp-ret>
+303	<bool-ope-ret>	id<id-tail><bool-exp2-ret>
+304	<bool-ope-ret>	(<value-grp>)<bool-exp2-ret>
+305	<bool-ope-ret>	<bool><bool-eq-ret>
+306	<bool-ope-ret>	<digit><bool-arith><releq-ret>
+307	<bool-ope-ret>	PARCH-lit<eq-op><parch-val>
+308	<bool-ope-ret>	SCROLL-lit<scr-char><eq-op><scroll-val>
+309	<bool-eq-ret>	<eq-op><bool-ope-ret>
+310	<bool-eq-ret>	λ
+311	<releq-ret>	<rel><bool-arith2-ret><bool-eq-ret>
+312	<releq-ret>	<eq-digit><bool-arith3-ret>
+313	<bool-arith2-ret>	<dime-arith><bool-arith2-ret>
+314	<bool-arith2-ret>	λ
+315	<bool-arith3-ret>	<dime-arith><bool-arith3-ret>
+316	<bool-arith3-ret>	λ
+317	<bool-exp2-ret>	<arith><bool-arith><releq-ret>
+318	<bool-exp2-ret>	<rel><bool-arith2-ret><bool-eq-ret>
+319	<bool-exp2-ret>	<eq-op><eq-ope-ret>
+320	<bool-exp2-ret>	λ
+321	<eq-ope-ret>	id<id-tail><bool-arith4-ret><bool-rel-ret>
+322	<eq-ope-ret>	(<value-grp>)<bool-arith4-ret><bool-rel-ret>
+323	<eq-ope-ret>	<digit><bool-arith4-ret><bool-rel-ret>
+324	<eq-ope-ret>	<eq-ope1>
+325	<bool-arith4-ret>	<dime-arith><bool-arith4-ret>
+326	<bool-arith4-ret>	λ
+327	<bool-rel-ret>	<rel><bool-arith3-ret>
+328	<bool-rel-ret>	λ
+329	<bool-exp-ret>	<log-op><bool-ope-ret><bool-exp-ret>
+330	<bool-exp-ret>	λ
+331	<params>	<d-type> id <param-mult>
+332	<params>	λ
+333	<param-mult>	, <params>
+334	<param-mult>	λ
+335	<d-type>	COIN
+336	<d-type>	DIME
+337	<d-type>	PARCH
+338	<d-type>	SCROLL
+339	<d-type>	BOOL
+340	<ret-stmnts>	<statements><ret-stmnts>
+341	<ret-stmnts>	λ
+342	<id-tail>	{<index>}<elmt2>
+343	<id-tail>	$id
+344	<id-tail>	(<args>)
+345	<id-tail>	λ
+346	<elmt2>	{<index>}
+347	<elmt2>	λ
+348	<args>	<value><args-mult>
+349	<args>	λ
+350	<args-mult>	, <args>
+351	<args-mult>	λ
+352	<value>	id<id-tail><exp>
+353	<value>	(<value-grp>)<exp>
+354	<value>	<digit><digit-tail>
+355	<value>	PARCH-lit<parch-tail>
+356	<value>	SCROLL-lit<scr-char><scroll-tail>
+357	<value>	<bool><logeq-var>
+358	<digit-tail>	<arith-var><releq-var>
+359	<digit-tail>	λ
+360	<arith-var>	<dime-arith><arith-var>
+361	<arith-var>	λ
+362	<releq-var>	<rel><arith-var2><logeq-var>
+363	<releq-var>	<eq-digit><arith-var3><log-var>
+364	<releq-var>	λ
+365	<arith-var2>	<dime-arith><arith-var2>
+366	<arith-var2>	λ
+367	<arith-var3>	<dime-arith><arith-var3>
+368	<arith-var3>	λ
+369	<logeq-var>	<logeq-op><log-ope><log-var>
+370	<logeq-var>	λ
+371	<logeq-op>	<log-op>
+372	<logeq-op>	<eq-op>
+373	<log-var>	<log-op><log-ope><log-var>
+374	<log-var>	λ
+375	<parch-tail>	<eq-op>PARCH-lit<log-var>
+376	<parch-tail>	λ
+377	<scroll-tail>	<concat-var>
+378	<scroll-tail>	<eq-op><scroll-val><log-var>
+379	<scroll-tail>	λ
+380	<concat-var>	& <scroll-val> <concat-var>
+381	<concat-var>	λ
+382	<exp>	<arith><arith-var><releq-var>
+383	<exp>	<rel><arith-var2><logeq-var>
+384	<exp>	<log-op><log-ope><log-var>
+385	<exp>	<eq-op><eq-var><log-var>
+386	<exp>	& <scroll-val><scroll-var>
+387	<exp>	λ
+388	<log-ope>	id<id-tail><log-exp>
+389	<log-ope>	(<value-grp>)<log-exp>
+390	<log-ope>	<bool><log-booleq>
+391	<log-ope>	<digit><bool-arith><log-releq>
+392	<log-ope>	PARCH-lit<eq-op><parch-val>
+393	<log-ope>	SCROLL-lit<scr-char><eq-op><scroll-val>
+394	<log-booleq>	<eq-op><log-ope>
+395	<log-booleq>	λ
+396	<log-releq>	<rel><arith-var2><log-booleq>
+397	<log-releq>	<eq-digit><arith-var3>
+398	<log-exp>	<arith><arith-var><log-releq>
+399	<log-exp>	<rel><arith-var2><log-booleq>
+400	<log-exp>	<eq-op><eq-var>
+401	<log-exp>	λ
+402	<eq-var>	id<id-tail><arith-var4><rel-var>
+403	<eq-var>	(<value-grp>)<arith-var4><rel-var>
+404	<eq-var>	<digit><arith-var4><rel-var>
+405	<eq-var>	<eq-ope1>
+406	<arith-var4>	<dime-arith><arith-var4>
+407	<arith-var4>	λ
+408	<rel-var>	<rel><arith-var3>
+409	<rel-var>	λ
+410	<value-grp>	id<id-tail><exp-grp>
+411	<value-grp>	(<value-grp>)<exp-grp>
+412	<value-grp>	<digit><digit-tail-grp>
+413	<value-grp>	PARCH-lit<parch-tail-grp>
+414	<value-grp>	SCROLL-lit<scr-char><scroll-tail-grp>
+415	<value-grp>	<bool><logeq-grp>
+416	<digit-tail-grp>	<arith-grp><releq-grp>
+417	<digit-tail-grp>	λ
+418	<arith-grp>	<dime-arith><arith-grp>
+419	<arith-grp>	λ
+420	<releq-grp>	<rel><arith-grp2><logeq-grp>
+421	<releq-grp>	<eq-digit><arith-grp3><bool-exp-grp>
+422	<releq-grp>	λ
+423	<arith-grp2>	<dime-arith><arith-grp2>
+424	<arith-grp2>	λ
+425	<arith-grp3>	<dime-arith><arith-grp3>
+426	<arith-grp3>	λ
+427	<logeq-grp>	<logeq-op><bool-ope-grp><bool-exp-grp>
+428	<logeq-grp>	λ
+429	<parch-tail-grp>	<eq-op>PARCH-lit<bool-exp-grp>
+430	<parch-tail-grp>	λ
+431	<scroll-tail-grp>	<concat-str>
+432	<scroll-tail-grp>	<eq-op><scroll-val><bool-exp-grp>
+433	<scroll-tail-grp>	λ
+434	<concat-grp>	& <scroll-val> <concat-grp>
+435	<concat-grp>	λ
+436	<exp-grp>	<arith><arith-grp><releq-grp>
+437	<exp-grp>	<rel><arith-grp2><logeq-grp>
+438	<exp-grp>	<log-op><bool-ope-grp><bool-exp-grp>
+439	<exp-grp>	<eq-op><eq-ope-grp><bool-exp-grp>
+440	<exp-grp>	& <scroll-val><scroll-grp>
+441	<exp-grp>	λ
+442	<const>	LOCKE <const-init>!!
+443	<const-init>	COIN <coin-locke><coin-locke-mult>
+444	<const-init>	DIME <dime-locke><dime-locke-mult>
+445	<const-init>	PARCH <parch-locke><parch-locke-mult>
+446	<const-init>	SCROLL <scroll-locke><scroll-locke-mult>
+447	<const-init>	BOOL <bool-locke><bool-locke-mult>
+448	<coin-locke>	id = COIN-lit
+449	<coin-locke-mult>	, <coin-locke><coin-locke-mult>
+450	<coin-locke-mult>	λ
+451	<dime-locke>	id = <locke-digit>
+452	<locke-digit>	COIN-lit
+453	<locke-digit>	DIME-lit
+454	<dime-locke-mult>	, <dime-locke><dime-locke-mult>
+455	<dime-locke-mult>	λ
+456	<parch-locke>	id = PARCH-lit
+457	<parch-locke-mult>	, <parch-locke><parch-locke-mult>
+458	<parch-locke-mult>	λ
+459	<scroll-locke>	id = SCROLL-lit<scr-id>
+460	<scr-id>	{COIN-lit}
+461	<scr-id>	λ
+462	<scroll-locke-mult>	, <scroll-locke> <scroll-locke-mult>
+463	<scroll-locke-mult>	λ
+464	<bool-locke>	id = <locke-bool>
+465	<locke-bool>	AYE
+466	<locke-bool>	NAY
+467	<bool-locke-mult>	, <bool-locke> <bool-locke-mult>
+468	<bool-locke-mult>	λ
+469	<struct>	MAST id [    <mem-dec>    <mem-dec-tail> ] !! <struct>
+470	<struct>	λ
+471	<mem-dec>	<d-type> id <mem-mult>!! 
+472	<mem-mult>	, id <mem-mult>
+473	<mem-mult>	λ
+474	<mem-dec-tail>	<mem-dec> <mem-dec-tail>
+475	<mem-dec-tail>	λ
+476	<sub-func>	<return-func>
+477	<sub-func>	<nonreturn-func>
+478	<sub-func>	λ
+479	<return-func>	COIN id<coin-func>
+480	<return-func>	DIME id<dime-func>
+481	<return-func>	PARCH id<parch-func>
+482	<return-func>	SCROLL id<scroll-func>
+483	<return-func>	BOOL id<bool-func>
+484	<nonreturn-func>	ABYSS id (<params>) [   <ahoy-local-dec>   <nonret-stmnts>   <nonret-back> ] <sub-func>
+485	<nonret-stmnts>	<nonret-stmnt><nonret-tail>
+486	<nonret-tail>	<nonret-stmnts>
+487	<nonret-tail>	λ
+488	<nonret-back>	BACK!!
+489	<nonret-back>	λ
+490	<nonret-stmnt>	id<assign-tail>!!
+491	<nonret-stmnt>	ASK(SCROLL-lit, <addr>)!!
+492	<nonret-stmnt>	ECHO(SCROLL-lit<args-mult>)!!
+493	<nonret-stmnt>	LOOK(<condition>) [    <look-body>    <jump-stmnt> ] <nonret-look-tail>
+494	<nonret-stmnt>	CHART(<chart-cond>) [    <courses>    <course-tail>    <adrift-case> ]
+495	<nonret-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [    <look-body>    <jump-stmnt> ]
+496	<nonret-stmnt>	HEAVE (<condition>) [    <look-body>    <jump-stmnt> ]
+497	<nonret-stmnt>	HAUL [     <look-body>    <jump-stmnt> ] HEAVE (<condition>)!!
+498	<nonret-stmnt>	<unary-exp>!!
+499	<nonret-look-tail>	DROPLOOK(<condition>) [    <look-body>    <jump-stmnt> ] <nonret-look-tail>
+500	<nonret-look-tail>	DROP [    <look-body>    <jump-stmnt> ]
+501	<nonret-look-tail>	λ
+502	<local-dec>	<var-arr><local-dec>
+503	<local-dec>	<struct-dec>
+504	<local-dec>	λ
+505	<var-arr>	COIN id <coin-var-arr>!!
+506	<var-arr>	DIME id <dime-var-arr>!!
+507	<var-arr>	PARCH id <parch-var-arr>!!
+508	<var-arr>	SCROLL id <scroll-var-arr>!!
+509	<var-arr>	BOOL id <bool-var-arr>!!
+510	<struct-dec>	MAST id id <str-dec-init>!! <struct-dec>
+511	<struct-dec>	λ
+512	<str-dec-init>	, id <str-dec-tail>
+513	<str-dec-init>	=[<str-val><str-val-tail>]
+514	<str-dec-init>	λ
+515	<str-dec-tail>	, id <str-dec-tail>
+516	<str-dec-tail>	λ
+517	<str-val>	<value-str>
+518	<str-val>	$id = <value-str>
+519	<str-val-tail>	, <str-val> <str-val-tail>
+520	<str-val-tail>	λ
+521	<value-str>	id<id-tail><exp-str>
+522	<value-str>	(<value-grp>)<exp-str>
+523	<value-str>	<digit><digit-tail-str>
+524	<value-str>	PARCH-lit<parch-tail-str>
+525	<value-str>	SCROLL-lit<scr-char><scroll-tail-str>
+526	<value-str>	<bool><logeq-str>
+527	<digit-tail-str>	<arith-str><releq-str>
+528	<digit-tail-str>	λ
+529	<arith-str>	<dime-arith><arith-str>
+530	<arith-str>	λ
+531	<releq-str>	<rel><arith-str2><logeq-str>
+532	<releq-str>	<eq-digit><arith-str3><bool-exp-arr>
+533	<releq-str>	λ
+534	<arith-str2>	<dime-arith><arith-str2>
+535	<arith-str2>	λ
+536	<arith-str3>	<dime-arith><arith-str3>
+537	<arith-str3>	λ
+538	<logeq-str>	<logeq-op><log-ope-str><bool-exp-arr>
+539	<logeq-str>	λ
+540	<parch-tail-str>	<eq-op>PARCH-lit<bool-exp-arr>
+541	<parch-tail-str>	λ
+542	<scroll-tail-str>	<concat-str>
+543	<scroll-tail-str>	<eq-op><scroll-val><bool-exp-arr>
+544	<scroll-tail-str>	λ
+545	<concat-str>	& <scroll-val> <concat-str>
+546	<concat-str>	λ
+547	<exp-str>	<arith><arith-str><releq-str>
+548	<exp-str>	<rel><arith-str2><logeq-str>
+549	<exp-str>	<log-op><bool-ope-arr><bool-exp-arr>
+550	<exp-str>	<eq-op><eq-ope-arr><bool-exp-arr>
+551	<exp-str>	& <scroll-val><concat-str>
+552	<exp-str>	λ
+553	<statements>	<assign-stmnt> 
+554	<statements>	<ask-stmnt> 
+555	<statements>	<echo-stmnt> 
+556	<statements>	<look-stmnt> 
+557	<statements>	<chart-stmnt>
+558	<statements>	<hoist-stmnt> 
+559	<statements>	<heave-stmnt>
+560	<statements>	<haul-stmnt> 
+561	<statements>	<unary-exp>!!
+562	<assign-stmnt>	id<assign-tail>!!
+563	<assign-tail>	<arr-str><assign-body>
+564	<assign-tail>	(<args>)
+565	<arr-str>	{<index>}<arr-str-tail>
+566	<arr-str>	$id
+567	<arr-str>	λ
+568	<arr-str-tail>	{<index>}
+569	<arr-str-tail>	λ
+570	<assign-body>	= <value-as>
+571	<assign-body>	<arith-assign-op><dime-ret-val>
+572	<value-as>	id<id-tail><exp-as>
+573	<value-as>	(<var-grp>)<exp-as>
+574	<value-as>	<digit><digit-tail-as>
+575	<value-as>	PARCH-lit<parch-tail-as>
+576	<value-as>	SCROLL-lit<scr-char><scroll-tail-as>
+577	<value-as>	<bool><logeq-as>
+578	<digit-tail-as>	<arith-as><releq-as>
+579	<digit-tail-as>	λ
+580	<arith-as>	<dime-arith><arith-as>
+581	<arith-as>	λ
+582	<releq-as>	<rel><arith-as2><logeq-as>
+583	<releq-as>	<eq-digit><arith-as3><bool-exp-ret>
+584	<releq-as>	λ
+585	<arith-as2>	<dime-arith><arith-as2>
+586	<arith-as2>	λ
+587	<arith-as3>	<dime-arith><arith-as3>
+588	<arith-as3>	λ
+589	<logeq-as>	<logeq-op><bool-ope-ret><bool-exp-ret>
+590	<logeq-as>	λ
+591	<parch-tail-as>	<eq-op>PARCH-lit<log-as>
+592	<parch-tail-as>	λ
+593	<scroll-tail-as>	<concat-as>
+594	<scroll-tail-as>	<eq-op><scroll-val><bool-exp-ret>
+595	<scroll-tail-as>	λ
+596	<concat-as>	& <scroll-val> <concat-as>
+597	<concat-as>	λ
+598	<exp-as>	<arith><arith-as><releq-as>
+599	<exp-as>	<rel><arith-as2><logeq-as>
+600	<exp-as>	<log-op><bool-ope-ret><bool-exp-ret>
+601	<exp-as>	<eq-op><eq-ope-ret><bool-exp-ret>
+602	<exp-as>	& <scroll-val><concat-as>
+603	<exp-as>	λ
+604	<arith-assign-op>	+=
+605	<arith-assign-op>	-=
+606	<arith-assign-op>	*=
+607	<arith-assign-op>	/=
+608	<arith-assign-op>	%=
+609	<arith-assign-op>	^=
+610	<ask-stmnt>	ASK(SCROLL-lit, <addr>)!!
+611	<addr>	@id<arr-str><addr-tail>
+612	<addr-tail>	, <addr>
+613	<addr-tail>	λ
+614	<echo-stmnt>	ECHO(SCROLL-lit<args-mult>)!!
+615	<look-stmnt>	LOOK(<condition>) [    <look-body>    <jump-stmnt> ] <look-tail>
+616	<condition>	<bool-grp-val>
+617	<look-body>	<statements><look-body>
+618	<look-body>	λ
+619	<jump-stmnt>	SAIL!!
+620	<jump-stmnt>	LAND!!
+621	<jump-stmnt>	λ
+622	<look-tail>	DROPLOOK(<condition>) [    <look-body>    <jump-stmnt> ] <look-tail>
+623	<look-tail>	DROP [    <look-body>    <jump-stmnt> ]
+624	<look-tail>	λ
+625	<chart-stmnt>	CHART(<chart-cond>) [    <courses>    <course-tail>    <adrift-case> ]
+626	<chart-cond>	id<id-tail>
+627	<chart-cond>	<chart-const>
+628	<chart-const>	COIN-lit
+629	<chart-const>	PARCH-lit
+630	<chart-const>	SCROLL-lit<scr-id>
+631	<courses>	COURSE <chart-const>:    <course-body>    <course-jmp>
+632	<course-body>	<statements><course-body>
+633	<course-body>	λ
+634	<course-jmp>	SAIL!!
+635	<course-jmp>	LAND!!
+636	<course-jmp>	λ
+637	<course-tail>	<courses><course-tail>
+638	<course-tail>	λ
+639	<adrift-case>	ADRIFT:    <adrift-body>    LAND!!
+640	<adrift-case>	λ
+641	<adrift-body>	<statements><adrift-body>
+642	<adrift-body>	λ
+643	<hoist-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [    <look-body>    <jump-stmnt> ]
+644	<hoist-init>	COIN id = COIN-lit <init1-mult>
+645	<hoist-init>	id<arr-str> = COIN-lit <init2-mult>
+646	<hoist-init>	λ
+647	<init1-mult>	, id = COIN-lit <init1-mult>
+648	<init1-mult>	λ
+649	<init2-mult>	, id<arr-str> = COIN-lit <init2-mult>
+650	<init2-mult>	λ
+651	<hoist-cond>	<dime-val><bool-arith><releq-op><dime-val><bool-arith3-grp><hoist-log>
+652	<releq-op>	<rel-op>
+653	<releq-op>	<eq-op>
+654	<hoist-log>	<log-op><hoist-cond>
+655	<hoist-log>	λ
+656	<hoist-upd>	<upd><upd-mult>
+657	<upd>	<unary-op>id<arr-str>
+658	<upd>	id<arr-str><arith-assign-op><dime-grp-val>
+659	<upd-mult>	, <upd><upd-mult>
+660	<upd-mult>	λ
+661	<heave-stmnt>	HEAVE (<condition>) [    <look-body>    <jump-stmnt> ]
+662	<haul-stmnt>	HAUL [     <look-body>    <jump-stmnt> ] HEAVE (<condition>)!!
+663	<unary-exp>	<unary-op>id<arr-str>
+664	<unary-op>	+#
+665	<unary-op>	-#
+666	<ahoy-local-dec>	<var-arr><ahoy-local-dec>
+667	<ahoy-local-dec>	<ahoy-struct-dec>
+668	<ahoy-local-dec>	λ
+669	<ahoy-struct-dec>	MAST id id <str-dec-init>!! <ahoy-struct-dec>
+670	<ahoy-struct-dec>	λ
+671	<ahoy-stmnts>	<ahoy-stmnt><ahoy-tail>
+672	<ahoy-tail>	<ahoy-stmnts>
+673	<ahoy-tail>	λ
+674	<ahoy-stmnt>	id<assign-tail>!!
+675	<ahoy-stmnt>	ASK(SCROLL-lit, <addr>)!!
+676	<ahoy-stmnt>	ECHO(SCROLL-lit<args-mult>)!!
+677	<ahoy-stmnt>	LOOK (<condition>) [ <look-body> <jump-stmnt> ] <ahoy-look-tail>
+678	<ahoy-stmnt>	CHART (<chart-cond>) [ <courses> <course-tail> <adrift-case> ]
+679	<ahoy-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [ <look-body> <jump-stmnt> ]
+680	<ahoy-stmnt>	HEAVE (<condition>) [ <look-body> <jump-stmnt> ]
+681	<ahoy-stmnt>	HAUL [ <look-body> <jump-stmnt> ] HEAVE (<condition>)!!
+682	<ahoy-stmnt>	<unary-exp>!!
+683	<ahoy-look-tail>	DROPLOOK (<condition>) [ <look-body><jump-stmnt> ] <ahoy-look-tail>
+684	<ahoy-look-tail>	DROP [ <look-body><jump-stmnt> ]
+685	<ahoy-look-tail>	λ
