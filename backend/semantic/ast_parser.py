@@ -54,7 +54,7 @@
 #   When in doubt, cross-reference with syn_parser.py.
 # =============================================================================
 
-from syntax.predict_set import PREDICT
+from syntax.Predict_Set import PREDICT
 from semantic.ast_nodes import (
     ProgramNode, AhoyNode,
     ConstDeclNode,
