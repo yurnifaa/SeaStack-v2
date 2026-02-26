@@ -1434,7 +1434,7 @@ class Parser:
         # <bool-exp2>
         prod = self.get_production('<bool-exp2>')
         if prod == 212:
-            self.arith()
+            self.dime_arith()
             self.bool_arith()
             self.rel_eq()
         elif prod == 213:
@@ -1640,7 +1640,7 @@ class Parser:
         # <bool-exp2-grp>
         prod = self.get_production('<bool-exp2-grp>')
         if prod == 246:
-            self.arith()
+            self.dime_arith()
             self.bool_arith()
             self.releq_grp()
         elif prod == 247:
@@ -1840,7 +1840,7 @@ class Parser:
         # <bool-exp2-arr>
         prod = self.get_production('<bool-exp2-arr>')
         if prod == 282:
-            self.arith()
+            self.dime_arith()
             self.bool_arith()
             self.releq_arr()
         elif prod == 283:
@@ -2055,7 +2055,7 @@ class Parser:
         # <bool-exp2-ret>
         prod = self.get_production('<bool-exp2-ret>')
         if prod == 317:
-            self.arith()
+            self.dime_arith()
             self.bool_arith()
             self.releq_ret()
         elif prod == 318:
@@ -2395,7 +2395,7 @@ class Parser:
         # <exp>
         prod = self.get_production('<exp>')
         if prod == 382:
-            self.arith()
+            self.dime_arith()
             self.arith_var()
             self.releq_var()
         elif prod == 383:
@@ -2478,7 +2478,7 @@ class Parser:
         # <log-exp>
         prod = self.get_production('<log-exp>')
         if prod == 398:
-            self.arith()
+            self.dime_arith()
             self.arith_var()
             self.log_releq()
         elif prod == 399:
@@ -2664,7 +2664,7 @@ class Parser:
         # <exp-grp>
         prod = self.get_production('<exp-grp>')
         if prod == 436:
-            self.arith()
+            self.dime_arith()
             self.arith_grp()
             self.releq_grp()
         elif prod == 437:
@@ -3365,7 +3365,7 @@ class Parser:
         # <exp-str>
         prod = self.get_production('<exp-str>')
         if prod == 547:
-            self.arith()
+            self.dime_arith()
             self.arith_str()
             self.releq_str()
         elif prod == 548:
@@ -3619,7 +3619,7 @@ class Parser:
         # <exp-as>
         prod = self.get_production('<exp-as>')
         if prod == 598:
-            self.arith()
+            self.dime_arith()
             self.arith_as()
             self.releq_as()
         elif prod == 599:
