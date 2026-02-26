@@ -414,13 +414,13 @@ prod_num	non_terminal	body
 413	<value-grp>	PARCH-lit<parch-tail-grp>
 414	<value-grp>	SCROLL-lit<scr-char><scroll-tail-grp>
 415	<value-grp>	<bool><logeq-grp>
-416	<digit-tail-grp>	<arith-grp><releq-grp>
+416	<digit-tail-grp>	<arith-grp><releqvar-grp>
 417	<digit-tail-grp>	λ
 418	<arith-grp>	<dime-arith><arith-grp>
 419	<arith-grp>	λ
-420	<releq-grp>	<rel><arith-grp2><logeq-grp>
-421	<releq-grp>	<eq-digit><arith-grp3><bool-exp-grp>
-422	<releq-grp>	λ
+420	<releqvar-grp>	<rel><arith-grp2><logeq-grp>
+421	<releqvar-grp>	<eq-digit><arith-grp3><bool-exp-grp>
+422	<releqvar-grp>	λ
 423	<arith-grp2>	<dime-arith><arith-grp2>
 424	<arith-grp2>	λ
 425	<arith-grp3>	<dime-arith><arith-grp3>
@@ -434,7 +434,7 @@ prod_num	non_terminal	body
 433	<scroll-tail-grp>	λ
 434	<concat-grp>	& <scroll-val> <concat-grp>
 435	<concat-grp>	λ
-436	<exp-grp>	<dime-arith><arith-grp><releq-grp>
+436	<exp-grp>	<dime-arith><arith-grp><releqvar-grp>
 437	<exp-grp>	<rel><arith-grp2><logeq-grp>
 438	<exp-grp>	<log-op><bool-ope-grp><bool-exp-grp>
 439	<exp-grp>	<eq-op><eq-ope-grp><bool-exp-grp>

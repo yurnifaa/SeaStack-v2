@@ -231,7 +231,8 @@ class Parser:
         prod = self.get_production('<neg-coin-val>')
         if prod == 25:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
         elif prod == 26:
             self.eat('(')
             self.coin_val_grp()
@@ -521,7 +522,8 @@ class Parser:
         prod = self.get_production('<neg-dime-val>')
         if prod == 71:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
         elif prod == 72:
             self.eat('(')
             self.dime_grp_val()
@@ -773,7 +775,8 @@ class Parser:
             self.eat('PARCH-lit')
         elif prod == 108:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
         else:
             self.error_invalid_token('<parch-val>')
 
@@ -949,10 +952,12 @@ class Parser:
         prod = self.get_production('<scroll-val>')
         if prod == 132:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
         elif prod == 133:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
         elif prod == 134:
             self.eat('(')
             self.scroll_grp_val()
@@ -1233,7 +1238,8 @@ class Parser:
         prod = self.get_production('<bool-val>')
         if prod == 174:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_exp2()
         elif prod == 175:
             self.eat('(')
@@ -1253,7 +1259,8 @@ class Parser:
             self.parch_val()
         elif prod == 179:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.eq_op()
             self.scroll_val()
         else:
@@ -1295,7 +1302,8 @@ class Parser:
         prod = self.get_production('<not-ope>')
         if prod == 186:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
         elif prod == 187:
             self.eat('(')
             self.bool_grp_val()
@@ -1334,7 +1342,8 @@ class Parser:
         prod = self.get_production('<neg-digit>')
         if prod == 194:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
         elif prod == 195:
             self.eat('(')
             self.dime_grp_val()
@@ -1454,7 +1463,8 @@ class Parser:
         prod = self.get_production('<eq-ope>')
         if prod == 216:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_arith4()
             self.bool_rel()
         elif prod == 217:
@@ -1479,7 +1489,8 @@ class Parser:
             self.eat('PARCH-lit')
         elif prod == 221:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
         elif prod == 222:
             self.bool()
         else:
@@ -1543,7 +1554,8 @@ class Parser:
         prod = self.get_production('<bool-ope-grp>')
         if prod == 232:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_exp2_grp()
         elif prod == 233:
             self.eat('(')
@@ -1563,7 +1575,8 @@ class Parser:
             self.parch_val()
         elif prod == 237:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.eq_op()
             self.scroll_val()
         else:
@@ -1601,16 +1614,6 @@ class Parser:
         elif prod == 241:
             self.eq_digit()
             self.bool_arith3_grp()
-        elif prod == 420:
-            self.rel()
-            self.arith_grp2()
-            self.logeq_grp()
-        elif prod == 421:
-            self.eq_digit()
-            self.arith_grp3()
-            self.bool_exp_grp()
-        elif prod == 422:
-            pass  # Lambda
         else:
             self.error_invalid_token('<releq-grp>')
 
@@ -1660,7 +1663,8 @@ class Parser:
         prod = self.get_production('<eq-ope-grp>')
         if prod == 250:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_arith4_grp()
             self.bool_rel_grp()
         elif prod == 251:
@@ -1775,7 +1779,8 @@ class Parser:
         prod = self.get_production('<bool-ope-arr>')
         if prod == 268:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_exp2_arr()
         elif prod == 269:
             self.eat('(')
@@ -1795,7 +1800,8 @@ class Parser:
             self.parch_val()
         elif prod == 273:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.eq_op()
             self.scroll_val()
         else:
@@ -1860,7 +1866,8 @@ class Parser:
         prod = self.get_production('<eq-ope-arr>')
         if prod == 286:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_arith4_arr()
             self.bool_rel_arr()
         elif prod == 287:
@@ -1979,7 +1986,8 @@ class Parser:
         prod = self.get_production('<bool-ope-ret>')
         if prod == 303:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_exp2_ret()
         elif prod == 304:
             self.eat('(')
@@ -1999,7 +2007,8 @@ class Parser:
             self.parch_val()
         elif prod == 308:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.eq_op()
             self.scroll_val()
         else:
@@ -2075,7 +2084,8 @@ class Parser:
         prod = self.get_production('<eq-ope-ret>')
         if prod == 321:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.bool_arith4_ret()
             self.bool_rel_ret()
         elif prod == 322:
@@ -2236,7 +2246,8 @@ class Parser:
         prod = self.get_production('<value>')
         if prod == 352:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.exp()
         elif prod == 353:
             self.eat('(')
@@ -2251,7 +2262,8 @@ class Parser:
             self.parch_tail()
         elif prod == 356:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.scroll_tail()
         elif prod == 357:
             self.bool()
@@ -2424,7 +2436,8 @@ class Parser:
         prod = self.get_production('<log-ope>')
         if prod == 388:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.log_exp()
         elif prod == 389:
             self.eat('(')
@@ -2444,7 +2457,8 @@ class Parser:
             self.parch_val()
         elif prod == 393:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.eq_op()
             self.scroll_val()
         else:
@@ -2498,7 +2512,8 @@ class Parser:
         prod = self.get_production('<eq-var>')
         if prod == 402:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.arith_var4()
             self.rel_var()
         elif prod == 403:
@@ -2543,7 +2558,8 @@ class Parser:
         prod = self.get_production('<value-grp>')
         if prod == 410:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.exp_grp()
         elif prod == 411:
             self.eat('(')
@@ -2558,7 +2574,8 @@ class Parser:
             self.parch_tail_grp()
         elif prod == 414:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.scroll_tail_grp()
         elif prod == 415:
             self.bool()
@@ -2571,7 +2588,7 @@ class Parser:
         prod = self.get_production('<digit-tail-grp>')
         if prod == 416:
             self.arith_grp()
-            self.releq_grp()
+            self.releqvar_grp()
         elif prod == 417:
             pass  # Lambda
         else:
@@ -2587,6 +2604,22 @@ class Parser:
             pass  # Lambda
         else:
             self.error_invalid_token('<arith-grp>')
+
+    def releqvar_grp(self):
+        # <releqvar-grp>
+        prod = self.get_production('<releqvar-grp>')
+        if prod == 420:
+            self.rel()
+            self.arith_grp2()
+            self.logeq_grp()
+        elif prod == 421:
+            self.eq_digit()
+            self.arith_grp3()
+            self.bool_exp_grp()
+        elif prod == 422:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<releqvar-grp>')
 
     def arith_grp2(self):
         # <arith-grp2>
@@ -2666,7 +2699,7 @@ class Parser:
         if prod == 436:
             self.dime_arith()
             self.arith_grp()
-            self.releq_grp()
+            self.releqvar_grp()
         elif prod == 437:
             self.rel()
             self.arith_grp2()
@@ -2807,7 +2840,8 @@ class Parser:
             self.eat('id')
             self.eat('=')
             self.eat('SCROLL-lit')
-            self.scr_id()
+            if self.current_token.type in ['{']:
+                self.scr_id()
         else:
             self.error_invalid_token('<scroll-locke>')
 
@@ -3228,7 +3262,8 @@ class Parser:
         prod = self.get_production('<value-str>')
         if prod == 521:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.exp_str()
         elif prod == 522:
             self.eat('(')
@@ -3243,7 +3278,8 @@ class Parser:
             self.parch_tail_str()
         elif prod == 525:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.scroll_tail_str()
         elif prod == 526:
             self.bool()
@@ -3428,7 +3464,8 @@ class Parser:
         # <assign-tail>
         prod = self.get_production('<assign-tail>')
         if prod == 563:
-            self.arr_str()
+            if self.current_token.type in ['{', '$']:
+                self.arr_str()
             self.assign_body()
         elif prod == 564:
             self.eat('(')
@@ -3482,7 +3519,8 @@ class Parser:
         prod = self.get_production('<value-as>')
         if prod == 572:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
             self.exp_as()
         elif prod == 573:
             self.eat('(')
@@ -3497,7 +3535,8 @@ class Parser:
             self.parch_tail_as()
         elif prod == 576:
             self.eat('SCROLL-lit')
-            self.scr_char()
+            if self.current_token.type in ['{']:
+                self.scr_char()
             self.scroll_tail_as()
         elif prod == 577:
             self.bool()
@@ -3681,7 +3720,8 @@ class Parser:
         if prod == 611:
             self.eat('@')
             self.eat('id')
-            self.arr_str()
+            if self.current_token.type in ['{', '$']:
+                self.arr_str()
             self.addr_tail()
         else:
             self.error_invalid_token('<addr>')
@@ -3804,7 +3844,8 @@ class Parser:
         prod = self.get_production('<chart-cond>')
         if prod == 626:
             self.eat('id')
-            self.id_tail()
+            if self.current_token.type in ['{', '$', '(']:
+                self.id_tail()
         elif prod == 627:
             self.chart_const()
         else:
@@ -3819,7 +3860,8 @@ class Parser:
             self.eat('PARCH-lit')
         elif prod == 630:
             self.eat('SCROLL-lit')
-            self.scr_id()
+            if self.current_token.type in ['{']:
+                self.scr_id()
         else:
             self.error_invalid_token('<chart-const>')
 
@@ -3926,7 +3968,8 @@ class Parser:
             self.init1_mult()
         elif prod == 645:
             self.eat('id')
-            self.arr_str()
+            if self.current_token.type in ['{', '$']:
+                self.arr_str()
             self.eat('=')
             self.eat('COIN-lit')
             self.init2_mult()
@@ -3955,7 +3998,8 @@ class Parser:
         if prod == 649:
             self.eat(',')
             self.eat('id')
-            self.arr_str()
+            if self.current_token.type in ['{', '$']:
+                self.arr_str()
             self.eat('=')
             self.eat('COIN-lit')
             self.init2_mult()
@@ -4013,10 +4057,12 @@ class Parser:
         if prod == 657:
             self.unary_op()
             self.eat('id')
-            self.arr_str()
+            if self.current_token.type in ['{', '$']:
+                self.arr_str()
         elif prod == 658:
             self.eat('id')
-            self.arr_str()
+            if self.current_token.type in ['{', '$']:
+                self.arr_str()
             self.arith_assign_op()
             self.dime_grp_val()
         else:
@@ -4072,7 +4118,8 @@ class Parser:
         if prod == 663:
             self.unary_op()
             self.eat('id')
-            self.arr_str()
+            if self.current_token.type in ['{', '$']:
+                self.arr_str()
         else:
             self.error_invalid_token('<unary-exp>')
 

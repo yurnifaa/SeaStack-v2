@@ -246,6 +246,16 @@ class Parser:
 '''
 
 
+# Non-terminals that are optional (only called when the current token
+# is in their FIRST set).  Maps non-terminal name → list of trigger token types.
+OPTIONAL_CALL_GUARDS: dict = {
+    "<id-tail>": ["{", "$", "("],
+    "<arr-str>": ["{", "$"],
+    "<scr-char>": ["{"],
+    "<scr-id>": ["{"],
+}
+
+
 def generate_method(non_terminal: str, prods: list) -> str:
     """Generate a single parser method for one non-terminal."""
     method_name = nt_to_method(non_terminal)
@@ -275,7 +285,14 @@ def generate_method(non_terminal: str, prods: list) -> str:
                     lines.append(f"            self.eat({val!r})")
                 elif sym["kind"] == "non_terminal":
                     sub = nt_to_method(sym["value"])
-                    lines.append(f"            self.{sub}()")
+                    guard_tokens = OPTIONAL_CALL_GUARDS.get(sym["value"])
+                    if guard_tokens:
+                        # Emit a guarded call: only invoke when current token matches
+                        tokens_repr = ", ".join(repr(t) for t in guard_tokens)
+                        lines.append(f"            if self.current_token.type in [{tokens_repr}]:")
+                        lines.append(f"                self.{sub}()")
+                    else:
+                        lines.append(f"            self.{sub}()")
 
     lines.append(f"        else:")
     lines.append(f"            self.error_invalid_token({non_terminal!r})")
