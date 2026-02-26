@@ -181,7 +181,7 @@ class ASTParser:
 
     # ─────────────────────────────────────────────────────────────────────────
     # TYPE-SPECIFIC GLOBAL DISPATCH
-    # prods 12/13, 58/59, 98/99, 122/123, 172/173
+    # prods 12/13, 58/59, 98/99, 122/123, 164/165
     # ─────────────────────────────────────────────────────────────────────────
 
     def coin_var_arr_func(self, dtype, name_tok):
@@ -232,11 +232,11 @@ class ASTParser:
     def bool_var_arr_func(self, dtype, name_tok):
         prod = self.get_production('<bool-var-arr-func>')
         nodes = []
-        if prod == 172:
+        if prod == 164:
             nodes.extend(self.bool_var_arr(dtype, name_tok))
             self.eat('!!')
             nodes.extend(self.global_dec())
-        elif prod == 173:
+        elif prod == 165:
             nodes.append(self.bool_func(dtype, name_tok))
         return nodes
 
@@ -317,7 +317,6 @@ class ASTParser:
     def coin_arr_val(self):
         # prod 44: coin_val coin_arr_exp
         val = self.coin_val()
-        # coin_arr_exp: prod 45 (coin_arith chain) | prod 46 (λ) — already folded in coin_val
         return val
 
     def cav_tail(self):
@@ -380,23 +379,23 @@ class ASTParser:
         return []  # prod 66: λ
 
     def dime_arr(self, dtype, name_tok):
-        # prod 75
+        # prod 79
         self.eat('{'); dim1_tok = self.current_token; self.eat('COIN-lit'); self.eat('}')
         dim1 = int(dim1_tok.value)
         return self.dime_arr_tail(dtype, name_tok, dim1)
 
     def dime_arr_tail(self, dtype, name_tok, dim1):
         prod = self.get_production('<dime-arr-tail>')
-        if prod == 76:
+        if prod == 80:
             self.eat('='); self.eat('[')
             values = self._arr1_values(self.dime_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, values, name_tok)
-        elif prod == 77:
+        elif prod == 81:
             self.eat('{'); dim2_tok = self.current_token; self.eat('COIN-lit'); self.eat('}')
             dim2 = int(dim2_tok.value)
             return self.dime_arr2_tail(dtype, name_tok, dim1, dim2)
-        else:  # prod 78: λ
+        else:  # prod 82: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1], False, None, name_tok)
 
     def dime_arr2_tail(self, dtype, name_tok, dim1, dim2):
@@ -545,20 +544,19 @@ class ASTParser:
 
     # ─────────────────────────────────────────────────────────────────────────
     # BOOL VAR/ARR
-    # prods 174/175, 176, 177/178, 179/180
-    # prods 260/261/262/263, 264/265/266, 267, 268/269, 270/271
+    # prods 166/167, 168, 169/170, 171/172
     # ─────────────────────────────────────────────────────────────────────────
 
     def bool_var_arr(self, dtype, name_tok):
         prod = self.get_production('<bool-var-arr>')
-        if prod == 174:
+        if prod == 166:
             return self.bool_var(dtype, name_tok)
-        elif prod == 175:
+        elif prod == 167:
             return [self.bool_arr(dtype, name_tok)]
         return []
 
     def bool_var(self, dtype, name_tok):
-        # prod 176
+        # prod 168
         init = self.bool_init()
         nodes = [VarDeclNode(dtype, name_tok.value, init, name_tok)]
         nodes.extend(self.bool_init_mult(dtype))
@@ -566,19 +564,19 @@ class ASTParser:
 
     def bool_init(self):
         prod = self.get_production('<bool-init>')
-        if prod == 177:
+        if prod == 169:
             self.eat('=')
             return self.bool_val()
-        return None  # prod 178: λ
+        return None  # prod 170: λ
 
     def bool_init_mult(self, dtype):
         prod = self.get_production('<bool-init-mult>')
-        if prod == 179:
+        if prod == 171:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             init = self.bool_init()
             return [VarDeclNode(dtype, name_tok.value, init, name_tok)] + self.bool_init_mult(dtype)
-        return []  # prod 180: λ
+        return []  # prod 172: λ
 
     def bool_arr(self, dtype, name_tok):
         # prod 260
@@ -602,12 +600,12 @@ class ASTParser:
 
     def bool_arr2_tail(self, dtype, name_tok, dim1, dim2):
         prod = self.get_production('<bool-arr2-tail>')
-        if prod == 270:
+        if prod == 296:
             self.eat('='); self.eat('[')
             rows = self._arr2_rows(self.bool_val)
             self.eat(']')
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, rows, name_tok)
-        else:  # prod 271: λ
+        else:  # prod 297: λ
             return ArrayDeclNode(dtype, name_tok.value, [dim1, dim2], True, None, name_tok)
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -788,7 +786,7 @@ class ASTParser:
 
     # =========================================================================
     # STRUCT DEFINITIONS
-    # prod 292: MAST id [ mem-dec mem-dec-tail ]!!  (global struct typedef)
+    # prod 469: MAST id [ mem-dec mem-dec-tail ]!!  (global struct typedef)
     # Returns list[StructDefNode]
     # =========================================================================
 
@@ -800,7 +798,7 @@ class ASTParser:
             # Check we're in a struct DEFINITION context (has '[' after second id)
             # Since syn_parser uses PREDICT table, we rely on it:
             prod = self.get_production('<struct>')
-            if prod != 292:
+            if prod != 469:
                 break
             self.eat('MAST')
             name_tok = self.current_token; self.eat('id')
@@ -813,7 +811,7 @@ class ASTParser:
         return nodes
 
     def mem_dec(self):
-        """prod 294→ syn uses d_type id mem_mult!! """
+        """prod 471→ syn uses d_type id mem_mult!! """
         dtype = self.d_type()
         name_tok = self.current_token; self.eat('id')
         members = [MemberDeclNode(dtype, name_tok.value, name_tok)]
@@ -823,18 +821,18 @@ class ASTParser:
 
     def mem_mult(self, dtype):
         prod = self.get_production('<mem-mult>')
-        if prod == 295:
+        if prod == 472:
             self.eat(',')
             name_tok = self.current_token; self.eat('id')
             return [MemberDeclNode(dtype, name_tok.value, name_tok)] + self.mem_mult(dtype)
-        return []  # prod 296: λ
+        return []  # prod 473: λ
 
     def mem_dec_tail(self):
         prod = self.get_production('<mem-dec-tail>')
-        if prod == 297:
+        if prod == 474:
             members = self.mem_dec()
             return members + self.mem_dec_tail()
-        return []  # prod 298: λ
+        return []  # prod 475: λ
 
     # =========================================================================
     # FUNCTION DEFINITIONS
@@ -842,34 +840,38 @@ class ASTParser:
 
     def sub_func(self):
         """
-        prod 299: return_func
-        prod 300: nonreturn_func
-        prod 301: λ
+        prod 476: return_func
+        prod 477: nonreturn_func
+        prod 478: λ
         """
         prod = self.get_production('<sub-func>')
-        if prod == 299:
+        if prod == 476:
             return [self.return_func()]
-        elif prod == 300:
+        elif prod == 477:
             return [self.nonreturn_func()]
-        return []  # prod 301: λ
+        return []  # prod 478: λ
 
     def return_func(self):
         """
-        prod 302: COIN id coin_func
-        prod 303: DIME id dime_func
-        prod 304: PARCH id parch_func
-        prod 305: SCROLL id scroll_func  (+ sub_func)
-        prod 306: BOOL id bool_func
+        prod 479: COIN id coin_func
+        prod 480: DIME id dime_func
+        prod 481: PARCH id parch_func
+        prod 482: SCROLL id scroll_func  (+ sub_func)
+        prod 483: BOOL id bool_func
         """
         prod = self.get_production('<return-func>')
-        dtype_map = {302: 'COIN', 303: 'DIME', 304: 'PARCH', 305: 'SCROLL', 306: 'BOOL'}
-        token_map = {302: 'COIN', 303: 'DIME', 304: 'PARCH', 305: 'SCROLL', 306: 'BOOL'}
+        dtype_map = {479: 'COIN', 480: 'DIME', 481: 'PARCH', 482: 'SCROLL', 483: 'BOOL'}
+        token_map = {479: 'COIN', 480: 'DIME', 481: 'PARCH', 482: 'SCROLL', 483: 'BOOL'}
         dtype = dtype_map[prod]
         self.eat(token_map[prod])
         name_tok = self.current_token; self.eat('id')
         node = self._build_return_func(dtype, name_tok)
-        if prod == 305:
-            self.sub_func()  # scroll_var_arr_func handles sub_func after scroll_func
+        
+        # Note: _build_return_func handles the final sub_func call 
+        # to correctly mirror syn_parser chaining execution
+        if prod == 482:
+            self.sub_func() 
+            
         return node
 
     def _build_return_func(self, dtype, name_tok):
@@ -905,7 +907,7 @@ class ASTParser:
         return self._build_return_func(dtype, name_tok)
 
     def bool_func(self, dtype, name_tok):
-        # prod 168 (bool_func in the new grammar)
+        # prod 301 (bool_func in the new grammar)
         return self._build_return_func(dtype, name_tok)
 
     def return_val_for(self, dtype):
@@ -918,7 +920,7 @@ class ASTParser:
 
     def nonreturn_func(self):
         """
-        prod 307: ABYSS id (params) [ local_dec nonret_stmnts nonret_back ]
+        prod 484: ABYSS id (params) [ local_dec nonret_stmnts nonret_back ]
         """
         tok = self.current_token
         self.eat('ABYSS')
@@ -938,7 +940,7 @@ class ASTParser:
 
     def nonret_stmnts(self):
         """
-        prod 308: nonret_stmnt nonret_tail
+        prod 485: nonret_stmnt nonret_tail
         """
         first = self.nonret_stmnt()
         rest = self.nonret_tail()
@@ -946,13 +948,13 @@ class ASTParser:
 
     def nonret_tail(self):
         """
-        prod 309: nonret_stmnts
-        prod 310: λ
+        prod 486: nonret_stmnts
+        prod 487: λ
         """
         prod = self.get_production('<nonret-tail>')
-        if prod == 309:
+        if prod == 486:
             return self.nonret_stmnts()
-        return []  # prod 310: λ
+        return []  # prod 487: λ
 
     def nonret_back(self):
         """
@@ -1546,6 +1548,42 @@ class ASTParser:
             right = self.scroll_val()
             return BinaryOpNode(left, op, right, op_tok)
         return left  # prod 595: λ
+
+    def concat_as(self):
+        # <concat-as>
+        prod = self.get_production('<concat-as>')
+        if prod == 596:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_as()
+        elif prod == 597:
+            pass  # Lambda
+
+    def exp_as(self):
+        # <exp-as>
+        prod = self.get_production('<exp-as>')
+        if prod == 598:
+            self.dime_arith()
+            self.arith_as()
+            self.releq_as()
+        elif prod == 599:
+            self.rel()
+            self.arith_as2()
+            self.logeq_as()
+        elif prod == 600:
+            self.log_op()
+            self.bool_ope_ret()
+            self.bool_exp_ret()
+        elif prod == 601:
+            self.eq_op()
+            self.eq_ope_ret()
+            self.bool_exp_ret()
+        elif prod == 602:
+            self.eat('&')
+            self.scroll_val()
+            self.concat_as()
+        elif prod == 603:
+            pass  # Lambda
 
     def arith_assign_op(self):
         """prods 604–609: +=, -=, *=, /=, %=, ^="""

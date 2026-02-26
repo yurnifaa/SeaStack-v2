@@ -237,7 +237,7 @@ prod_num	non_terminal	body
 236	<bool-ope-grp>	PARCH-lit<eq-op><parch-val>
 237	<bool-ope-grp>	SCROLL-lit<scr-char><eq-op><scroll-val>
 238	<bool-eq-grp>	<eq-op><bool-ope-grp>
-239	<bool-eq-arr>	λ
+239	<bool-eq-grp>	λ
 240	<releq-grp>	<rel><bool-arith2-grp><bool-eq-grp>
 241	<releq-grp>	<eq-digit><bool-arith3-grp>
 242	<bool-arith2-grp>	<dime-arith><bool-arith2-grp>

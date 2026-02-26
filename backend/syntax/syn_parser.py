@@ -1588,21 +1588,10 @@ class Parser:
         if prod == 238:
             self.eq_op()
             self.bool_ope_grp()
+        elif prod == 239:
+            pass  # Lambda
         else:
             self.error_invalid_token('<bool-eq-grp>')
-
-    def bool_eq_arr(self):
-        # <bool-eq-arr>
-        prod = self.get_production('<bool-eq-arr>')
-        if prod == 239:
-            pass  # Lambda
-        elif prod == 274:
-            self.eq_op()
-            self.bool_ope_arr()
-        elif prod == 275:
-            pass  # Lambda
-        else:
-            self.error_invalid_token('<bool-eq-arr>')
 
     def releq_grp(self):
         # <releq-grp>
@@ -1806,6 +1795,17 @@ class Parser:
             self.scroll_val()
         else:
             self.error_invalid_token('<bool-ope-arr>')
+
+    def bool_eq_arr(self):
+        # <bool-eq-arr>
+        prod = self.get_production('<bool-eq-arr>')
+        if prod == 274:
+            self.eq_op()
+            self.bool_ope_arr()
+        elif prod == 275:
+            pass  # Lambda
+        else:
+            self.error_invalid_token('<bool-eq-arr>')
 
     def releq_arr(self):
         # <releq-arr>

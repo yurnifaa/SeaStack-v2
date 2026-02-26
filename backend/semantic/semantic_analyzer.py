@@ -53,9 +53,26 @@
 #
 # TYPE COMPATIBILITY:
 #   SeaStack's rules:
-#     COIN  ↔  DIME  (numeric types interchangeable in arithmetic & ==,!=)
-#     All other types must match exactly.
-#   _compatible(expected, actual) encodes this.
+#     COIN / DIME are compatible ONLY in arithmetic and equality (==,!=)
+#       expressions — _compatible_expr() handles this case.
+#     In assignment / initialization contexts (variables, array elements,
+#       struct members, function parameters, return values):
+#         • A COIN value may be promoted into a DIME target.
+#         • A DIME value CANNOT be assigned to a COIN target.
+#     All other types must match exactly in every context.
+#   _compatible(expected, actual) encodes the strict assignment rules.
+#   _compatible_expr(left, right) encodes the looser expression rules.
+#
+# BOUNDS CHECKING:
+#   When an array is indexed with a compile-time COIN integer literal, the
+#   analyzer checks that the index falls within [0, declared_size - 1].
+#   This applies in every access context: read expressions (ArrayAccessNode),
+#   assignments and compound-assignments (_resolve_assign_target), and ASK
+#   address targets (_resolve_address_target).  Runtime (non-literal) indices
+#   cannot be checked statically and are silently skipped.
+#   Struct member access is inherently "bounds-checked" by verifying that the
+#   member name exists in the struct definition — this is already enforced at
+#   every access/assignment site.
 #
 # CHANGES FROM ORIGINAL (v1 → v2):
 #   • Symbol classes moved to symbol_table.py; imported from there.
@@ -123,6 +140,12 @@ class SemanticAnalyzer:
         # True when we are analyzing the ADRIFT body of a CHART statement.
         self.in_adrift = False
 
+        # True only while visit_FuncCallStmtNode is dispatching into
+        # visit_FuncCallNode.  Lets visit_FuncCallNode know it is being called
+        # as a standalone statement, so the ABYSS-in-expression error is
+        # correctly suppressed for valid calls like  log()!!
+        self._in_stmt_call = False
+
     # =========================================================================
     # ENTRY POINT
     # =========================================================================
@@ -166,15 +189,127 @@ class SemanticAnalyzer:
         """
         Record a semantic error. token can be None (for implicit locations).
         Non-fatal — analysis continues after this call.
+
+        Extracts the error type from the message and retrieves the actual source line
+        for structured error formatting.
         """
         line = getattr(token, 'line', '?')
         col  = getattr(token, 'col',  '?')
+
+        # Extract error type from message patterns
+        error_type = self._extract_error_type(message)
+
+        # Get the actual source code line
+        actual_line = ""
+        if line != '?' and line != '-':
+            try:
+                line_num = int(line) - 1  # Convert to 0-indexed
+                source_lines = self.source_code.split('\n')
+                if 0 <= line_num < len(source_lines):
+                    actual_line = source_lines[line_num].strip()
+            except (ValueError, IndexError, AttributeError):
+                actual_line = ""
+
         self.errors.append({
-            'type':    'Semantic Error',
-            'line':    line,
-            'col':     col,
-            'message': message,
+            'line':        line,
+            'col':         col,
+            'error_type':  error_type,
+            'message':     message,
+            'actual_line': actual_line,
         })
+
+    def _extract_error_type(self, message):
+        """
+        Extract the semantic error type from the error message.
+        Returns a human-readable error type string.
+        """
+        msg_lower = message.lower()
+
+        # --- VARIABLE DECLARATION & INITIALIZATION ERRORS ---
+        if 'may be used before it is initialized' in msg_lower:
+            return 'Uninitialized Variable'
+        elif 'already declared' in msg_lower or 'duplicate' in msg_lower:
+            return 'Duplicate Declaration'
+        elif 'undeclared' in msg_lower or 'undefined' in msg_lower:
+            return 'Undeclared Variable'
+
+        # --- LOCKE/CONSTANT MODIFICATION ---
+        elif 'locke' in msg_lower and ('assign' in msg_lower or 'modify' in msg_lower or 'apply' in msg_lower):
+            return 'LOCKE Modification'
+        elif 'read-only' in msg_lower or ('LOCKE are' in msg_lower and 'reassigned' in msg_lower):
+            return 'LOCKE Modification'
+
+        # --- TYPE ERRORS ---
+        elif 'type mismatch' in msg_lower or 'cannot initialize' in msg_lower:
+            return 'Type Mismatch'
+        elif 'incompatible' in msg_lower:
+            return 'Type Mismatch'
+
+        # --- ASSIGNMENT ERRORS ---
+        elif 'cannot assign' in msg_lower:
+            return 'Invalid Assignment'
+
+        # --- SCOPE ERRORS ---
+        elif 'outside' in msg_lower or 'outside of' in msg_lower:
+            return 'Outside Scope'
+
+        # --- OPERATOR & OPERAND ERRORS ---
+        elif 'operator' in msg_lower and ('requires' in msg_lower or 'must' in msg_lower):
+            return 'Invalid Operand Type'
+
+        # --- SWITCH/CHART ERRORS ---
+        elif 'chart' in msg_lower and 'expression' in msg_lower:
+            return 'Invalid Switch Expression'
+        elif 'course' in msg_lower and 'duplicate' in msg_lower:
+            return 'Invalid Switch Expression'
+
+        # --- ARRAY ERRORS ---
+        elif 'out of bounds' in msg_lower:
+            return 'Array Index Out of Bounds'
+        elif ('initializer has' in msg_lower and 'row' in msg_lower) or ('initializer has' in msg_lower and 'exceed' in msg_lower):
+            return 'Array Bounds Exceeded'
+        elif 'array index' in msg_lower and 'must be coin' in msg_lower:
+            return 'Invalid Index Type'
+        elif 'is not an array' in msg_lower:
+            return 'Invalid Array'
+        elif 'array' in msg_lower:
+            return 'Array Error'
+
+        # --- STRUCT ERRORS ---
+        elif 'has no member' in msg_lower:
+            return 'Undefined Struct Member'
+        elif 'struct' in msg_lower:
+            return 'Struct Error'
+
+        # --- FUNCTION ERRORS ---
+        elif ('expects' in msg_lower and 'argument' in msg_lower) or ('argument' in msg_lower and 'expects' in msg_lower):
+            return 'Argument Count Mismatch'
+        elif 'specifier' in msg_lower and ('expects' in msg_lower or 'mismatch' in msg_lower):
+            return 'Format Specifier Mismatch'
+        elif 'function' in msg_lower:
+            return 'Function Error'
+
+        # --- CONTEXT ERRORS ---
+        elif 'back' in msg_lower and ('outside' in msg_lower or 'function' in msg_lower or 'abyss' in msg_lower or 'return' in msg_lower):
+            return 'Invalid Return Context'
+        elif ('sail' in msg_lower or 'land' in msg_lower) and ('outside' in msg_lower or 'loop' in msg_lower or 'conditional' in msg_lower):
+            return 'Invalid Jump Context'
+        elif 'cannot be used as an expression' in msg_lower:
+            return 'Invalid Expression Context'
+
+        # --- CONDITION ERRORS ---
+        elif 'condition' in msg_lower and 'must' in msg_lower:
+            return 'Invalid Condition Type'
+        elif 'must' in msg_lower and 'bool' in msg_lower:
+            return 'Invalid Condition Type'
+
+        # --- RESERVED IDENTIFIERS ---
+        elif 'reserved' in msg_lower or 'keyword' in msg_lower:
+            return 'Reserved Identifier Misuse'
+
+        # --- DEFAULT ---
+        else:
+            return 'Semantic Error'
 
     # =========================================================================
     # TYPE HELPERS
@@ -182,14 +317,35 @@ class SemanticAnalyzer:
 
     def _compatible(self, expected, actual):
         """
-        Returns True if actual type is acceptable where expected type is needed.
-        COIN and DIME are numeric siblings — they are mutually compatible for
-        assignment, equality (==,!=), and arithmetic.
-        All other types must match exactly.
+        Returns True if actual type is acceptable where expected type is needed
+        in an ASSIGNMENT / INITIALIZATION context (variable, array element,
+        struct member, function parameter, or return value).
+
+        Rules:
+          • Exact match is always acceptable.
+          • A COIN value may be promoted to a DIME target (COIN → DIME allowed).
+          • A DIME value may NOT be assigned to a COIN target.
+          • All other types must match exactly.
         """
         if expected == actual:
             return True
-        if expected in ('COIN', 'DIME') and actual in ('COIN', 'DIME'):
+        # Only allow promotion: COIN value into a DIME target.
+        if expected == 'DIME' and actual == 'COIN':
+            return True
+        return False
+
+    def _compatible_expr(self, left, right):
+        """
+        Returns True if left and right types are compatible in an EXPRESSION
+        context (arithmetic operators and equality/inequality comparisons only).
+
+        Rules:
+          • COIN and DIME are mutually compatible with each other in expressions.
+          • All other types must match exactly.
+        """
+        if left == right:
+            return True
+        if left in ('COIN', 'DIME') and right in ('COIN', 'DIME'):
             return True
         return False
 
@@ -204,7 +360,53 @@ class SemanticAnalyzer:
         return dtype if dtype else 'unknown'
 
     # ─────────────────────────────────────────────────────────────────────────
-    # FORMAT SPECIFIER HELPERS  (for ASK and ECHO validation)
+    # BOUNDS-CHECKING HELPERS
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _literal_int_value(self, node):
+        """
+        If node is a compile-time COIN integer literal, return its integer
+        value so we can do static bounds checking. Returns None for any
+        non-literal or non-COIN expression (i.e. a runtime value — we cannot
+        check those statically and silently skip the check).
+
+        Tries node.value first (most AST designs), then node.token.value as a
+        fallback.  Converts to int safely; returns None on any failure.
+        """
+        cls = type(node).__name__
+        if cls != 'LiteralNode':
+            return None
+        # Only COIN literals are valid array indices
+        if getattr(node, 'dtype', None) != 'COIN':
+            return None
+        raw = getattr(node, 'value', None)
+        if raw is None:
+            raw = getattr(getattr(node, 'token', None), 'value', None)
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return None
+
+    def _check_array_index_bounds(self, array_name, dim_label, index_expr,
+                                   declared_size, token):
+        """
+        If index_expr is a compile-time COIN literal, verify it is in the
+        range [0, declared_size - 1].  If not, record an error.
+        Silently skips the check for runtime (non-literal) indices.
+
+        dim_label is a human-readable string like 'index' or 'row index' or
+        'column index' used in the error message.
+        """
+        idx_val = self._literal_int_value(index_expr)
+        if idx_val is None:
+            return   # runtime index — cannot check statically
+        if idx_val < 0 or idx_val >= declared_size:
+            self.error(token,
+                f"Array '{array_name}' {dim_label} {idx_val} is out of bounds "
+                f"(declared size {declared_size}, valid range 0–{declared_size - 1}).")
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # FORMAT SPECIFIER HELPERS
     # ─────────────────────────────────────────────────────────────────────────
 
     # Maps the specifier character (after %) to the SeaStack type it represents.
@@ -298,7 +500,7 @@ class SemanticAnalyzer:
         """
         if self.sym.lookup_current_scope(node.name):
             self.error(node.token,
-                f"Constant '{node.name}' is already declared in this scope.")
+                f"LOCKE '{node.name}' is already declared in this scope.")
             return
         sym = Symbol(node.name, node.dtype, 'const', node.token,
                      is_initialized=True)
@@ -607,7 +809,7 @@ class SemanticAnalyzer:
             if val_type and not self._compatible(target_dtype, val_type):
                 self.error(node.token,
                     f"Cannot assign '{self._type_name(val_type)}' to "
-                    f"'{node.var_name}' (declared as '{target_dtype}').")
+                    f"'{node.var_name}'")
             # Mark variable as initialized after first assignment
             if node.target_kind == 'var':
                 self.sym.update_initialized(node.var_name)
@@ -625,20 +827,21 @@ class SemanticAnalyzer:
             if not self._is_numeric(target_dtype):
                 self.error(node.token,
                     f"Compound assignment operator '{node.operator}' can only be used "
-                    f"on numeric types (COIN/DIME), "
+                    f"on numeric types, "
                     f"but '{node.var_name}' is '{target_dtype}'.")
             val_type = self.visit(node.value)
             if val_type and not self._is_numeric(val_type):
                 self.error(node.token,
-                    f"Right-hand side of '{node.operator}' must be numeric "
-                    f"(COIN/DIME), got '{self._type_name(val_type)}'.")
+                    f"Right-hand side of '{node.operator}' must be numeric"
+                    f", got '{self._type_name(val_type)}'.")
 
     def _resolve_assign_target(self, var_name, target_kind,
                                 index1, index2, member, token):
         """
         Shared helper for AssignNode and CompoundAssignNode.
         Resolves the declared dtype of the assignment target and performs
-        all target-specific checks (const guard, array index types, member lookup).
+        all target-specific checks (const guard, array index types and static
+        bounds, member lookup for structs).
         Returns the target's dtype string, or None if an error was reported.
         """
         sym = self.sym.lookup(var_name)
@@ -649,8 +852,7 @@ class SemanticAnalyzer:
         # Constants cannot be reassigned
         if sym.kind == 'const':
             self.error(token,
-                f"Cannot assign to constant '{var_name}' "
-                f"(declared with LOCKE — constants are read-only).")
+                f"Cannot assign to LOCKE '{var_name}' ")
             return None
 
         if target_kind == 'var':
@@ -660,26 +862,31 @@ class SemanticAnalyzer:
             if sym.kind != 'array':
                 self.error(token, f"'{var_name}' is not an array.")
                 return None
-            # Validate index types
+            # Validate index types and static bounds
             if index1 is not None:
                 idx_type = self.visit(index1)
                 if idx_type and idx_type != 'COIN':
                     self.error(token,
                         f"Array index for '{var_name}' must be COIN, "
                         f"got '{self._type_name(idx_type)}'.")
+                dim_label = 'row index' if sym.is_2d else 'index'
+                self._check_array_index_bounds(
+                    var_name, dim_label, index1, sym.dimensions[0], token)
             if index2 is not None:
                 idx_type = self.visit(index2)
                 if idx_type and idx_type != 'COIN':
                     self.error(token,
                         f"Second array index for '{var_name}' must be COIN, "
                         f"got '{self._type_name(idx_type)}'.")
+                if len(sym.dimensions) > 1:
+                    self._check_array_index_bounds(
+                        var_name, 'column index', index2, sym.dimensions[1], token)
             return sym.dtype
 
         elif target_kind == 'member':
             if sym.kind != 'struct_var':
                 self.error(token,
-                    f"'{var_name}' is not a struct variable "
-                    f"(member access with $ requires a struct variable).")
+                    f"'{var_name}' is not a struct variable ")
                 return None
             type_sym = self.sym.lookup(sym.struct_type_name)
             if type_sym is None or type_sym.kind != 'struct':
@@ -735,8 +942,7 @@ class SemanticAnalyzer:
             return None
         if sym.kind == 'const':
             self.error(node.token,
-                f"Cannot use constant '{node.var_name}' as an ASK target "
-                f"(constants are read-only).")
+                f"Cannot use LOCKE '{node.var_name}' as an ASK target.")
             return None
 
         if node.target_kind in ('array1d', 'array2d'):
@@ -750,6 +956,19 @@ class SemanticAnalyzer:
                     self.error(node.token,
                         f"Array index in ASK target must be COIN, "
                         f"got '{self._type_name(idx_type)}'.")
+                dim_label = 'row index' if sym.is_2d else 'index'
+                self._check_array_index_bounds(
+                    node.var_name, dim_label, node.index1, sym.dimensions[0], node.token)
+            if getattr(node, 'index2', None) is not None:
+                idx_type = self.visit(node.index2)
+                if idx_type and idx_type != 'COIN':
+                    self.error(node.token,
+                        f"Second array index in ASK target must be COIN, "
+                        f"got '{self._type_name(idx_type)}'.")
+                if len(sym.dimensions) > 1:
+                    self._check_array_index_bounds(
+                        node.var_name, 'column index', node.index2,
+                        sym.dimensions[1], node.token)
             return sym.dtype
 
         elif node.target_kind == 'member':
@@ -798,7 +1017,7 @@ class SemanticAnalyzer:
                                  if v == expected_spec]
                     spec_str = f'%{spec_char[0]}' if spec_char else '?'
                     self.error(node.token,
-                        f"ECHO argument {i+1}: specifier {spec_str} expects "
+                        f"Specifier {spec_str} expects "
                         f"'{expected_spec}' but got '{self._type_name(arg_type)}'.")
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -968,13 +1187,12 @@ class SemanticAnalyzer:
                     f"Undeclared variable '{node.var_name}' in HOIST init.")
             elif sym.kind == 'const':
                 self.error(node.token,
-                    f"Cannot assign to constant '{node.var_name}' in HOIST init.")
+                    f"Cannot assign to LOCKE '{node.var_name}' in HOIST init.")
             elif sym.dtype != 'COIN':
                 # HOIST init with existing var: must be COIN (not just numeric)
                 self.error(node.token,
                     f"HOIST init variable '{node.var_name}' must be COIN, "
-                    f"got '{sym.dtype}'. "
-                    f"(Only COIN literals are valid HOIST initializer values.)")
+                    f"got '{sym.dtype}'.")
 
     def visit_HoistUpdateNode(self, node):
         """
@@ -989,7 +1207,7 @@ class SemanticAnalyzer:
             return
         if sym.kind == 'const':
             self.error(node.token,
-                f"Cannot modify constant '{node.var_name}' in HOIST update.")
+                f"Cannot modify LOCKE '{node.var_name}' in HOIST update.")
             return
 
         if node.update_kind == 'unary':
@@ -1075,12 +1293,11 @@ class SemanticAnalyzer:
         """
         if self.current_func_return is None:
             self.error(node.token,
-                "BACK (return with value) used outside of a function.")
+                "BACK used outside of a function.")
             return
         if self.current_func_return == 'ABYSS':
             self.error(node.token,
-                "ABYSS functions cannot return a value. "
-                "Use bare BACK!! instead.")
+                "ABYSS functions cannot return a value.")
             return
         ret_type = self.visit(node.value)
         if ret_type and not self._compatible(self.current_func_return, ret_type):
@@ -1097,9 +1314,8 @@ class SemanticAnalyzer:
                 "BACK used outside of a function.")
         elif self.current_func_return != 'ABYSS':
             self.error(node.token,
-                f"Bare BACK!! used inside a '{self.current_func_return}' "
-                f"returning function. This function must return a value — "
-                f"use BACK <value>!! instead.")
+                f"BACK!! used inside a '{self.current_func_return}' "
+                f"returning function. This function must return a value.")
 
     def visit_UnaryStmtNode(self, node):
         """
@@ -1114,19 +1330,21 @@ class SemanticAnalyzer:
             return
         if sym.kind == 'const':
             self.error(node.token,
-                f"Cannot apply '{node.operator}' to constant '{node.var_name}' "
-                f"(constants are read-only).")
+                f"Cannot apply '{node.operator}' to LOCKE '{node.var_name}'")
             return
         # Rule: unary +# and -# operate on COIN ONLY
         if sym.dtype != 'COIN':
             self.error(node.token,
                 f"Operator '{node.operator}' requires a COIN variable, "
-                f"but '{node.var_name}' is '{sym.dtype}'. "
-                f"(Unary increment/decrement is not defined for '{sym.dtype}'.)")
+                f"but '{node.var_name}' is '{sym.dtype}'. ")
 
     def visit_FuncCallStmtNode(self, node):
-        """A function call used as a statement (return value discarded)."""
+        """A function call used as a statement (return value discarded).
+        ABYSS functions are perfectly valid here — only expression use is banned.
+        """
+        self._in_stmt_call = True
         self.visit(node.call_expr)
+        self._in_stmt_call = False
 
     # =========================================================================
     # EXPRESSIONS  (all return a dtype string or None on error)
@@ -1147,7 +1365,7 @@ class SemanticAnalyzer:
         sym = self.sym.lookup(node.name)
         if sym is None:
             self.error(node.token,
-                f"Use of undeclared variable '{node.name}'.")
+                f"Undeclared variable '{node.name}'.")
             return None
         if not sym.is_initialized:
             self.error(node.token,
@@ -1160,6 +1378,8 @@ class SemanticAnalyzer:
         Checks:
           • Array must be declared and actually be of kind 'array'.
           • Each index must be COIN type.
+          • If an index is a compile-time integer literal, verify it is within
+            [0, declared_size - 1].  Runtime indices are not checked statically.
         Returns the element type (the array's base dtype).
         """
         sym = self.sym.lookup(node.name)
@@ -1172,13 +1392,20 @@ class SemanticAnalyzer:
                 f"'{node.name}' is not an array (it is a '{sym.kind}').")
             return None
 
-        # Validate index types
+        # Validate index types and static bounds
         for idx, index_expr in enumerate(node.indices):
             idx_type = self.visit(index_expr)
             if idx_type and idx_type != 'COIN':
                 self.error(node.token,
                     f"Array index [{idx}] for '{node.name}' must be COIN, "
                     f"got '{self._type_name(idx_type)}'.")
+            # Static out-of-bounds check (only when index is a literal)
+            if idx < len(sym.dimensions):
+                dim_label = 'column index' if (sym.is_2d and idx == 1) else \
+                            'row index'    if (sym.is_2d and idx == 0) else \
+                            'index'
+                self._check_array_index_bounds(
+                    node.name, dim_label, index_expr, sym.dimensions[idx], node.token)
 
         return sym.dtype   # element type = array's base dtype
 
@@ -1198,8 +1425,7 @@ class SemanticAnalyzer:
             return None
         if sym.kind != 'struct_var':
             self.error(node.token,
-                f"'{node.var_name}' is not a struct variable "
-                f"($ member access requires a struct variable).")
+                f"'{node.var_name}' is not a struct variable.")
             return None
 
         type_sym = self.sym.lookup(sym.struct_type_name)
@@ -1270,7 +1496,7 @@ class SemanticAnalyzer:
             return None
         if sym.kind != 'func':
             self.error(node.token,
-                f"'{node.name}' is not a function (it is a '{sym.kind}').")
+                f"'{node.name}' is not a function.")
             return None
 
         # Argument count check
@@ -1278,8 +1504,8 @@ class SemanticAnalyzer:
         actual_count   = len(node.args)
         if expected_count != actual_count:
             self.error(node.token,
-                f"Function '{node.name}' expects {expected_count} argument(s), "
-                f"got {actual_count}.")
+                f"Function '{node.name}' expects '{expected_count}' argument(s), "
+                f"got '{actual_count}'.")
         else:
             # Type-check each argument against its corresponding parameter
             for i, (param, arg) in enumerate(zip(sym.params, node.args)):
@@ -1290,12 +1516,15 @@ class SemanticAnalyzer:
                         f"expected '{param.dtype}', "
                         f"got '{self._type_name(arg_type)}'.")
 
-        # ABYSS return used in an expression context is a type error
+        # ABYSS functions cannot produce a value, so using one inside an
+        # expression is an error.  However, calling one as a standalone
+        # statement (log()!!) is perfectly valid — _in_stmt_call is True
+        # in that case, so we skip the error and just return None quietly.
         if sym.return_type == 'ABYSS':
-            self.error(node.token,
-                f"Function '{node.name}' is declared ABYSS (no return value) "
-                f"and cannot be used as an expression. "
-                f"Call it as a statement instead.")
+            if not self._in_stmt_call:
+                self.error(node.token,
+                    f"Function '{node.name}' is declared ABYSS "
+                    f"and cannot be used as an expression.")
             return None
 
         return sym.return_type
@@ -1354,7 +1583,7 @@ class SemanticAnalyzer:
             return 'BOOL'
 
         elif op in ('==', '!='):
-            if left_type and right_type and not self._compatible(left_type, right_type):
+            if left_type and right_type and not self._compatible_expr(left_type, right_type):
                 self.error(node.token,
                     f"Cannot compare '{self._type_name(left_type)}' "
                     f"and '{self._type_name(right_type)}' with '{op}': "
@@ -1387,7 +1616,7 @@ class SemanticAnalyzer:
         if op == '-':
             if operand_type and not self._is_numeric(operand_type):
                 self.error(node.token,
-                    f"Unary '-' requires a numeric operand (COIN or DIME), "
+                    f"Unary '-' requires a numeric operand, "
                     f"got '{self._type_name(operand_type)}'.")
             return operand_type   # preserves COIN or DIME
 
