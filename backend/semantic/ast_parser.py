@@ -2799,14 +2799,52 @@ class ASTParser:
         return self.bool_grp_ope()
 
     def _bool_literal(self):
-        """AYE → True, NAY → False"""
+        """
+        Handles the <bool> non-terminal (prod 180/181), used inside bool_grp_ope (prod 234).
+
+        prod 180: AYE/NAY literal → LiteralNode(BOOL)
+        prod 181: !/!# not_op not_ope → UnaryOpNode wrapping the operand
+
+        <not-ope> (prod 186/187/188):
+          186: id [id_tail]       → IdentNode / array / member / call
+          187: (value_grp)        → parenthesised expression
+          188: AYE | NAY          → LiteralNode(BOOL)
+        """
         tok = self.current_token
         if tok.type == 'AYE':
             self.eat('AYE')
             return LiteralNode('BOOL', True, tok)
-        else:
+        elif tok.type == 'NAY':
             self.eat('NAY')
             return LiteralNode('BOOL', False, tok)
+        else:
+            # prod 181: not_op not_ope
+            op_tok = self.current_token
+            op = op_tok.type          # '!' or '!#'
+            self.eat(op_tok.type)
+
+            # parse not_ope (prod 186/187/188)
+            not_ope_prod = self.get_production('<not-ope>')
+            inner_tok = self.current_token
+            if not_ope_prod == 186:   # id [id_tail]
+                self.eat('id')
+                if self.current_token and self.current_token.type in ('{', '$', '('):
+                    operand = self.id_tail(inner_tok.value, inner_tok)
+                else:
+                    operand = IdentNode(inner_tok.value, inner_tok)
+            elif not_ope_prod == 187:  # (value_grp)
+                self.eat('(')
+                operand = self.value_grp()
+                self.eat(')')
+            else:                      # prod 188: AYE | NAY
+                if inner_tok.type == 'AYE':
+                    self.eat('AYE')
+                    operand = LiteralNode('BOOL', True, inner_tok)
+                else:
+                    self.eat('NAY')
+                    operand = LiteralNode('BOOL', False, inner_tok)
+
+            return UnaryOpNode(op, operand, op_tok)
 
     def bool_exp_fold(self, left):
         """
