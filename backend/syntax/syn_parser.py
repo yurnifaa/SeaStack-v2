@@ -265,7 +265,7 @@ class Parser:
         prod = self.get_production('<coin-val-grp>')
         if prod == 30:
             self.coin_val()
-            self.coin_exp_grp()
+            self.coin_grp_exp()
         else:
             self.error_invalid_token('<coin-val-grp>')
 
@@ -2154,7 +2154,9 @@ class Parser:
         prod = self.get_production('<param-mult>')
         if prod == 333:
             self.eat(',')
-            self.params()
+            self.d_type()
+            self.eat('id')
+            self.param_mult()
         elif prod == 334:
             pass  # Lambda
         else:
@@ -2235,7 +2237,8 @@ class Parser:
         prod = self.get_production('<args-mult>')
         if prod == 350:
             self.eat(',')
-            self.args()
+            self.value()
+            self.args_mult()
         elif prod == 351:
             pass  # Lambda
         else:
@@ -3481,7 +3484,8 @@ class Parser:
             self.eat('{')
             self.index()
             self.eat('}')
-            self.arr_str_tail()
+            if self.current_token.type in ['{']:
+                self.arr_str_tail()
         elif prod == 566:
             self.eat('$')
             self.eat('id')
