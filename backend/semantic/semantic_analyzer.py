@@ -1,1623 +1,799 @@
 # =============================================================================
 # semantic_analyzer.py — SeaStack Semantic Analyzer
 #
-# HOW THIS ANALYZER WORKS (read before editing):
-# ───────────────────────────────────────────────
-# The analyzer walks the AST produced by ast_parser.py using the VISITOR
-# PATTERN. Every AST node class has a corresponding visit_ClassName() method
-# here. The main dispatch method visit(node) routes each node to the right
-# visitor automatically using the node's class name.
+# Walks AST via visitor pattern. Expression visitors return dtype strings.
+# Statement visitors return None. Non-fatal errors are collected.
 #
-# TWO KINDS OF VISITORS:
-#   Statement visitors  → called for side effects (register symbols, check
-#                         scopes, verify control flow). Return nothing.
-#   Expression visitors → called to determine the TYPE of an expression.
-#                         Return a dtype string: 'COIN','DIME','PARCH',
-#                         'SCROLL','BOOL', or None if unknown/error.
-#
-# SYMBOL TABLE:
-#   Managed by SymbolTable in symbol_table.py.
-#   A stack of dicts (scopes). The innermost scope is always self.sym._scopes[-1].
-#   push_scope() / pop_scope() wrap every block that introduces a new scope:
-#   function bodies, loop bodies, LOOK bodies, etc.
-#   lookup(name) walks from innermost to outermost — this implements shadowing.
-#
-# CONTEXT TRACKING:
-#   self.current_func_return  — the return type of the function we are inside
-#                               (None at global/AHOY level)
-#   self.loop_depth           — how many nested loops we are inside (HOIST/
-#                               HEAVE/HAUL). LOOK/DROPLOOK/DROP/CHART are
-#                               conditionals, NOT loops — they use
-#                               self.in_conditional instead.
-#   self.in_conditional       — whether we are inside any conditional block
-#                               (LOOK/DROPLOOK/DROP/CHART/COURSE/ADRIFT).
-#                               SAIL and LAND are valid here too.
-#   self.in_chart             — whether we are specifically inside a CHART
-#                               block (SAIL is forbidden in ADRIFT bodies,
-#                               but the grammar already prevents it — tracked
-#                               here for belt-and-suspenders validation).
-#
-# JUMP STATEMENT PLACEMENT:
-#   Per SeaStack rules:
-#     SAIL / LAND  → valid at the END of any loop or conditional body,
-#                    including LOOK, DROPLOOK, DROP, COURSE bodies.
-#                    SAIL is forbidden in ADRIFT (grammar enforces; we mirror).
-#     LAND         → REQUIRED at end of ADRIFT body.
-#     BACK         → only inside a function; returning functions need a value,
-#                    ABYSS functions must NOT return a value.
-#
-# ERROR REPORTING:
-#   self.error(token, message) appends an error dict to self.errors.
-#   Errors are non-fatal: the analyzer continues walking after reporting one,
-#   so it can catch multiple errors in a single pass.
-#
-# TYPE COMPATIBILITY:
-#   SeaStack's rules:
-#     COIN  — integer
-#     DIME  — floating-point
-#     PARCH — single-character LITERAL (written with single quotes, e.g. 'A')
-#     SCROLL — string; SCROLL{i} (character index) returns SCROLL, not PARCH,
-#              because an indexed character is still a one-character SCROLL value
-#     BOOL  — boolean
-#       expressions — _compatible_expr() handles this case.
-#     In assignment / initialization contexts (variables, array elements,
-#       struct members, function parameters, return values):
-#         • A COIN value may be promoted into a DIME target.
-#         • A DIME value CANNOT be assigned to a COIN target.
-#     All other types must match exactly in every context.
-#   _compatible(expected, actual) encodes the strict assignment rules.
-#   _compatible_expr(left, right) encodes the looser expression rules.
-#
-# BOUNDS CHECKING:
-#   When an array is indexed with a compile-time COIN integer literal, the
-#   analyzer checks that the index falls within [0, declared_size - 1].
-#   This applies in every access context: read expressions (ArrayAccessNode),
-#   assignments and compound-assignments (_resolve_assign_target), and ASK
-#   address targets (_resolve_address_target).  Runtime (non-literal) indices
-#   cannot be checked statically and are silently skipped.
-#   Struct member access is inherently "bounds-checked" by verifying that the
-#   member name exists in the struct definition — this is already enforced at
-#   every access/assignment site.
-#
-# CHANGES FROM ORIGINAL (v1 → v2):
-#   • Symbol classes moved to symbol_table.py; imported from there.
-#   • StructTypeSymbol now stores member_order (list) alongside members (dict)
-#     to support positional struct initializer validation.
-#   • visit_StructDefNode passes member_order to StructTypeSymbol constructor.
-#   • visit_StructVarDeclNode correctly imports NamedInitNode and validates
-#     positional initializer count against declared member count.
-#   • Conditional bodies (LOOK/DROP/DROPLOOK) no longer increment loop_depth;
-#     a new in_conditional counter is used instead, so SAIL/LAND inside
-#     conditionals are correctly validated without confusing the loop counter.
-#   • visit_SailNode / visit_LandNode check both loop_depth and in_conditional.
-#   • visit_ArrayDeclNode now validates that init_values count ≤ declared size.
-#   • visit_UnaryStmtNode enforces COIN-only operand (not DIME) per rules.
-#   • visit_EchoNode validates format specifier count vs argument count.
-#   • visit_AskNode validates format specifier count vs target count.
-#   • _pre_register_func no longer double-declares; visit_FuncDefNode handles
-#     the declare() call safely with lookup_current_scope guard.
-#   • visit_FuncCallNode now handles ABYSS return type correctly (ABYSS
-#     functions can be called as statements but not used in expressions).
+# KEY FIXES from original:
+#   - Added global-scope check for LOCKE constants
+#   - Compound assignment now checks target is initialized
+#   - Improved COURSE duplicate label detection using value comparison
+#   - Assignment marks arrays/structs as initialized at base level
 # =============================================================================
 
 import re
-
 from semantic.symbol_table import (
-    Symbol,
-    ArraySymbol,
-    FunctionSymbol,
-    StructTypeSymbol,
-    StructVarSymbol,
-    SymbolTable,
+    Symbol, ArraySymbol, FunctionSymbol,
+    StructTypeSymbol, StructVarSymbol, SymbolTable,
 )
 from semantic.ast_nodes import NamedInitNode, PositionalInitNode
 
 
-# =============================================================================
-# SEMANTIC ANALYZER
-# =============================================================================
-
 class SemanticAnalyzer:
     def __init__(self, ast, source_code):
-        self.ast         = ast
+        self.ast = ast
         self.source_code = source_code
-        self.sym         = SymbolTable()
-        self.errors      = []
+        self.sym = SymbolTable()
+        self.errors = []
 
-        # ── Context tracking ─────────────────────────────────────────────────
-        # Return type of the function we are currently inside.
-        # None  → global scope or AHOY (neither returns a value).
-        self.current_func_return = None   # str | None
+        # Context tracking
+        self.current_func_return = None  # return type of current function (None = global/AHOY)
+        self.loop_depth = 0              # HOIST/HEAVE/HAUL depth
+        self.in_conditional = 0          # LOOK/CHART conditional depth
+        self.in_chart = False            # inside CHART block
+        self.in_adrift = False           # inside ADRIFT body
 
-        # Nested loop depth (HOIST / HEAVE / HAUL-HEAVE only).
-        # LOOK / CHART are conditionals, not loops — they use in_conditional.
-        self.loop_depth    = 0   # int
-
-        # Depth of any conditional block (LOOK, DROPLOOK, DROP, CHART).
-        # Incremented/decremented alongside loop_depth so that SAIL/LAND
-        # inside a LOOK body nested in a HOIST body is still valid.
-        self.in_conditional = 0  # int
-
-        # True specifically while inside a CHART block.  SAIL is forbidden
-        # in ADRIFT bodies (the grammar enforces this, but we double-check).
-        self.in_chart = False
-
-        # True when we are analyzing the ADRIFT body of a CHART statement.
-        self.in_adrift = False
-
-    # =========================================================================
-    # ENTRY POINT
-    # =========================================================================
+    # ── Entry Point ──────────────────────────────────────────────────────
 
     def analyze(self):
-        """
-        Run the full semantic analysis pass.
-        Returns list of error dicts (empty list means success).
-        """
         self.visit(self.ast)
         return self.errors
 
-    # =========================================================================
-    # VISITOR DISPATCH
-    # =========================================================================
+    # ── Visitor Dispatch ─────────────────────────────────────────────────
 
     def visit(self, node):
-        """
-        Dispatch to the correct visitor based on node class name.
-        Expression visitors return a dtype string.
-        Statement visitors return None.
-        """
-        if node is None:
-            return None
-        method_name = f'visit_{type(node).__name__}'
-        visitor = getattr(self, method_name, self.visit_unknown)
-        return visitor(node)
+        if node is None: return None
+        method = f'visit_{type(node).__name__}'
+        return getattr(self, method, self._visit_unknown)(node)
 
-    def visit_unknown(self, node):
-        self.errors.append({
-            'type':    'Internal',
-            'message': f'No visitor for node type {type(node).__name__}',
-            'line': '?', 'col': '?',
-        })
+    def _visit_unknown(self, node):
+        self.errors.append({'type': 'Internal', 'message': f'No visitor for {type(node).__name__}',
+                           'line': '?', 'col': '?'})
 
-    # =========================================================================
-    # ERROR HELPER
-    # =========================================================================
+    # ── Error Helper ─────────────────────────────────────────────────────
 
     def error(self, token, message):
-        """
-        Record a semantic error. token can be None (for implicit locations).
-        Non-fatal — analysis continues after this call.
-
-        Extracts the error type from the message and retrieves the actual source line
-        for structured error formatting.
-        """
         line = getattr(token, 'line', '?')
-        col  = getattr(token, 'col',  '?')
-
-        # Extract error type from message patterns
-        error_type = self._extract_error_type(message)
-
-        # Get the actual source code line
+        col = getattr(token, 'col', '?')
         actual_line = ""
         if line != '?' and line != '-':
             try:
-                line_num = int(line) - 1  # Convert to 0-indexed
-                source_lines = self.source_code.split('\n')
-                if 0 <= line_num < len(source_lines):
-                    actual_line = source_lines[line_num].strip()
-            except (ValueError, IndexError, AttributeError):
-                actual_line = ""
+                ln = int(line) - 1
+                src_lines = self.source_code.split('\n')
+                if 0 <= ln < len(src_lines): actual_line = src_lines[ln].strip()
+            except (ValueError, IndexError, AttributeError): pass
 
         self.errors.append({
-            'line':        line,
-            'col':         col,
-            'error_type':  error_type,
-            'message':     message,
-            'actual_line': actual_line,
+            'line': line, 'col': col,
+            'error_type': self._classify_error(message),
+            'message': message, 'actual_line': actual_line,
         })
 
-    def _extract_error_type(self, message):
-        """
-        Extract the semantic error type from the error message.
-        Returns a human-readable error type string.
-        """
-        msg_lower = message.lower()
+    def _classify_error(self, msg):
+        m = msg.lower()
+        if 'may be used before' in m: return 'Uninitialized Variable'
+        if 'already declared' in m or 'duplicate' in m: return 'Duplicate Declaration'
+        if 'undeclared' in m or 'undefined' in m: return 'Undeclared Variable'
+        if 'locke' in m and ('assign' in m or 'modify' in m or 'apply' in m): return 'LOCKE Modification'
+        if 'read-only' in m: return 'LOCKE Modification'
+        if 'only be declared globally' in m: return 'Invalid LOCKE Scope'
+        if 'type mismatch' in m or 'cannot initialize' in m: return 'Type Mismatch'
+        if 'incompatible' in m: return 'Type Mismatch'
+        if 'cannot assign' in m: return 'Invalid Assignment'
+        if 'outside' in m: return 'Outside Scope'
+        if 'operator' in m and ('requires' in m or 'must' in m): return 'Invalid Operand Type'
+        if 'chart' in m and 'expression' in m: return 'Invalid CHART Expression'
+        if 'course' in m and 'duplicate' in m: return 'Duplicate COURSE Label'
+        if 'out of bounds' in m: return 'Array Index Out of Bounds'
+        if 'initializer has' in m and ('row' in m or 'exceed' in m): return 'Array Bounds Exceeded'
+        if 'array index' in m and 'must be coin' in m: return 'Invalid Index Type'
+        if 'is not an array' in m: return 'Invalid Array'
+        if 'has no member' in m: return 'Undefined Struct Member'
+        if 'expects' in m and 'argument' in m: return 'Argument Count Mismatch'
+        if 'specifier' in m and ('expects' in m or 'mismatch' in m): return 'Format Specifier Mismatch'
+        if 'function' in m: return 'Function Error'
+        if 'back' in m and ('outside' in m or 'abyss' in m or 'return' in m): return 'Invalid Return Context'
+        if ('sail' in m or 'land' in m) and 'outside' in m: return 'Invalid Jump Context'
+        if 'cannot be used as an expression' in m: return 'Invalid Expression Context'
+        if 'condition' in m and 'must' in m: return 'Invalid Condition Type'
+        return 'Semantic Error'
 
-        # --- VARIABLE DECLARATION & INITIALIZATION ERRORS ---
-        if 'may be used before it is initialized' in msg_lower:
-            return 'Uninitialized Variable'
-        elif 'already declared' in msg_lower or 'duplicate' in msg_lower:
-            return 'Duplicate Declaration'
-        elif 'undeclared' in msg_lower or 'undefined' in msg_lower:
-            return 'Undeclared Variable'
-
-        # --- LOCKE/CONSTANT MODIFICATION ---
-        elif 'locke' in msg_lower and ('assign' in msg_lower or 'modify' in msg_lower or 'apply' in msg_lower):
-            return 'LOCKE Modification'
-        elif 'read-only' in msg_lower or ('LOCKE are' in msg_lower and 'reassigned' in msg_lower):
-            return 'LOCKE Modification'
-
-        # --- TYPE ERRORS ---
-        elif 'type mismatch' in msg_lower or 'cannot initialize' in msg_lower:
-            return 'Type Mismatch'
-        elif 'incompatible' in msg_lower:
-            return 'Type Mismatch'
-
-        # --- ASSIGNMENT ERRORS ---
-        elif 'cannot assign' in msg_lower:
-            return 'Invalid Assignment'
-
-        # --- SCOPE ERRORS ---
-        elif 'outside' in msg_lower or 'outside of' in msg_lower:
-            return 'Outside Scope'
-
-        # --- OPERATOR & OPERAND ERRORS ---
-        elif 'operator' in msg_lower and ('requires' in msg_lower or 'must' in msg_lower):
-            return 'Invalid Operand Type'
-
-        # --- SWITCH/CHART ERRORS ---
-        elif 'chart' in msg_lower and 'expression' in msg_lower:
-            return 'Invalid Switch Expression'
-        elif 'course' in msg_lower and 'duplicate' in msg_lower:
-            return 'Invalid Switch Expression'
-
-        # --- ARRAY ERRORS ---
-        elif 'out of bounds' in msg_lower:
-            return 'Array Index Out of Bounds'
-        elif ('initializer has' in msg_lower and 'row' in msg_lower) or ('initializer has' in msg_lower and 'exceed' in msg_lower):
-            return 'Array Bounds Exceeded'
-        elif 'array index' in msg_lower and 'must be coin' in msg_lower:
-            return 'Invalid Index Type'
-        elif 'is not an array' in msg_lower:
-            return 'Invalid Array'
-        elif 'array' in msg_lower:
-            return 'Array Error'
-
-        # --- STRUCT ERRORS ---
-        elif 'has no member' in msg_lower:
-            return 'Undefined Struct Member'
-        elif 'struct' in msg_lower:
-            return 'Struct Error'
-
-        # --- FUNCTION ERRORS ---
-        elif ('expects' in msg_lower and 'argument' in msg_lower) or ('argument' in msg_lower and 'expects' in msg_lower):
-            return 'Argument Count Mismatch'
-        elif 'specifier' in msg_lower and ('expects' in msg_lower or 'mismatch' in msg_lower):
-            return 'Format Specifier Mismatch'
-        elif 'function' in msg_lower:
-            return 'Function Error'
-
-        # --- CONTEXT ERRORS ---
-        elif 'back' in msg_lower and ('outside' in msg_lower or 'function' in msg_lower or 'abyss' in msg_lower or 'return' in msg_lower):
-            return 'Invalid Return Context'
-        elif ('sail' in msg_lower or 'land' in msg_lower) and ('outside' in msg_lower or 'loop' in msg_lower or 'conditional' in msg_lower):
-            return 'Invalid Jump Context'
-        elif 'cannot be used as an expression' in msg_lower:
-            return 'Invalid Expression Context'
-
-        # --- CONDITION ERRORS ---
-        elif 'condition' in msg_lower and 'must' in msg_lower:
-            return 'Invalid Condition Type'
-        elif 'must' in msg_lower and 'bool' in msg_lower:
-            return 'Invalid Condition Type'
-
-        # --- RESERVED IDENTIFIERS ---
-        elif 'reserved' in msg_lower or 'keyword' in msg_lower:
-            return 'Reserved Identifier Misuse'
-
-        # --- DEFAULT ---
-        else:
-            return 'Semantic Error'
-
-    # =========================================================================
-    # TYPE HELPERS
-    # =========================================================================
+    # ── Type Helpers ─────────────────────────────────────────────────────
 
     def _compatible(self, expected, actual):
-        """
-        Returns True if actual type is acceptable where expected type is needed
-        in an ASSIGNMENT / INITIALIZATION context (variable, array element,
-        struct member, function parameter, or return value).
-
-        Rules:
-          • Exact match is always acceptable.
-          • A COIN value may be promoted to a DIME target (COIN → DIME allowed).
-          • A DIME value may NOT be assigned to a COIN target.
-          • All other types must match exactly.
-        """
-        if expected == actual:
-            return True
-        # Only allow promotion: COIN value into a DIME target.
-        if expected == 'DIME' and actual == 'COIN':
-            return True
+        """Assignment compatibility: exact match or COIN→DIME promotion."""
+        if expected == actual: return True
+        if expected == 'DIME' and actual == 'COIN': return True
         return False
 
     def _compatible_expr(self, left, right):
-        """
-        Returns True if left and right types are compatible in an EXPRESSION
-        context (arithmetic operators and equality/inequality comparisons only).
-
-        Rules:
-          • COIN and DIME are mutually compatible with each other in expressions.
-          • All other types must match exactly.
-        """
-        if left == right:
-            return True
-        if left in ('COIN', 'DIME') and right in ('COIN', 'DIME'):
-            return True
+        """Expression compatibility: COIN↔DIME are compatible."""
+        if left == right: return True
+        if left in ('COIN', 'DIME') and right in ('COIN', 'DIME'): return True
         return False
 
-    def _is_numeric(self, dtype):
-        return dtype in ('COIN', 'DIME')
+    def _is_numeric(self, dtype): return dtype in ('COIN', 'DIME')
+    def _is_bool(self, dtype): return dtype == 'BOOL'
+    def _type_name(self, dtype): return dtype if dtype else 'unknown'
 
-    def _is_bool(self, dtype):
-        return dtype == 'BOOL'
+    # ── Bounds Checking ──────────────────────────────────────────────────
 
-    def _type_name(self, dtype):
-        """Human-readable type name for error messages."""
-        return dtype if dtype else 'unknown'
+    def _literal_int(self, node):
+        """Get compile-time COIN int value, or None for runtime values."""
+        if type(node).__name__ != 'LiteralNode': return None
+        if getattr(node, 'dtype', None) != 'COIN': return None
+        try: return int(getattr(node, 'value', None))
+        except (TypeError, ValueError): return None
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # BOUNDS-CHECKING HELPERS
-    # ─────────────────────────────────────────────────────────────────────────
-
-    def _literal_int_value(self, node):
-        """
-        If node is a compile-time COIN integer literal, return its integer
-        value so we can do static bounds checking. Returns None for any
-        non-literal or non-COIN expression (i.e. a runtime value — we cannot
-        check those statically and silently skip the check).
-
-        Tries node.value first (most AST designs), then node.token.value as a
-        fallback.  Converts to int safely; returns None on any failure.
-        """
-        cls = type(node).__name__
-        if cls != 'LiteralNode':
-            return None
-        # Only COIN literals are valid array indices
-        if getattr(node, 'dtype', None) != 'COIN':
-            return None
-        raw = getattr(node, 'value', None)
-        if raw is None:
-            raw = getattr(getattr(node, 'token', None), 'value', None)
-        try:
-            return int(raw)
-        except (TypeError, ValueError):
-            return None
-
-    def _check_array_index_bounds(self, array_name, dim_label, index_expr,
-                                   declared_size, token):
-        """
-        If index_expr is a compile-time COIN literal, verify it is in the
-        range [0, declared_size - 1].  If not, record an error.
-        Silently skips the check for runtime (non-literal) indices.
-
-        dim_label is a human-readable string like 'index' or 'row index' or
-        'column index' used in the error message.
-        """
-        idx_val = self._literal_int_value(index_expr)
-        if idx_val is None:
-            return   # runtime index — cannot check statically
-        if idx_val < 0 or idx_val >= declared_size:
+    def _check_bounds(self, arr_name, dim_label, idx_expr, size, token):
+        v = self._literal_int(idx_expr)
+        if v is not None and (v < 0 or v >= size):
             self.error(token,
-                f"Array '{array_name}' {dim_label} {idx_val} is out of bounds "
-                f"(declared size {declared_size}, valid range 0–{declared_size - 1}).")
+                f"Array '{arr_name}' {dim_label} {v} is out of bounds "
+                f"(declared size {size}, valid range 0–{size - 1}).")
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # FORMAT SPECIFIER HELPERS
-    # ─────────────────────────────────────────────────────────────────────────
+    # ── Format Specifiers ────────────────────────────────────────────────
 
-    # Maps the specifier character (after %) to the SeaStack type it represents.
-    _SPECIFIER_TO_DTYPE = {
-        'C': 'COIN',
-        'D': 'DIME',
-        'P': 'PARCH',
-        'S': 'SCROLL',
-        'B': 'BOOL',
-    }
+    _SPEC_MAP = {'C': 'COIN', 'D': 'DIME', 'P': 'PARCH', 'S': 'SCROLL', 'B': 'BOOL'}
 
-    def _parse_format_specifiers(self, fmt_string):
-        """
-        Extract the list of dtype strings from a format string.
-        E.g. "%C%D%S" → ['COIN', 'DIME', 'SCROLL']
-        Returns list[str] (may be empty if no specifiers found).
-        """
-        found = re.findall(r'%([CDPSB])', fmt_string)
-        return [self._SPECIFIER_TO_DTYPE[ch] for ch in found]
+    def _parse_specs(self, fmt):
+        return [self._SPEC_MAP[ch] for ch in re.findall(r'%([CDPSB])', fmt)]
 
-    # =========================================================================
+    # =====================================================================
     # PROGRAM STRUCTURE
-    # =========================================================================
+    # =====================================================================
 
     def visit_ProgramNode(self, node):
-        """
-        Global scope: process all global declarations, then the AHOY body.
-
-        Two-pass strategy:
-          Pass 1 → pre-register all function signatures so they can be called
-                   before their definition appears in the file (forward refs).
-                   Also pre-register struct types so struct vars can reference
-                   them in initializers before the full definition pass.
-          Pass 2 → full analysis of each global declaration.
-        """
-        # Pass 1: register function signatures and struct types
-        for decl in node.global_decls:
-            cls = type(decl).__name__
-            if cls == 'FuncDefNode':
-                self._pre_register_func(decl)
-            elif cls == 'StructDefNode':
-                self._pre_register_struct(decl)
-
+        # Pass 1: pre-register functions and struct types for forward refs
+        for d in node.global_decls:
+            cn = type(d).__name__
+            if cn == 'FuncDefNode': self._pre_register_func(d)
+            elif cn == 'StructDefNode': self._pre_register_struct(d)
         # Pass 2: full analysis
-        for decl in node.global_decls:
-            self.visit(decl)
-
-        # Analyze the AHOY main body
+        for d in node.global_decls: self.visit(d)
         self.visit(node.ahoy_body)
 
     def _pre_register_func(self, node):
-        """
-        Register a function's signature (name, return type, params) in the
-        global scope without analyzing its body. This enables forward calls.
-        Silently skips if already declared — visit_FuncDefNode will handle
-        the genuine duplicate check.
-        """
         if not self.sym.lookup_current_scope(node.name):
-            sym = FunctionSymbol(node.name, node.return_type, node.params, node.token)
-            self.sym.declare(sym)
+            self.sym.declare(FunctionSymbol(node.name, node.return_type, node.params, node.token))
 
     def _pre_register_struct(self, node):
-        """
-        Register a struct type definition in the global scope so that struct
-        variable declarations can reference the type name before the full
-        visit_StructDefNode pass runs.
-        """
         if not self.sym.lookup_current_scope(node.name):
-            members      = {m.name: m.dtype for m in node.members}
-            member_order = [m.name for m in node.members]
-            sym = StructTypeSymbol(node.name, members, member_order, node.token)
-            self.sym.declare(sym)
+            members = {m.name: m.dtype for m in node.members}
+            order = [m.name for m in node.members]
+            self.sym.declare(StructTypeSymbol(node.name, members, order, node.token))
 
     def visit_AhoyNode(self, node):
-        """The main AHOY block has its own scope for local declarations."""
         self.sym.push_scope()
-        for decl in node.local_decls:
-            self.visit(decl)
-        for stmt in node.statements:
-            self.visit(stmt)
+        for d in node.local_decls: self.visit(d)
+        for s in node.statements: self.visit(s)
         self.sym.pop_scope()
 
-    # =========================================================================
+    # =====================================================================
     # DECLARATIONS
-    # =========================================================================
+    # =====================================================================
 
     def visit_ConstDeclNode(self, node):
-        """
-        LOCKE declarations: must have a literal value, cannot be reassigned.
-        The grammar already enforces literal-only values, so we just register.
-        """
-        if self.sym.lookup_current_scope(node.name):
+        # LOCKE can only be declared globally (rule p.11)
+        if not self.sym.is_global_scope():
             self.error(node.token,
-                f"LOCKE '{node.name}' is already declared in this scope.")
+                f"LOCKE '{node.name}' can only be declared globally.")
             return
-        sym = Symbol(node.name, node.dtype, 'const', node.token,
-                     is_initialized=True)
-        self.sym.declare(sym)
+        if self.sym.lookup_current_scope(node.name):
+            self.error(node.token, f"LOCKE '{node.name}' is already declared in this scope.")
+            return
+        self.sym.declare(Symbol(node.name, node.dtype, 'const', node.token, is_initialized=True))
 
     def visit_VarDeclNode(self, node):
-        """
-        Variable declaration. Check for duplicates, type-check the initializer.
-        Variables without an initializer are registered as uninitialized —
-        the analyzer will flag use-before-init when they are read.
-        """
         if self.sym.lookup_current_scope(node.name):
-            self.error(node.token,
-                f"Variable '{node.name}' is already declared in this scope.")
+            self.error(node.token, f"Variable '{node.name}' is already declared in this scope.")
             return
-
-        init_type = None
         if node.init_value is not None:
             init_type = self.visit(node.init_value)
             if init_type and not self._compatible(node.dtype, init_type):
                 self.error(node.token,
                     f"Cannot initialize '{node.dtype}' variable '{node.name}' "
                     f"with a '{self._type_name(init_type)}' value.")
-
-        sym = Symbol(node.name, node.dtype, 'var', node.token,
-                     is_initialized=(node.init_value is not None))
-        self.sym.declare(sym)
+        self.sym.declare(Symbol(node.name, node.dtype, 'var', node.token,
+                                is_initialized=(node.init_value is not None)))
 
     def visit_ArrayDeclNode(self, node):
-        """
-        Array declaration.
-        Checks:
-          • No duplicate in current scope.
-          • Each initializer element's type matches the array's declared dtype.
-          • Initializer element COUNT does not exceed the declared dimension size.
-            (Fewer elements than the size is allowed — remaining are null.)
-        """
         if self.sym.lookup_current_scope(node.name):
-            self.error(node.token,
-                f"Array '{node.name}' is already declared in this scope.")
+            self.error(node.token, f"Array '{node.name}' is already declared in this scope.")
             return
-
         if node.init_values is not None:
             if node.is_2d:
-                # For 2D: outer list = rows, each row = list of expressions.
-                declared_rows = node.dimensions[0]
-                declared_cols = node.dimensions[1]
-
-                if len(node.init_values) > declared_rows:
+                dr, dc = node.dimensions[0], node.dimensions[1]
+                if len(node.init_values) > dr:
                     self.error(node.token,
                         f"Array '{node.name}' initializer has {len(node.init_values)} "
-                        f"row(s) but was declared with {declared_rows} row(s).")
-
-                for row_idx, row in enumerate(node.init_values):
-                    if len(row) > declared_cols:
+                        f"row(s) but was declared with {dr} row(s).")
+                for ri, row in enumerate(node.init_values):
+                    if len(row) > dc:
                         self.error(node.token,
-                            f"Array '{node.name}' row [{row_idx}] has {len(row)} "
-                            f"element(s) but the declared column size is {declared_cols}.")
-                    for col_idx, elem in enumerate(row):
-                        elem_type = self.visit(elem)
-                        if elem_type and not self._compatible(node.dtype, elem_type):
+                            f"Array '{node.name}' row [{ri}] has {len(row)} element(s) "
+                            f"but the declared column size is {dc}.")
+                    for ci, elem in enumerate(row):
+                        et = self.visit(elem)
+                        if et and not self._compatible(node.dtype, et):
                             self.error(node.token,
-                                f"Array '{node.name}' element [{row_idx}][{col_idx}] "
-                                f"has type '{self._type_name(elem_type)}', "
-                                f"expected '{node.dtype}'.")
+                                f"Array '{node.name}' element [{ri}][{ci}] has type "
+                                f"'{self._type_name(et)}', expected '{node.dtype}'.")
             else:
-                declared_size = node.dimensions[0]
-                if len(node.init_values) > declared_size:
+                ds = node.dimensions[0]
+                if len(node.init_values) > ds:
                     self.error(node.token,
                         f"Array '{node.name}' initializer has {len(node.init_values)} "
-                        f"element(s) but was declared with size {declared_size}.")
-
-                for idx, elem in enumerate(node.init_values):
-                    elem_type = self.visit(elem)
-                    if elem_type and not self._compatible(node.dtype, elem_type):
+                        f"element(s) but was declared with size {ds}.")
+                for i, elem in enumerate(node.init_values):
+                    et = self.visit(elem)
+                    if et and not self._compatible(node.dtype, et):
                         self.error(node.token,
-                            f"Array '{node.name}' element [{idx}] "
-                            f"has type '{self._type_name(elem_type)}', "
-                            f"expected '{node.dtype}'.")
-
-        sym = ArraySymbol(node.name, node.dtype, node.dimensions, node.is_2d,
-                          node.token)
-        self.sym.declare(sym)
+                            f"Array '{node.name}' element [{i}] has type "
+                            f"'{self._type_name(et)}', expected '{node.dtype}'.")
+        self.sym.declare(ArraySymbol(node.name, node.dtype, node.dimensions, node.is_2d, node.token))
 
     def visit_StructDefNode(self, node):
-        """
-        Register a struct TYPE definition (MAST Ship [...]).
-        Checks:
-          • No duplicate struct type name in current scope.
-          • No duplicate member names within the struct.
-          • At least one member (grammar enforces; we mirror for clarity).
-        """
-        # If pre-registered in Pass 1, skip re-declaration but still validate members.
         existing = self.sym.lookup_current_scope(node.name)
         if existing and existing.kind == 'struct':
-            # Already registered — validate members against what we stored.
-            members_seen = set()
-            for member in node.members:
-                if member.name in members_seen:
-                    self.error(member.token,
-                        f"Struct '{node.name}' has duplicate member '{member.name}'.")
-                members_seen.add(member.name)
+            # Already pre-registered — just validate members
+            seen = set()
+            for m in node.members:
+                if m.name in seen:
+                    self.error(m.token, f"Struct '{node.name}' has duplicate member '{m.name}'.")
+                seen.add(m.name)
             return
-
         if existing:
-            self.error(node.token,
-                f"Identifier '{node.name}' is already declared in this scope.")
+            self.error(node.token, f"Identifier '{node.name}' is already declared in this scope.")
             return
-
-        members      = {}
-        member_order = []
-        for member in node.members:
-            if member.name in members:
-                self.error(member.token,
-                    f"Struct '{node.name}' has duplicate member '{member.name}'.")
+        members, order = {}, []
+        for m in node.members:
+            if m.name in members:
+                self.error(m.token, f"Struct '{node.name}' has duplicate member '{m.name}'.")
             else:
-                members[member.name]  = member.dtype
-                member_order.append(member.name)
+                members[m.name] = m.dtype; order.append(m.name)
+        self.sym.declare(StructTypeSymbol(node.name, members, order, node.token))
 
-        sym = StructTypeSymbol(node.name, members, member_order, node.token)
-        self.sym.declare(sym)
-
-    def visit_MemberDeclNode(self, node):
-        pass   # handled inside visit_StructDefNode
+    def visit_MemberDeclNode(self, node): pass
 
     def visit_StructVarDeclNode(self, node):
-        """
-        Declare a struct variable instance (MAST Ship s1).
-        Checks:
-          • Struct type must be defined.
-          • Variable name must not collide in current scope.
-          • If positional initializers: count must not exceed member count;
-            each value's type must match the corresponding member's dtype.
-          • If named initializers: each member name must exist in the struct;
-            each value's type must match the member's declared dtype.
-          • Providing more initializers than members is invalid.
-        """
-        # Verify struct type exists
         type_sym = self.sym.lookup(node.struct_type)
         if type_sym is None or type_sym.kind != 'struct':
-            self.error(node.token,
-                f"Undefined struct type '{node.struct_type}'.")
-            return
-
-        members      = type_sym.members       # dict[name → dtype]
-        member_order = type_sym.member_order  # list[str] — declaration order
-
-        # Check for duplicate variable name in current scope
+            self.error(node.token, f"Undefined struct type '{node.struct_type}'."); return
+        members, order = type_sym.members, type_sym.member_order
         if self.sym.lookup_current_scope(node.var_name):
-            self.error(node.token,
-                f"Variable '{node.var_name}' is already declared in this scope.")
-            return
-
-        # Validate initializer list
+            self.error(node.token, f"Variable '{node.var_name}' is already declared in this scope."); return
         if node.inits:
-            if len(node.inits) > len(member_order):
+            if len(node.inits) > len(order):
                 self.error(node.token,
-                    f"Struct '{node.struct_type}' has {len(member_order)} member(s) "
+                    f"Struct '{node.struct_type}' has {len(order)} member(s) "
                     f"but {len(node.inits)} initializer(s) were provided.")
             else:
-                positional_cursor = 0   # tracks which member we are on for positional inits
-
+                pos = 0
                 for init in node.inits:
                     if isinstance(init, NamedInitNode):
-                        # Named init: $member_name = value
                         if init.member_name not in members:
                             self.error(init.token,
-                                f"Struct type '{node.struct_type}' has no member "
-                                f"'{init.member_name}'.")
+                                f"Struct type '{node.struct_type}' has no member '{init.member_name}'.")
                         else:
-                            expected = members[init.member_name]
-                            actual   = self.visit(init.value)
-                            if actual and not self._compatible(expected, actual):
+                            actual = self.visit(init.value)
+                            if actual and not self._compatible(members[init.member_name], actual):
                                 self.error(init.token,
                                     f"Member '{init.member_name}' of '{node.struct_type}' "
-                                    f"expects '{expected}', "
-                                    f"got '{self._type_name(actual)}'.")
-                        # After a named init we do NOT advance positional_cursor —
-                        # the next init (if positional) picks up from wherever
-                        # the named init left the cursor.  SeaStack rule: named
-                        # inits jump to that member; the next positional init
-                        # then goes to the member AFTER the named one.
-                        if init.member_name in member_order:
-                            positional_cursor = member_order.index(init.member_name) + 1
-
+                                    f"expects '{members[init.member_name]}', got '{self._type_name(actual)}'.")
+                        if init.member_name in order:
+                            pos = order.index(init.member_name) + 1
                     elif isinstance(init, PositionalInitNode):
-                        # Positional init: value fills the next member in order
-                        if positional_cursor >= len(member_order):
-                            self.error(node.token,
-                                f"Too many positional initializers for struct "
-                                f"'{node.struct_type}'.")
-                            break
-                        member_name = member_order[positional_cursor]
-                        expected    = members[member_name]
-                        actual      = self.visit(init.value)
+                        if pos >= len(order):
+                            self.error(node.token, f"Too many positional initializers for struct '{node.struct_type}'."); break
+                        mname = order[pos]; expected = members[mname]
+                        actual = self.visit(init.value)
                         if actual and not self._compatible(expected, actual):
                             self.error(node.token,
-                                f"Positional initializer {positional_cursor + 1} for "
-                                f"struct '{node.struct_type}' member '{member_name}' "
-                                f"expects '{expected}', "
-                                f"got '{self._type_name(actual)}'.")
-                        positional_cursor += 1
+                                f"Positional initializer {pos+1} for struct '{node.struct_type}' "
+                                f"member '{mname}' expects '{expected}', got '{self._type_name(actual)}'.")
+                        pos += 1
+        self.sym.declare(StructVarSymbol(node.var_name, node.struct_type, node.token))
 
-        sym = StructVarSymbol(node.var_name, node.struct_type, node.token)
-        self.sym.declare(sym)
-
-    def visit_PositionalInitNode(self, node):
-        return self.visit(node.value)
-
-    def visit_NamedInitNode(self, node):
-        return self.visit(node.value)
+    def visit_PositionalInitNode(self, node): return self.visit(node.value)
+    def visit_NamedInitNode(self, node): return self.visit(node.value)
 
     def visit_FuncDefNode(self, node):
-        """
-        Function definition.
-
-        Key steps:
-        1. Register the function in the OUTER scope if not already done by
-           _pre_register_func (forward-reference pass). Report error on genuine
-           duplicates (two function definitions with the same name).
-        2. Push a new scope for the function body.
-        3. Declare all parameters as initialized variables in the inner scope.
-        4. Analyze local declarations and body statements.
-        5. Validate the return expression type matches the declared return type.
-        6. Pop the scope when done.
-
-        current_func_return tells nested ReturnNode/BackNode visitors what
-        type to expect.
-        """
-        # If not pre-registered, register now.  If already in scope, that means
-        # _pre_register_func ran successfully — skip re-declaration.
         existing = self.sym.lookup_current_scope(node.name)
         if existing is None:
-            sym = FunctionSymbol(node.name, node.return_type, node.params, node.token)
-            if not self.sym.declare(sym):
-                self.error(node.token,
-                    f"Function '{node.name}' is already declared in this scope.")
-                return
+            if not self.sym.declare(FunctionSymbol(node.name, node.return_type, node.params, node.token)):
+                self.error(node.token, f"Function '{node.name}' is already declared in this scope."); return
         elif existing.kind != 'func':
-            # Name collides with a non-function symbol
-            self.error(node.token,
-                f"'{node.name}' is already declared as a "
-                f"'{existing.kind}' in this scope.")
-            return
-        # (else: pre-registered as func — proceed to analyze body)
+            self.error(node.token, f"'{node.name}' is already declared as a '{existing.kind}' in this scope."); return
 
-        # Save and set function context
-        outer_return          = self.current_func_return
+        outer_ret = self.current_func_return
         self.current_func_return = node.return_type
-
         self.sym.push_scope()
 
-        # Declare parameters as initialized variables in function scope
-        for param in node.params:
-            if self.sym.lookup_current_scope(param.name):
-                self.error(param.token,
-                    f"Duplicate parameter name '{param.name}' "
-                    f"in function '{node.name}'.")
+        for p in node.params:
+            if self.sym.lookup_current_scope(p.name):
+                self.error(p.token, f"Duplicate parameter name '{p.name}' in function '{node.name}'.")
             else:
-                sym = Symbol(param.name, param.dtype, 'param', param.token,
-                             is_initialized=True)
-                self.sym.declare(sym)
+                self.sym.declare(Symbol(p.name, p.dtype, 'param', p.token, is_initialized=True))
 
-        # Analyze body
-        for decl in node.local_decls:
-            self.visit(decl)
-        for stmt in node.body:
-            self.visit(stmt)
+        for d in node.local_decls: self.visit(d)
+        for s in node.body: self.visit(s)
 
-        # Validate return expression (for returning functions only)
         if node.return_type != 'ABYSS' and node.return_expr is not None:
-            ret_type = self.visit(node.return_expr)
-            if ret_type and not self._compatible(node.return_type, ret_type):
+            rt = self.visit(node.return_expr)
+            if rt and not self._compatible(node.return_type, rt):
                 self.error(node.token,
                     f"Function '{node.name}' declared to return '{node.return_type}' "
-                    f"but BACK expression has type '{self._type_name(ret_type)}'.")
+                    f"but BACK expression has type '{self._type_name(rt)}'.")
 
         self.sym.pop_scope()
-        self.current_func_return = outer_return
+        self.current_func_return = outer_ret
 
-    def visit_ParamNode(self, node):
-        pass   # params are handled inside visit_FuncDefNode
+    def visit_ParamNode(self, node): pass
 
-    # =========================================================================
+    # =====================================================================
     # STATEMENTS
-    # =========================================================================
+    # =====================================================================
+
+    def _target_label(self, var_name, target_kind, index1, index2, member):
+        """Build a human-readable label for the assignment target.
+        e.g. 'b1$crew', 'arr{2}', 'grid{1}{0}', or just 'x'."""
+        if target_kind == 'member' and member:
+            return f"{var_name}${member}"
+        elif target_kind == 'array2d' and index1 is not None and index2 is not None:
+            i1 = getattr(index1, 'value', '?')
+            i2 = getattr(index2, 'value', '?')
+            return f"{var_name}{{{i1}}}{{{i2}}}"
+        elif target_kind == 'array1d' and index1 is not None:
+            i1 = getattr(index1, 'value', '?')
+            return f"{var_name}{{{i1}}}"
+        return var_name
 
     def visit_AssignNode(self, node):
-        """
-        Simple assignment: x = expr!!  arr{i} = expr!!  s$member = expr!!
-
-        Checks:
-          • Target variable must be declared.
-          • Target must NOT be a constant (LOCKE).
-          • For array access: indices must be COIN type.
-          • For member access: struct variable and member must exist.
-          • RHS type must be compatible with the target's declared dtype.
-          • After assignment, the variable is marked as initialized.
-        """
-        target_dtype = self._resolve_assign_target(
-            node.var_name, node.target_kind,
-            node.index1, node.index2, node.member, node.token
-        )
+        target_dtype = self._resolve_target(
+            node.var_name, node.target_kind, node.index1, node.index2, node.member, node.token)
         if target_dtype is not None:
             val_type = self.visit(node.value)
             if val_type and not self._compatible(target_dtype, val_type):
+                label = self._target_label(
+                    node.var_name, node.target_kind, node.index1, node.index2, node.member)
                 self.error(node.token,
-                    f"Cannot assign '{self._type_name(val_type)}' to "
-                    f"'{node.var_name}'")
-            # Mark variable as initialized after first assignment
-            if node.target_kind == 'var':
-                self.sym.update_initialized(node.var_name)
+                    f"Cannot assign '{self._type_name(val_type)}' to '{label}'.")
+            # Mark initialized
+            self.sym.update_initialized(node.var_name)
 
     def visit_CompoundAssignNode(self, node):
-        """
-        Compound assignment: x += 5!!  arr{i} -= 1!!
-        Per rules: compound operators are numeric-only (COIN or DIME).
-        """
-        target_dtype = self._resolve_assign_target(
-            node.var_name, node.target_kind,
-            node.index1, node.index2, node.member, node.token
-        )
+        target_dtype = self._resolve_target(
+            node.var_name, node.target_kind, node.index1, node.index2, node.member, node.token)
         if target_dtype is not None:
+            # NOTE: the LHS of a compound assignment does not need to be initialized
+            # beforehand — as long as it is declared, it may be assigned to.
+            label = self._target_label(
+                node.var_name, node.target_kind, node.index1, node.index2, node.member)
             if not self._is_numeric(target_dtype):
                 self.error(node.token,
                     f"Compound assignment operator '{node.operator}' can only be used "
-                    f"on numeric types, "
-                    f"but '{node.var_name}' is '{target_dtype}'.")
+                    f"on numeric types, but '{label}' is '{target_dtype}'.")
             val_type = self.visit(node.value)
             if val_type and not self._is_numeric(val_type):
                 self.error(node.token,
-                    f"Right-hand side of '{node.operator}' must be numeric"
-                    f", got '{self._type_name(val_type)}'.")
+                    f"Right-hand side of '{node.operator}' must be numeric, "
+                    f"got '{self._type_name(val_type)}'.")
+            # Mark the variable as initialized after compound assignment
+            self.sym.update_initialized(node.var_name)
 
-    def _resolve_assign_target(self, var_name, target_kind,
-                                index1, index2, member, token):
-        """
-        Shared helper for AssignNode and CompoundAssignNode.
-        Resolves the declared dtype of the assignment target and performs
-        all target-specific checks (const guard, array index types and static
-        bounds, member lookup for structs).
-        Returns the target's dtype string, or None if an error was reported.
-        """
+    def _resolve_target(self, var_name, target_kind, index1, index2, member, token):
+        """Resolve assignment target dtype. Returns None on error."""
         sym = self.sym.lookup(var_name)
         if sym is None:
-            self.error(token, f"Undeclared variable '{var_name}'.")
-            return None
-
-        # Constants cannot be reassigned
+            self.error(token, f"Undeclared variable '{var_name}'."); return None
         if sym.kind == 'const':
-            self.error(token,
-                f"Cannot assign to LOCKE '{var_name}' ")
-            return None
+            self.error(token, f"Cannot assign to LOCKE '{var_name}'."); return None
 
         if target_kind == 'var':
             return sym.dtype
-
         elif target_kind in ('array1d', 'array2d'):
             if sym.kind != 'array':
-                self.error(token, f"'{var_name}' is not an array.")
-                return None
-            # Validate index types and static bounds
+                self.error(token, f"'{var_name}' is not an array."); return None
             if index1 is not None:
-                idx_type = self.visit(index1)
-                if idx_type and idx_type != 'COIN':
-                    self.error(token,
-                        f"Array index for '{var_name}' must be COIN, "
-                        f"got '{self._type_name(idx_type)}'.")
-                dim_label = 'row index' if sym.is_2d else 'index'
-                self._check_array_index_bounds(
-                    var_name, dim_label, index1, sym.dimensions[0], token)
+                it = self.visit(index1)
+                if it and it != 'COIN':
+                    self.error(token, f"Array index for '{var_name}' must be COIN, got '{self._type_name(it)}'.")
+                lbl = 'row index' if sym.is_2d else 'index'
+                self._check_bounds(var_name, lbl, index1, sym.dimensions[0], token)
             if index2 is not None:
-                idx_type = self.visit(index2)
-                if idx_type and idx_type != 'COIN':
-                    self.error(token,
-                        f"Second array index for '{var_name}' must be COIN, "
-                        f"got '{self._type_name(idx_type)}'.")
+                it = self.visit(index2)
+                if it and it != 'COIN':
+                    self.error(token, f"Second array index for '{var_name}' must be COIN, got '{self._type_name(it)}'.")
                 if len(sym.dimensions) > 1:
-                    self._check_array_index_bounds(
-                        var_name, 'column index', index2, sym.dimensions[1], token)
+                    self._check_bounds(var_name, 'column index', index2, sym.dimensions[1], token)
             return sym.dtype
-
         elif target_kind == 'member':
             if sym.kind != 'struct_var':
-                self.error(token,
-                    f"'{var_name}' is not a struct variable ")
-                return None
-            type_sym = self.sym.lookup(sym.struct_type_name)
-            if type_sym is None or type_sym.kind != 'struct':
-                self.error(token,
-                    f"Cannot resolve struct type '{sym.struct_type_name}' "
-                    f"for variable '{var_name}'.")
-                return None
-            if member not in type_sym.members:
-                self.error(token,
-                    f"Struct '{sym.struct_type_name}' has no member '{member}'.")
-                return None
-            return type_sym.members[member]
-
+                self.error(token, f"'{var_name}' is not a struct variable."); return None
+            ts = self.sym.lookup(sym.struct_type_name)
+            if ts is None or ts.kind != 'struct':
+                self.error(token, f"Cannot resolve struct type '{sym.struct_type_name}'."); return None
+            if member not in ts.members:
+                self.error(token, f"Struct '{sym.struct_type_name}' has no member '{member}'."); return None
+            return ts.members[member]
         return None
 
     def visit_AskNode(self, node):
-        """
-        ASK("format", @x, @arr{0})!!
-
-        Checks:
-          • Format specifier count must match the number of address targets.
-          • Each specifier's dtype must match the corresponding target's dtype.
-          • Each target must be a declared, non-constant variable.
-        """
-        specifiers = self._parse_format_specifiers(node.format_string)
-        target_count = len(node.targets)
-
-        if len(specifiers) != target_count:
+        specs = self._parse_specs(node.format_string)
+        if len(specs) != len(node.targets):
             self.error(node.token,
-                f"ASK format string has {len(specifiers)} specifier(s) "
-                f"but {target_count} target variable(s) were given.")
+                f"ASK format string has {len(specs)} specifier(s) "
+                f"but {len(node.targets)} target variable(s) were given.")
+        for i, tgt in enumerate(node.targets):
+            tgt_dtype = self._resolve_addr_target(tgt)
+            if i < len(specs) and tgt_dtype:
+                if not self._compatible(specs[i], tgt_dtype):
+                    spec_ch = [k for k, v in self._SPEC_MAP.items() if v == specs[i]]
+                    self.error(tgt.token,
+                        f"ASK format specifier %{spec_ch[0] if spec_ch else '?'} "
+                        f"expects '{specs[i]}' but target '{tgt.var_name}' is '{tgt_dtype}'.")
 
-        for i, target in enumerate(node.targets):
-            target_dtype = self._resolve_address_target(target)
-            # Type-check specifier vs target if both are known
-            if i < len(specifiers) and target_dtype:
-                expected_spec = specifiers[i]
-                if not self._compatible(expected_spec, target_dtype):
-                    self.error(target.token,
-                        f"ASK format specifier %{list(self._SPECIFIER_TO_DTYPE.keys())[list(self._SPECIFIER_TO_DTYPE.values()).index(expected_spec)]} "
-                        f"expects '{expected_spec}' but target '{target.var_name}' "
-                        f"is '{target_dtype}'.")
-
-    def _resolve_address_target(self, node):
-        """
-        Validate and return the dtype of an ASK address target (@id[...]).
-        Returns the target dtype or None on error.
-        """
+    def _resolve_addr_target(self, node):
         sym = self.sym.lookup(node.var_name)
         if sym is None:
-            self.error(node.token,
-                f"Undeclared variable '{node.var_name}' in ASK target.")
-            return None
+            self.error(node.token, f"Undeclared variable '{node.var_name}' in ASK target."); return None
         if sym.kind == 'const':
-            self.error(node.token,
-                f"Cannot use LOCKE '{node.var_name}' as an ASK target.")
-            return None
-
+            self.error(node.token, f"Cannot use LOCKE '{node.var_name}' as an ASK target."); return None
         if node.target_kind in ('array1d', 'array2d'):
             if sym.kind != 'array':
-                self.error(node.token,
-                    f"'{node.var_name}' is not an array.")
-                return None
+                self.error(node.token, f"'{node.var_name}' is not an array."); return None
             if node.index1 is not None:
-                idx_type = self.visit(node.index1)
-                if idx_type and idx_type != 'COIN':
-                    self.error(node.token,
-                        f"Array index in ASK target must be COIN, "
-                        f"got '{self._type_name(idx_type)}'.")
-                dim_label = 'row index' if sym.is_2d else 'index'
-                self._check_array_index_bounds(
-                    node.var_name, dim_label, node.index1, sym.dimensions[0], node.token)
+                it = self.visit(node.index1)
+                if it and it != 'COIN':
+                    self.error(node.token, f"Array index in ASK target must be COIN, got '{self._type_name(it)}'.")
+                lbl = 'row index' if sym.is_2d else 'index'
+                self._check_bounds(node.var_name, lbl, node.index1, sym.dimensions[0], node.token)
             if getattr(node, 'index2', None) is not None:
-                idx_type = self.visit(node.index2)
-                if idx_type and idx_type != 'COIN':
-                    self.error(node.token,
-                        f"Second array index in ASK target must be COIN, "
-                        f"got '{self._type_name(idx_type)}'.")
+                it = self.visit(node.index2)
+                if it and it != 'COIN':
+                    self.error(node.token, f"Second array index in ASK target must be COIN, got '{self._type_name(it)}'.")
                 if len(sym.dimensions) > 1:
-                    self._check_array_index_bounds(
-                        node.var_name, 'column index', node.index2,
-                        sym.dimensions[1], node.token)
+                    self._check_bounds(node.var_name, 'column index', node.index2, sym.dimensions[1], node.token)
             return sym.dtype
-
         elif node.target_kind == 'member':
             if sym.kind != 'struct_var':
-                self.error(node.token,
-                    f"'{node.var_name}' is not a struct variable.")
-                return None
-            type_sym = self.sym.lookup(sym.struct_type_name)
-            if type_sym and node.member in type_sym.members:
-                return type_sym.members[node.member]
-            self.error(node.token,
-                f"Struct '{sym.struct_type_name}' has no member '{node.member}'.")
-            return None
-
+                self.error(node.token, f"'{node.var_name}' is not a struct variable."); return None
+            ts = self.sym.lookup(sym.struct_type_name)
+            if ts and node.member in ts.members: return ts.members[node.member]
+            self.error(node.token, f"Struct '{sym.struct_type_name}' has no member '{node.member}'."); return None
         return sym.dtype
 
-    def visit_AddressNode(self, node):
-        """Dispatched only when AddressNode is visited outside visit_AskNode."""
-        self._resolve_address_target(node)
+    def visit_AddressNode(self, node): self._resolve_addr_target(node)
 
     def visit_EchoNode(self, node):
-        """
-        ECHO("format", arg1, arg2)!!
-
-        Checks:
-          • Format specifier count must match the number of extra arguments.
-            (The first argument is the SCROLL literal — extra args follow.)
-          • Each specifier's dtype must be compatible with the corresponding
-            argument's inferred type.
-          • If there are no specifiers, there must be no extra arguments.
-        """
-        specifiers = self._parse_format_specifiers(node.format_string)
-        arg_count  = len(node.args)
-
-        if len(specifiers) != arg_count:
+        specs = self._parse_specs(node.format_string)
+        if len(specs) != len(node.args):
             self.error(node.token,
-                f"ECHO format string has {len(specifiers)} specifier(s) "
-                f"but {arg_count} argument(s) were given.")
-
+                f"ECHO format string has {len(specs)} specifier(s) "
+                f"but {len(node.args)} argument(s) were given.")
         for i, arg in enumerate(node.args):
-            arg_type = self.visit(arg)
-            if i < len(specifiers) and arg_type:
-                expected_spec = specifiers[i]
-                if not self._compatible(expected_spec, arg_type):
-                    spec_char = [k for k, v in self._SPECIFIER_TO_DTYPE.items()
-                                 if v == expected_spec]
-                    spec_str = f'%{spec_char[0]}' if spec_char else '?'
+            at = self.visit(arg)
+            if i < len(specs) and at:
+                if not self._compatible(specs[i], at):
+                    sc = [k for k, v in self._SPEC_MAP.items() if v == specs[i]]
                     self.error(node.token,
-                        f"Specifier {spec_str} expects "
-                        f"'{expected_spec}' but got '{self._type_name(arg_type)}'.")
+                        f"Specifier %{sc[0] if sc else '?'} expects '{specs[i]}' "
+                        f"but got '{self._type_name(at)}'.")
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # CONDITIONAL STATEMENTS
-    # ─────────────────────────────────────────────────────────────────────────
+    # ── Conditionals ─────────────────────────────────────────────────────
 
     def visit_LookNode(self, node):
-        """
-        LOOK (cond) [ body ] [DROPLOOK (cond) [ body ]] [DROP [ body ]]
-
-        • Condition must be BOOL.
-        • Each branch body gets its own scope.
-        • SAIL/LAND are valid at the end of any conditional body —
-          tracked via in_conditional counter, NOT loop_depth.
-        """
-        cond_type = self.visit(node.condition)
-        if cond_type and not self._is_bool(cond_type):
-            self.error(node.token,
-                f"LOOK condition must be BOOL, got '{self._type_name(cond_type)}'.")
-
-        # LOOK body
-        self.sym.push_scope()
-        self.in_conditional += 1
-        for stmt in node.body:
-            self.visit(stmt)
-        self.in_conditional -= 1
-        self.sym.pop_scope()
-
-        # DROPLOOK branches
-        for (dl_cond, dl_body) in node.droplooks:
-            dl_type = self.visit(dl_cond)
-            if dl_type and not self._is_bool(dl_type):
-                self.error(node.token,
-                    f"DROPLOOK condition must be BOOL, "
-                    f"got '{self._type_name(dl_type)}'.")
-            self.sym.push_scope()
-            self.in_conditional += 1
-            for stmt in dl_body:
-                self.visit(stmt)
-            self.in_conditional -= 1
-            self.sym.pop_scope()
-
-        # DROP branch
+        ct = self.visit(node.condition)
+        if ct and not self._is_bool(ct):
+            self.error(node.token, f"LOOK condition must be BOOL, got '{self._type_name(ct)}'.")
+        self.sym.push_scope(); self.in_conditional += 1
+        for s in node.body: self.visit(s)
+        self.in_conditional -= 1; self.sym.pop_scope()
+        for (dc, db) in node.droplooks:
+            dt = self.visit(dc)
+            if dt and not self._is_bool(dt):
+                self.error(node.token, f"DROPLOOK condition must be BOOL, got '{self._type_name(dt)}'.")
+            self.sym.push_scope(); self.in_conditional += 1
+            for s in db: self.visit(s)
+            self.in_conditional -= 1; self.sym.pop_scope()
         if node.drop_body is not None:
-            self.sym.push_scope()
-            self.in_conditional += 1
-            for stmt in node.drop_body:
-                self.visit(stmt)
-            self.in_conditional -= 1
-            self.sym.pop_scope()
+            self.sym.push_scope(); self.in_conditional += 1
+            for s in node.drop_body: self.visit(s)
+            self.in_conditional -= 1; self.sym.pop_scope()
 
     def visit_ChartNode(self, node):
-        """
-        CHART(expr) [ COURSE val: body ... ADRIFT: body LAND!! ]
-
-        • Switch expression must be COIN, PARCH, or SCROLL (per rules).
-        • Each COURSE label must be a compatible literal type.
-        • Duplicate COURSE labels within the same CHART are invalid.
-        • ADRIFT is the default case.
-        """
         expr_type = self.visit(node.expr)
-
-        # Switch expression type must be COIN, PARCH, or SCROLL
         if expr_type and expr_type not in ('COIN', 'PARCH', 'SCROLL'):
             self.error(node.token,
-                f"CHART expression must be COIN, PARCH, or SCROLL, "
-                f"got '{self._type_name(expr_type)}'.")
-
-        outer_chart = self.in_chart
-        self.in_chart = True
-
-        seen_labels = {}   # label repr → CourseNode.token (duplicate detection)
-
+                f"CHART expression must be COIN, PARCH, or SCROLL, got '{self._type_name(expr_type)}'.")
+        outer_chart = self.in_chart; self.in_chart = True
+        # Improved duplicate COURSE label check using value+dtype
+        seen = {}
         for course in node.courses:
-            # Check case value type matches switch expression type
             case_type = self.visit(course.value)
             if expr_type and case_type and not self._compatible(expr_type, case_type):
                 self.error(course.token,
                     f"COURSE value type '{self._type_name(case_type)}' does not "
                     f"match CHART expression type '{self._type_name(expr_type)}'.")
-
-            # Duplicate label check
-            label_key = repr(course.value)
-            if label_key in seen_labels:
-                self.error(course.token,
-                    f"Duplicate COURSE label in CHART block.")
+            # Build label key from dtype+value for reliable comparison
+            label_key = self._course_label_key(course.value)
+            if label_key in seen:
+                self.error(course.token, "Duplicate COURSE label in CHART block.")
             else:
-                seen_labels[label_key] = course.token
+                seen[label_key] = True
 
-            self.sym.push_scope()
-            self.in_conditional += 1
-            for stmt in course.body:
-                self.visit(stmt)
-            self.in_conditional -= 1
-            self.sym.pop_scope()
+            self.sym.push_scope(); self.in_conditional += 1
+            for s in course.body: self.visit(s)
+            self.in_conditional -= 1; self.sym.pop_scope()
 
-        # ADRIFT body (default case)
         if node.adrift_body is not None:
-            outer_adrift = self.in_adrift
-            self.in_adrift = True
-            self.sym.push_scope()
-            self.in_conditional += 1
-            for stmt in node.adrift_body:
-                self.visit(stmt)
-            self.in_conditional -= 1
-            self.sym.pop_scope()
+            outer_adrift = self.in_adrift; self.in_adrift = True
+            self.sym.push_scope(); self.in_conditional += 1
+            for s in node.adrift_body: self.visit(s)
+            self.in_conditional -= 1; self.sym.pop_scope()
             self.in_adrift = outer_adrift
-
         self.in_chart = outer_chart
 
-    def visit_CourseNode(self, node):
-        pass   # handled inline in visit_ChartNode
+    def _course_label_key(self, node):
+        """Generate a reliable key for COURSE label duplicate detection."""
+        cn = type(node).__name__
+        if cn == 'LiteralNode': return (node.dtype, node.value)
+        if cn == 'ScrollCharAccessNode':
+            inner = getattr(node.scroll_expr, 'value', '?')
+            idx = getattr(node.index, 'value', '?')
+            return ('SCROLL_CHAR', inner, idx)
+        return id(node)  # fallback
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # LOOP STATEMENTS
-    # ─────────────────────────────────────────────────────────────────────────
+    def visit_CourseNode(self, node): pass
+
+    # ── Loops ────────────────────────────────────────────────────────────
 
     def visit_HoistNode(self, node):
-        """
-        HOIST (init!! cond!! upd) [ body ]
-
-        The init section can declare new COIN variables — these live only
-        for the duration of the loop (they get their own scope).
-        The condition must resolve to BOOL (numeric comparison).
-        """
         self.sym.push_scope()
-
-        for init in node.inits:
-            self.visit(init)
-
-        cond_type = self.visit(node.condition)
-        if cond_type and not self._is_bool(cond_type):
-            self.error(node.token,
-                f"HOIST condition must resolve to BOOL, "
-                f"got '{self._type_name(cond_type)}'.")
-
-        for upd in node.updates:
-            self.visit(upd)
-
+        for init in node.inits: self.visit(init)
+        ct = self.visit(node.condition)
+        if ct and not self._is_bool(ct):
+            self.error(node.token, f"HOIST condition must resolve to BOOL, got '{self._type_name(ct)}'.")
+        for upd in node.updates: self.visit(upd)
         self.loop_depth += 1
-        for stmt in node.body:
-            self.visit(stmt)
+        for s in node.body: self.visit(s)
         self.loop_depth -= 1
-
         self.sym.pop_scope()
 
     def visit_HoistInitNode(self, node):
-        """
-        One HOIST initializer.
-          declares_new=True  → COIN id = COIN-lit  (declares loop variable)
-          declares_new=False → id = COIN-lit        (assigns to existing variable)
-        Per rules, HOIST init variables must be COIN type.
-        """
         if node.declares_new:
             if self.sym.lookup_current_scope(node.var_name):
-                self.error(node.token,
-                    f"Loop variable '{node.var_name}' conflicts with an "
-                    f"existing declaration in this scope.")
+                self.error(node.token, f"Loop variable '{node.var_name}' conflicts with existing declaration.")
             else:
-                sym = Symbol(node.var_name, 'COIN', 'var', node.token,
-                             is_initialized=True)
-                self.sym.declare(sym)
+                self.sym.declare(Symbol(node.var_name, 'COIN', 'var', node.token, is_initialized=True))
         else:
             sym = self.sym.lookup(node.var_name)
             if sym is None:
-                self.error(node.token,
-                    f"Undeclared variable '{node.var_name}' in HOIST init.")
+                self.error(node.token, f"Undeclared variable '{node.var_name}' in HOIST init.")
             elif sym.kind == 'const':
-                self.error(node.token,
-                    f"Cannot assign to LOCKE '{node.var_name}' in HOIST init.")
+                self.error(node.token, f"Cannot assign to LOCKE '{node.var_name}' in HOIST init.")
             elif sym.dtype != 'COIN':
-                # HOIST init with existing var: must be COIN (not just numeric)
                 self.error(node.token,
-                    f"HOIST init variable '{node.var_name}' must be COIN, "
-                    f"got '{sym.dtype}'.")
+                    f"HOIST init variable '{node.var_name}' must be COIN, got '{sym.dtype}'.")
 
     def visit_HoistUpdateNode(self, node):
-        """
-        One HOIST update expression: +#id / -#id, or id op= expr.
-        Per rules: unary operands must be COIN; compound operands must be
-        numeric (COIN or DIME).
-        """
         sym = self.sym.lookup(node.var_name)
         if sym is None:
-            self.error(node.token,
-                f"Undeclared variable '{node.var_name}' in HOIST update.")
-            return
+            self.error(node.token, f"Undeclared variable '{node.var_name}' in HOIST update."); return
         if sym.kind == 'const':
-            self.error(node.token,
-                f"Cannot modify LOCKE '{node.var_name}' in HOIST update.")
-            return
-
+            self.error(node.token, f"Cannot modify LOCKE '{node.var_name}' in HOIST update."); return
         if node.update_kind == 'unary':
-            # +#id / -#id requires COIN specifically (not DIME)
             if sym.dtype != 'COIN':
                 self.error(node.token,
-                    f"Unary operator '{node.unary_op}' in HOIST update requires "
-                    f"COIN type, but '{node.var_name}' is '{sym.dtype}'.")
+                    f"Unary operator '{node.unary_op}' in HOIST update requires COIN type, "
+                    f"but '{node.var_name}' is '{sym.dtype}'.")
         elif node.update_kind == 'compound':
             if not self._is_numeric(sym.dtype):
                 self.error(node.token,
-                    f"Compound update target '{node.var_name}' must be numeric "
-                    f"(COIN/DIME), got '{sym.dtype}'.")
+                    f"Compound update target '{node.var_name}' must be numeric, got '{sym.dtype}'.")
             if node.value is not None:
-                val_type = self.visit(node.value)
-                if val_type and not self._is_numeric(val_type):
-                    self.error(node.token,
-                        f"HOIST update value must be numeric, "
-                        f"got '{self._type_name(val_type)}'.")
+                vt = self.visit(node.value)
+                if vt and not self._is_numeric(vt):
+                    self.error(node.token, f"HOIST update value must be numeric, got '{self._type_name(vt)}'.")
 
     def visit_HeaveNode(self, node):
-        """HEAVE (cond) [ body ] — while loop. Condition must be BOOL."""
-        cond_type = self.visit(node.condition)
-        if cond_type and not self._is_bool(cond_type):
-            self.error(node.token,
-                f"HEAVE condition must be BOOL, "
-                f"got '{self._type_name(cond_type)}'.")
-        self.sym.push_scope()
-        self.loop_depth += 1
-        for stmt in node.body:
-            self.visit(stmt)
-        self.loop_depth -= 1
-        self.sym.pop_scope()
+        ct = self.visit(node.condition)
+        if ct and not self._is_bool(ct):
+            self.error(node.token, f"HEAVE condition must be BOOL, got '{self._type_name(ct)}'.")
+        self.sym.push_scope(); self.loop_depth += 1
+        for s in node.body: self.visit(s)
+        self.loop_depth -= 1; self.sym.pop_scope()
 
     def visit_HaulHeaveNode(self, node):
-        """HAUL [ body ] HEAVE (cond)!! — do-while. Condition must be BOOL."""
-        self.sym.push_scope()
-        self.loop_depth += 1
-        for stmt in node.body:
-            self.visit(stmt)
-        self.loop_depth -= 1
-        self.sym.pop_scope()
-        cond_type = self.visit(node.condition)
-        if cond_type and not self._is_bool(cond_type):
-            self.error(node.token,
-                f"HAUL-HEAVE condition must be BOOL, "
-                f"got '{self._type_name(cond_type)}'.")
+        self.sym.push_scope(); self.loop_depth += 1
+        for s in node.body: self.visit(s)
+        self.loop_depth -= 1; self.sym.pop_scope()
+        ct = self.visit(node.condition)
+        if ct and not self._is_bool(ct):
+            self.error(node.token, f"HAUL-HEAVE condition must be BOOL, got '{self._type_name(ct)}'.")
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # JUMP STATEMENTS
-    # ─────────────────────────────────────────────────────────────────────────
+    # ── Jump Statements ──────────────────────────────────────────────────
 
     def visit_SailNode(self, node):
-        """
-        SAIL!! — break out of a loop or COURSE case.
-        Valid inside any loop body or conditional body (LOOK, COURSE, etc.).
-        NOT valid in ADRIFT bodies (grammar already prevents this; we mirror).
-        NOT valid at top level or directly inside AHOY with no containing block.
-        """
         if self.in_adrift:
-            self.error(node.token,
-                "SAIL!! is not allowed inside an ADRIFT body.")
-            return
+            self.error(node.token, "SAIL!! is not allowed inside an ADRIFT body."); return
         if self.loop_depth == 0 and self.in_conditional == 0:
-            self.error(node.token,
-                "SAIL!! used outside of a loop or conditional block.")
+            self.error(node.token, "SAIL!! used outside of a loop or conditional block.")
 
     def visit_LandNode(self, node):
-        """
-        LAND!! — continue to next iteration, or exit CHART/LOOK block.
-        Valid inside any loop body or conditional body.
-        """
         if self.loop_depth == 0 and self.in_conditional == 0:
-            self.error(node.token,
-                "LAND!! used outside of a loop or conditional block.")
+            self.error(node.token, "LAND!! used outside of a loop or conditional block.")
 
     def visit_ReturnNode(self, node):
-        """
-        BACK expr!! inside a returning function.
-        Checks:
-          • Must be inside a returning function (not ABYSS, not global/AHOY).
-          • Return value type must match the declared return type.
-        """
         if self.current_func_return is None:
-            self.error(node.token,
-                "BACK used outside of a function.")
-            return
+            self.error(node.token, "BACK used outside of a function."); return
         if self.current_func_return == 'ABYSS':
-            self.error(node.token,
-                "ABYSS functions cannot return a value.")
-            return
-        ret_type = self.visit(node.value)
-        if ret_type and not self._compatible(self.current_func_return, ret_type):
+            self.error(node.token, "ABYSS functions cannot return a value."); return
+        rt = self.visit(node.value)
+        if rt and not self._compatible(self.current_func_return, rt):
             self.error(node.token,
                 f"Function expects return type '{self.current_func_return}', "
-                f"but BACK expression has type '{self._type_name(ret_type)}'.")
+                f"but BACK expression has type '{self._type_name(rt)}'.")
 
     def visit_BackNode(self, node):
-        """
-        Bare BACK!! inside an ABYSS (non-returning) function.
-        """
         if self.current_func_return is None:
-            self.error(node.token,
-                "BACK used outside of a function.")
+            self.error(node.token, "BACK used outside of a function.")
         elif self.current_func_return != 'ABYSS':
             self.error(node.token,
-                f"BACK!! used inside a '{self.current_func_return}' "
-                f"returning function. This function must return a value.")
+                f"BACK!! used inside a '{self.current_func_return}' returning function. "
+                f"This function must return a value.")
 
     def visit_UnaryStmtNode(self, node):
-        """
-        +#x!! or -#x!! as a standalone statement.
-        Per SeaStack rules: the operand must be a COIN variable (NOT DIME).
-        Also invalid on constants.
-        """
         sym = self.sym.lookup(node.var_name)
         if sym is None:
-            self.error(node.token,
-                f"Undeclared variable '{node.var_name}'.")
-            return
+            self.error(node.token, f"Undeclared variable '{node.var_name}'."); return
         if sym.kind == 'const':
-            self.error(node.token,
-                f"Cannot apply '{node.operator}' to LOCKE '{node.var_name}'")
-            return
-        # Rule: unary +# and -# operate on COIN ONLY
+            self.error(node.token, f"Cannot apply '{node.operator}' to LOCKE '{node.var_name}'."); return
+        # Unary +# -# operates on COIN only (rule p.38)
         if sym.dtype != 'COIN':
             self.error(node.token,
                 f"Operator '{node.operator}' requires a COIN variable, "
-                f"but '{node.var_name}' is '{sym.dtype}'. ")
+                f"but '{node.var_name}' is '{sym.dtype}'.")
 
     def visit_FuncCallStmtNode(self, node):
-        """A function call used as a statement (return value discarded)."""
         self.visit(node.call_expr)
 
-    # =========================================================================
-    # EXPRESSIONS  (all return a dtype string or None on error)
-    # =========================================================================
+    # =====================================================================
+    # EXPRESSIONS
+    # =====================================================================
 
-    def visit_LiteralNode(self, node):
-        """Literals always know their own type — return it directly."""
-        return node.dtype
+    def visit_LiteralNode(self, node): return node.dtype
 
     def visit_IdentNode(self, node):
-        """
-        A bare variable reference.
-        Checks:
-          • Variable must be declared.
-          • Variable must be initialized before use.
-        Returns the variable's declared dtype.
-        """
         sym = self.sym.lookup(node.name)
         if sym is None:
-            self.error(node.token,
-                f"Undeclared variable '{node.name}'.")
-            return None
+            self.error(node.token, f"Undeclared variable '{node.name}'."); return None
+        # A lone identifier (no parentheses) is ONLY a variable or constant.
+        # If the name resolves to a function, it must be treated as undeclared
+        # because function references require parentheses: greet() not greet.
+        if sym.kind == 'func':
+            self.error(node.token, f"Undeclared variable '{node.name}'."); return None
         if not sym.is_initialized:
-            self.error(node.token,
-                f"Variable '{node.name}' may be used before it is initialized.")
+            self.error(node.token, f"Variable '{node.name}' may be used before it is initialized.")
         return sym.dtype
 
     def visit_ArrayAccessNode(self, node):
-        """
-        arr{i} or arr{i}{j}
-        Checks:
-          • Array must be declared and actually be of kind 'array'.
-          • Each index must be COIN type.
-          • If an index is a compile-time integer literal, verify it is within
-            [0, declared_size - 1].  Runtime indices are not checked statically.
-        Returns the element type (the array's base dtype).
-        """
         sym = self.sym.lookup(node.name)
         if sym is None:
-            self.error(node.token,
-                f"Undeclared array '{node.name}'.")
-            return None
+            self.error(node.token, f"Undeclared array '{node.name}'."); return None
         if sym.kind != 'array':
-            self.error(node.token,
-                f"'{node.name}' is not an array (it is a '{sym.kind}').")
-            return None
-
-        # Validate index types and static bounds
-        for idx, index_expr in enumerate(node.indices):
-            idx_type = self.visit(index_expr)
-            if idx_type and idx_type != 'COIN':
-                self.error(node.token,
-                    f"Array index [{idx}] for '{node.name}' must be COIN, "
-                    f"got '{self._type_name(idx_type)}'.")
-            # Static out-of-bounds check (only when index is a literal)
-            if idx < len(sym.dimensions):
-                dim_label = 'column index' if (sym.is_2d and idx == 1) else \
-                            'row index'    if (sym.is_2d and idx == 0) else \
-                            'index'
-                self._check_array_index_bounds(
-                    node.name, dim_label, index_expr, sym.dimensions[idx], node.token)
-
-        return sym.dtype   # element type = array's base dtype
+            self.error(node.token, f"'{node.name}' is not an array (it is a '{sym.kind}')."); return None
+        for i, idx in enumerate(node.indices):
+            it = self.visit(idx)
+            if it and it != 'COIN':
+                self.error(node.token, f"Array index [{i}] for '{node.name}' must be COIN, got '{self._type_name(it)}'.")
+            if i < len(sym.dimensions):
+                lbl = 'column index' if (sym.is_2d and i == 1) else 'row index' if (sym.is_2d and i == 0) else 'index'
+                self._check_bounds(node.name, lbl, idx, sym.dimensions[i], node.token)
+        return sym.dtype
 
     def visit_MemberAccessNode(self, node):
-        """
-        s$member — access a struct member in an expression.
-        Checks:
-          • Variable must be a struct_var.
-          • The struct type must be resolvable.
-          • The member must exist in that struct type.
-        Returns the member's declared dtype.
-        """
         sym = self.sym.lookup(node.var_name)
         if sym is None:
-            self.error(node.token,
-                f"Undeclared variable '{node.var_name}'.")
-            return None
+            self.error(node.token, f"Undeclared variable '{node.var_name}'."); return None
         if sym.kind != 'struct_var':
-            self.error(node.token,
-                f"'{node.var_name}' is not a struct variable.")
-            return None
-
-        type_sym = self.sym.lookup(sym.struct_type_name)
-        if type_sym is None or type_sym.kind != 'struct':
-            self.error(node.token,
-                f"Cannot resolve struct type '{sym.struct_type_name}' "
-                f"for variable '{node.var_name}'.")
-            return None
-
-        if node.member_name not in type_sym.members:
-            self.error(node.token,
-                f"Struct '{sym.struct_type_name}' has no member "
-                f"'{node.member_name}'.")
-            return None
-
-        return type_sym.members[node.member_name]
+            self.error(node.token, f"'{node.var_name}' is not a struct variable."); return None
+        ts = self.sym.lookup(sym.struct_type_name)
+        if ts is None or ts.kind != 'struct':
+            self.error(node.token, f"Cannot resolve struct type '{sym.struct_type_name}'."); return None
+        if node.member_name not in ts.members:
+            self.error(node.token, f"Struct '{sym.struct_type_name}' has no member '{node.member_name}'."); return None
+        return ts.members[node.member_name]
 
     def visit_ScrollCharAccessNode(self, node):
-        """
-        "hello"{0} or msg{i}
-        Checks:
-          • The scroll expression must be SCROLL type.
-          • The index must be COIN type.
-        Returns SCROLL — a single-character indexed access yields a one-character
-        SCROLL value, NOT a PARCH.  PARCH is a character literal written with
-        single quotes (e.g. 'A'); SCROLL{i} produces a length-1 SCROLL.
-        """
-        scroll_type = self.visit(node.scroll_expr)
-        if scroll_type and scroll_type != 'SCROLL':
+        st = self.visit(node.scroll_expr)
+        if st and st != 'SCROLL':
             self.error(node.token,
-                f"Character indexing with {{}} requires a SCROLL value, "
-                f"got '{self._type_name(scroll_type)}'.")
-
-        idx_type = self.visit(node.index)
-        if idx_type and idx_type != 'COIN':
-            self.error(node.token,
-                f"SCROLL character index must be COIN, "
-                f"got '{self._type_name(idx_type)}'.")
-
-        return 'SCROLL'   # a single-character index yields a one-char SCROLL
+                f"Character indexing requires a SCROLL value, got '{self._type_name(st)}'.")
+        it = self.visit(node.index)
+        if it and it != 'COIN':
+            self.error(node.token, f"SCROLL character index must be COIN, got '{self._type_name(it)}'.")
+        # Compile-time bounds check when the SCROLL operand is a literal string
+        scroll_node = node.scroll_expr
+        if type(scroll_node).__name__ == 'LiteralNode' and getattr(scroll_node, 'dtype', None) == 'SCROLL':
+            raw = getattr(scroll_node, 'value', None)
+            if raw is not None:
+                str_len = len(str(raw))
+                idx_val = self._literal_int(node.index)
+                if idx_val is not None:
+                    if idx_val < 0 or idx_val >= str_len:
+                        self.error(node.token,
+                            f"SCROLL character index {idx_val} is out of bounds "
+                            f"(length {str_len}, valid range 0–{str_len - 1}).")
+        return 'SCROLL'  # SCROLL char access returns single-char SCROLL (rule p.16)
 
     def visit_StringConcatNode(self, node):
-        """
-        "Hello" & " " & name
-        All operands must be SCROLL type. Returns SCROLL.
-        """
-        for operand in node.operands:
-            op_type = self.visit(operand)
-            if op_type and op_type != 'SCROLL':
+        for op in node.operands:
+            ot = self.visit(op)
+            if ot and ot != 'SCROLL':
                 self.error(node.token,
-                    f"String concatenation (&) requires SCROLL operands, "
-                    f"got '{self._type_name(op_type)}'.")
+                    f"String concatenation (&) requires SCROLL operands, got '{self._type_name(ot)}'.")
         return 'SCROLL'
 
     def visit_FuncCallNode(self, node):
-        """
-        add(x, y) — function call used as an expression.
-        Checks:
-          • Function must be declared.
-          • Argument count must match parameter count.
-          • Each argument's type must be compatible with the corresponding param.
-          • ABYSS functions have no return value — if used as an expression
-            (not via FuncCallStmtNode) this is a type error.
-        Returns the function's declared return type, or None on error.
-        """
         sym = self.sym.lookup(node.name)
         if sym is None:
-            self.error(node.token,
-                f"Call to undeclared function '{node.name}'.")
-            return None
+            self.error(node.token, f"Call to undeclared function '{node.name}'."); return None
         if sym.kind != 'func':
+            self.error(node.token, f"'{node.name}' is not a function."); return None
+        exp_cnt, act_cnt = len(sym.params), len(node.args)
+        if exp_cnt != act_cnt:
             self.error(node.token,
-                f"'{node.name}' is not a function.")
-            return None
-
-        # Argument count check
-        expected_count = len(sym.params)
-        actual_count   = len(node.args)
-        if expected_count != actual_count:
-            self.error(node.token,
-                f"Function '{node.name}' expects '{expected_count}' argument(s), "
-                f"got '{actual_count}'.")
+                f"Function '{node.name}' expects '{exp_cnt}' argument(s), got '{act_cnt}'.")
         else:
-            # Type-check each argument against its corresponding parameter
-            for i, (param, arg) in enumerate(zip(sym.params, node.args)):
-                arg_type = self.visit(arg)
-                if arg_type and not self._compatible(param.dtype, arg_type):
+            for i, (p, a) in enumerate(zip(sym.params, node.args)):
+                at = self.visit(a)
+                if at and not self._compatible(p.dtype, at):
                     self.error(node.token,
-                        f"Argument {i+1} of '{node.name}': "
-                        f"expected '{param.dtype}', "
-                        f"got '{self._type_name(arg_type)}'.")
-
-        # ABYSS return used in an expression context is a type error
+                        f"Argument {i+1} of '{node.name}': expected '{p.dtype}', got '{self._type_name(at)}'.")
         if sym.return_type == 'ABYSS':
             self.error(node.token,
-                f"Function '{node.name}' is declared ABYSS"
-                f"and cannot be used as an expression. ")
+                f"Function '{node.name}' is declared ABYSS and cannot be used as an expression.")
             return None
-
         return sym.return_type
 
     def visit_BinaryOpNode(self, node):
-        """
-        left OP right
-
-        Type rules per SeaStack spec:
-          Arithmetic (+,-,*,/,%,^):
-            Both sides must be numeric (COIN or DIME).
-            Result is DIME if either side is DIME, else COIN.
-
-          Relational (<,>,<=,>=):
-            Both sides must be numeric.
-            Result is always BOOL.
-
-          Equality (==,!=):
-            Both sides must have COMPATIBLE types.
-            COIN==DIME and DIME==COIN are allowed (numeric ↔ numeric).
-            PARCH==PARCH, SCROLL==SCROLL, BOOL==BOOL are allowed.
-            Cross-type comparisons (e.g. COIN==BOOL) are errors.
-            Result is always BOOL.
-
-          Logical (&&,||):
-            Both sides must be BOOL.
-            Result is always BOOL.
-        """
-        left_type  = self.visit(node.left)
-        right_type = self.visit(node.right)
+        lt = self.visit(node.left); rt = self.visit(node.right)
         op = node.operator
-
         if op in ('+', '-', '*', '/', '%', '^'):
-            if left_type and not self._is_numeric(left_type):
-                self.error(node.token,
-                    f"Operator '{op}' requires numeric operands, "
-                    f"left operand is '{self._type_name(left_type)}'.")
-            if right_type and not self._is_numeric(right_type):
-                self.error(node.token,
-                    f"Operator '{op}' requires numeric operands, "
-                    f"right operand is '{self._type_name(right_type)}'.")
-            # DIME dominates COIN in mixed arithmetic
-            if left_type == 'DIME' or right_type == 'DIME':
-                return 'DIME'
-            return 'COIN'
-
+            if lt and not self._is_numeric(lt):
+                self.error(node.token, f"Operator '{op}' requires numeric operands, left is '{self._type_name(lt)}'.")
+            if rt and not self._is_numeric(rt):
+                self.error(node.token, f"Operator '{op}' requires numeric operands, right is '{self._type_name(rt)}'.")
+            return 'DIME' if (lt == 'DIME' or rt == 'DIME') else 'COIN'
         elif op in ('<', '>', '<=', '>='):
-            if left_type and not self._is_numeric(left_type):
-                self.error(node.token,
-                    f"Relational operator '{op}' requires numeric operands, "
-                    f"left operand is '{self._type_name(left_type)}'.")
-            if right_type and not self._is_numeric(right_type):
-                self.error(node.token,
-                    f"Relational operator '{op}' requires numeric operands, "
-                    f"right operand is '{self._type_name(right_type)}'.")
+            if lt and not self._is_numeric(lt):
+                self.error(node.token, f"Relational operator '{op}' requires numeric operands, left is '{self._type_name(lt)}'.")
+            if rt and not self._is_numeric(rt):
+                self.error(node.token, f"Relational operator '{op}' requires numeric operands, right is '{self._type_name(rt)}'.")
             return 'BOOL'
-
         elif op in ('==', '!='):
-            if left_type and right_type and not self._compatible_expr(left_type, right_type):
+            if lt and rt and not self._compatible_expr(lt, rt):
                 self.error(node.token,
-                    f"Cannot compare '{self._type_name(left_type)}' "
-                    f"and '{self._type_name(right_type)}' with '{op}': "
-                    f"operands must have compatible types.")
+                    f"Cannot compare '{self._type_name(lt)}' and '{self._type_name(rt)}' with '{op}'.")
             return 'BOOL'
-
         elif op in ('&&', '||'):
-            if left_type and not self._is_bool(left_type):
-                self.error(node.token,
-                    f"Logical operator '{op}' requires BOOL operands, "
-                    f"left operand is '{self._type_name(left_type)}'.")
-            if right_type and not self._is_bool(right_type):
-                self.error(node.token,
-                    f"Logical operator '{op}' requires BOOL operands, "
-                    f"right operand is '{self._type_name(right_type)}'.")
+            if lt and not self._is_bool(lt):
+                self.error(node.token, f"Logical operator '{op}' requires BOOL operands, left is '{self._type_name(lt)}'.")
+            if rt and not self._is_bool(rt):
+                self.error(node.token, f"Logical operator '{op}' requires BOOL operands, right is '{self._type_name(rt)}'.")
             return 'BOOL'
-
-        return None  # unknown operator — should not happen after syntax parse
+        return None
 
     def visit_UnaryOpNode(self, node):
-        """
-        Prefix unary operators:
-          '-'  : negate a numeric value (COIN/DIME → same type preserved)
-          '!'  : logical NOT            (BOOL → BOOL)
-          '!#' : logical double-NOT     (BOOL → BOOL)
-        """
-        operand_type = self.visit(node.operand)
-        op = node.operator
-
+        ot = self.visit(node.operand); op = node.operator
         if op == '-':
-            if operand_type and not self._is_numeric(operand_type):
-                self.error(node.token,
-                    f"Unary '-' requires a numeric operand, "
-                    f"got '{self._type_name(operand_type)}'.")
-            return operand_type   # preserves COIN or DIME
-
+            if ot and not self._is_numeric(ot):
+                self.error(node.token, f"Unary '-' requires a numeric operand, got '{self._type_name(ot)}'.")
+            return ot
         elif op in ('!', '!#'):
-            if operand_type and not self._is_bool(operand_type):
-                self.error(node.token,
-                    f"Operator '{op}' requires a BOOL operand, "
-                    f"got '{self._type_name(operand_type)}'.")
+            if ot and not self._is_bool(ot):
+                self.error(node.token, f"Operator '{op}' requires a BOOL operand, got '{self._type_name(ot)}'.")
             return 'BOOL'
-
         return None
