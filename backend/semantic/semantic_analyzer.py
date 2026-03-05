@@ -32,6 +32,7 @@ class SemanticAnalyzer:
         self.in_conditional = 0          # LOOK/CHART conditional depth
         self.in_chart = False            # inside CHART block
         self.in_adrift = False           # inside ADRIFT body
+        self.known_values = {}           # var_name → (dtype, value) for compile-time propagation
 
     # ── Entry Point ──────────────────────────────────────────────────────
 
@@ -120,10 +121,32 @@ class SemanticAnalyzer:
 
     def _literal_int(self, node):
         """Get compile-time COIN int value, or None for runtime values."""
-        if type(node).__name__ != 'LiteralNode': return None
-        if getattr(node, 'dtype', None) != 'COIN': return None
-        try: return int(getattr(node, 'value', None))
-        except (TypeError, ValueError): return None
+        if type(node).__name__ == 'LiteralNode':
+            if getattr(node, 'dtype', None) != 'COIN': return None
+            try: return int(getattr(node, 'value', None))
+            except (TypeError, ValueError): return None
+        # Also resolve identifiers with known compile-time values
+        if type(node).__name__ == 'IdentNode':
+            name = getattr(node, 'name', None)
+            if name and name in self.known_values:
+                dtype, val = self.known_values[name]
+                if dtype == 'COIN':
+                    try: return int(val)
+                    except (TypeError, ValueError): return None
+        return None
+
+    def _known_scroll_length(self, node):
+        """Get compile-time SCROLL string length, or None for runtime values."""
+        if type(node).__name__ == 'LiteralNode' and getattr(node, 'dtype', None) == 'SCROLL':
+            raw = getattr(node, 'value', None)
+            if raw is not None: return len(str(raw))
+        if type(node).__name__ == 'IdentNode':
+            name = getattr(node, 'name', None)
+            if name and name in self.known_values:
+                dtype, val = self.known_values[name]
+                if dtype == 'SCROLL' and val is not None:
+                    return len(str(val))
+        return None
 
     def _check_bounds(self, arr_name, dim_label, idx_expr, size, token):
         v = self._literal_int(idx_expr)
@@ -194,9 +217,11 @@ class SemanticAnalyzer:
                 self.error(node.token,
                     f"Cannot initialize '{node.dtype}' variable '{node.name}' "
                     f"with a '{self._type_name(init_type)}' value.")
+            # Track compile-time known value for constant propagation
+            if type(node.init_value).__name__ == 'LiteralNode':
+                self.known_values[node.name] = (node.dtype, node.init_value.value)
         self.sym.declare(Symbol(node.name, node.dtype, 'var', node.token,
-                                is_initialized=(node.init_value is not None),
-                                init_expr=node.init_value))
+                                is_initialized=(node.init_value is not None)))
 
     def visit_ArrayDeclNode(self, node):
         if self.sym.lookup_current_scope(node.name):
@@ -362,6 +387,13 @@ class SemanticAnalyzer:
                     f"Cannot assign '{self._type_name(val_type)}' to '{label}'.")
             # Mark initialized
             self.sym.update_initialized(node.var_name)
+            # Track compile-time known value for simple variable assignments
+            if node.target_kind == 'var':
+                if type(node.value).__name__ == 'LiteralNode':
+                    self.known_values[node.var_name] = (target_dtype, node.value.value)
+                else:
+                    # Value is now runtime-determined; remove from known values
+                    self.known_values.pop(node.var_name, None)
 
     def visit_CompoundAssignNode(self, node):
         target_dtype = self._resolve_target(
@@ -382,6 +414,8 @@ class SemanticAnalyzer:
                     f"got '{self._type_name(val_type)}'.")
             # Mark the variable as initialized after compound assignment
             self.sym.update_initialized(node.var_name)
+            # Value is now runtime-determined; remove from known values
+            self.known_values.pop(node.var_name, None)
 
     def _resolve_target(self, var_name, target_kind, index1, index2, member, token):
         """Resolve assignment target dtype. Returns None on error."""
@@ -434,6 +468,10 @@ class SemanticAnalyzer:
                     self.error(tgt.token,
                         f"ASK format specifier %{spec_ch[0] if spec_ch else '?'} "
                         f"expects '{specs[i]}' but target '{tgt.var_name}' is '{tgt_dtype}'.")
+            # ASK reads input into the target, so mark it as initialized
+            self.sym.update_initialized(tgt.var_name)
+            # Value is now runtime-determined; remove from known values
+            self.known_values.pop(tgt.var_name, None)
 
     def _resolve_addr_target(self, node):
         sym = self.sym.lookup(node.var_name)
@@ -656,31 +694,11 @@ class SemanticAnalyzer:
             self.error(node.token,
                 f"Operator '{node.operator}' requires a COIN variable, "
                 f"but '{node.var_name}' is '{sym.dtype}'.")
+        # Value is now runtime-determined; remove from known values
+        self.known_values.pop(node.var_name, None)
 
     def visit_FuncCallStmtNode(self, node):
-        # Special handling for function calls in statement context.
-        # ABYSS functions can only be called as statements, not expressions.
-        call = node.call_expr
-        sym = self.sym.lookup(call.name)
-        if sym is None:
-            self.error(call.token, f"Call to undeclared function '{call.name}'."); return
-        if sym.kind != 'func':
-            self.error(call.token, f"'{call.name}' is not a function."); return
-
-        # Check argument count and types
-        exp_cnt, act_cnt = len(sym.params), len(call.args)
-        if exp_cnt != act_cnt:
-            self.error(call.token,
-                f"Function '{call.name}' expects '{exp_cnt}' argument(s), got '{act_cnt}'.")
-        else:
-            for i, (p, a) in enumerate(zip(sym.params, call.args)):
-                at = self.visit(a)
-                if at and not self._compatible(p.dtype, at):
-                    self.error(call.token,
-                        f"Argument {i+1} of '{call.name}': expected '{p.dtype}', got '{self._type_name(at)}'.")
-
-        # ABYSS functions are allowed in statement context (this is their only valid use).
-        # For non-ABYSS functions called as statements, the return value is just discarded.
+        self.visit(node.call_expr)
 
     # =====================================================================
     # EXPRESSIONS
@@ -704,40 +722,7 @@ class SemanticAnalyzer:
     def visit_ArrayAccessNode(self, node):
         sym = self.sym.lookup(node.name)
         if sym is None:
-            self.error(node.token, f"Undeclared variable '{node.name}'."); return None
-
-        # Handle SCROLL character indexing (syntax: scrollVar{index})
-        if sym.dtype == 'SCROLL':
-            if len(node.indices) != 1:
-                self.error(node.token, f"SCROLL variable '{node.name}' only supports single indexing.")
-                return None
-            idx = node.indices[0]
-            it = self.visit(idx)
-            if it and it != 'COIN':
-                self.error(node.token, f"SCROLL character index must be COIN, got '{self._type_name(it)}'.")
-
-            # Compile-time bounds check for SCROLL variables initialized with literals
-            idx_val = self._literal_int(idx)
-            init_expr = getattr(sym, 'init_expr', None)
-
-            if idx_val is not None and init_expr is not None:
-                # Try to get the literal string value from the initialization expression
-                init_expr_type = type(init_expr).__name__
-                if init_expr_type == 'LiteralNode' and getattr(init_expr, 'dtype', None) == 'SCROLL':
-                    str_val = getattr(init_expr, 'value', '')
-                    # Strip quotes from SCROLL literal (lexer stores "hi" as "hi" with quotes)
-                    if isinstance(str_val, str) and len(str_val) >= 2:
-                        if str_val[0] == '"' and str_val[-1] == '"':
-                            str_val = str_val[1:-1]
-                    str_len = len(str_val)
-                    if idx_val < 0 or idx_val >= str_len:
-                        self.error(node.token,
-                            f"SCROLL character index {idx_val} is out of bounds for '{node.name}' "
-                            f"(length {str_len}, valid range 0–{str_len - 1}).")
-
-            return 'SCROLL'  # SCROLL character access returns single-char SCROLL
-
-        # Handle array indexing
+            self.error(node.token, f"Undeclared array '{node.name}'."); return None
         if sym.kind != 'array':
             self.error(node.token, f"'{node.name}' is not an array (it is a '{sym.kind}')."); return None
         for i, idx in enumerate(node.indices):
@@ -770,18 +755,15 @@ class SemanticAnalyzer:
         it = self.visit(node.index)
         if it and it != 'COIN':
             self.error(node.token, f"SCROLL character index must be COIN, got '{self._type_name(it)}'.")
-        # Compile-time bounds check when the SCROLL operand is a literal string
-        scroll_node = node.scroll_expr
-        if type(scroll_node).__name__ == 'LiteralNode' and getattr(scroll_node, 'dtype', None) == 'SCROLL':
-            raw = getattr(scroll_node, 'value', None)
-            if raw is not None:
-                str_len = len(str(raw))
-                idx_val = self._literal_int(node.index)
-                if idx_val is not None:
-                    if idx_val < 0 or idx_val >= str_len:
-                        self.error(node.token,
-                            f"SCROLL character index {idx_val} is out of bounds "
-                            f"(length {str_len}, valid range 0–{str_len - 1}).")
+        # Compile-time bounds check (works for both literals and known variables)
+        str_len = self._known_scroll_length(node.scroll_expr)
+        if str_len is not None:
+            idx_val = self._literal_int(node.index)
+            if idx_val is not None:
+                if idx_val < 0 or idx_val >= str_len:
+                    self.error(node.token,
+                        f"SCROLL character index {idx_val} is out of bounds "
+                        f"(length {str_len}, valid range 0–{str_len - 1}).")
         return 'SCROLL'  # SCROLL char access returns single-char SCROLL (rule p.16)
 
     def visit_StringConcatNode(self, node):

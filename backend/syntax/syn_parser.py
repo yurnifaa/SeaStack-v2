@@ -2196,7 +2196,8 @@ class Parser:
             self.eat('{')
             self.index()
             self.eat('}')
-            self.elmt2()
+            if self.current_token.type in ['{']:
+                self.elmt2()
         elif prod == 343:
             self.eat('$')
             self.eat('id')
