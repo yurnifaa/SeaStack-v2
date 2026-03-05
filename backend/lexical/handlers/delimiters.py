@@ -14,6 +14,7 @@ class Delimiters:
         ALPHANUMERIC = LOWLET | DIGIT
         ASCII = set(string.printable)
         NONZERO = set("123456789")
+        DECIMAL = set(".")
 
     # =========================================================================
     # Whitespace, Newline, Tab
@@ -47,7 +48,7 @@ class Delimiters:
         COMMA_DELIM = ASSIGN_DELIM | set(['@'])
         CONCAT_DELIM = WHITESPACE | LOWLET | set('"(')
         
-        CLOSECB_DELIM = WHITESPACE | GEN_OP | set("]){&:")
+        CLOSECB_DELIM = WHITESPACE | GEN_OP | set("]){&:,")
         OPENP_DELIM = WHITESPACE | ALPHANUMERIC | set(['A', 'B', 'C', 'D', 'N', 'P', 'S', '(', ')', '"', "'", '-', '!'])
         CLOSEP_DELIM = WHITESPACE | GEN_OP | set(")[],")
 
@@ -65,7 +66,8 @@ class Delimiters:
             "DIGIT": DIGIT,
             "ALPHANUMERIC": ALPHANUMERIC,
             "ASCII": ASCII,
-            "NONZERO": NONZERO, 
+            "NONZERO": NONZERO,
+            "DECIMAL": DECIMAL,
             "WHITESPACE": WHITESPACE,
             "ARITH_OP": ARITH_OP,
             "GEN_OP": GEN_OP,

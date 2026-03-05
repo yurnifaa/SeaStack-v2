@@ -28,7 +28,7 @@ prod_num	non_terminal	body
 27	<coin-exp>	<coin-arith><coin-exp>
 28	<coin-exp>	λ
 29	<coin-arith>	<arith-op><coin-val>
-30	<coin-val-grp>	<coin-val><coin-exp-grp>
+30	<coin-val-grp>	<coin-val><coin-grp-exp>
 31	<coin-grp-exp>	<coin-arith><coin-grp-exp>
 32	<coin-grp-exp>	λ
 33	<arith-op>	+
@@ -331,7 +331,7 @@ prod_num	non_terminal	body
 330	<bool-exp-ret>	λ
 331	<params>	<d-type> id <param-mult>
 332	<params>	λ
-333	<param-mult>	, <params>
+333	<param-mult>	, <d-type> id <param-mult>
 334	<param-mult>	λ
 335	<d-type>	COIN
 336	<d-type>	DIME
@@ -348,7 +348,7 @@ prod_num	non_terminal	body
 347	<elmt2>	λ
 348	<args>	<value><args-mult>
 349	<args>	λ
-350	<args-mult>	, <args>
+350	<args-mult>	, <value><args-mult>
 351	<args-mult>	λ
 352	<value>	id<id-tail><exp>
 353	<value>	(<value-grp>)<exp>

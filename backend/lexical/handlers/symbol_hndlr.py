@@ -3,7 +3,7 @@ from backend.lexical.lexer_token import Token
 from backend.lexical.handlers.delimiters import Delimiters
 
 class SymbolHandler:
-    
+
     # =========================================================================
     # HELPER: Sanitize Delimiters for Display
     # Replaces invisible chars ('\n', '\t', etc.) with the word "whitespace"
@@ -13,7 +13,7 @@ class SymbolHandler:
         delims = list(delim_set) if isinstance(delim_set, set) else delim_set
         cleaned_list = []
         has_whitespace = False
-        
+
         for d in delims:
             # Check for invisible whitespace characters
             if d in [' ', '\t', '\n', '\r', '\v', '\f']:
@@ -23,10 +23,10 @@ class SymbolHandler:
                 has_whitespace = True
             else:
                 cleaned_list.append(d)
-        
+
         if has_whitespace:
             cleaned_list.append("whitespace")
-            
+
         # Remove duplicates and sort
         cleaned_list = list(set(cleaned_list))
         cleaned_list.sort(key=str)
@@ -42,16 +42,16 @@ class SymbolHandler:
             self.line,
             self.col - 1,
         )
-        
+
         # --- SANITIZE BEFORE ATTACHING ---
         err_token.expected = self._sanitize_delims(expected_list)
-        
+
         return err_token
 
     # =============================================
     # [ARITHMETIC] PLUS '+': +, +#, +=
     # =============================================
-    def rs120(self):  
+    def rs120(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs121()
         if self.current_char == "#": return self.rs122()
@@ -64,459 +64,464 @@ class SymbolHandler:
     def rs121(self): return Token("+", self.current_token_text(), self.line, self.col - 1)
 
     # --- INC '+#' ---
-    def rs122(self):  
+    def rs122(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs123()
-        
+
         # DELIMITERS
         self.errors.append(self._create_sym_error(["lowlet"]))
-        
+
     def rs123(self): return Token("+#", self.current_token_text(), self.line, self.col - 1)
-    
+
     # --- ADD-ASSIGN '+=' ---
-    def rs124(self):  
+    def rs124(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs125()
-        
+
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
     def rs125(self): return Token("+=", self.current_token_text(), self.line, self.col - 1)
-    
+
     # =============================================
-    # [ARITHMETIC] SUB '-': -, -#, -=
+    # [ARITHMETIC] SUB '-': -, -#, -=, -0, -nonzero
     # =============================================
-    def rs126(self): 
+    def rs126(self):
         self.advance()
 
-        # Treat digits as a delimiter for the minus sign.
-        if self.current_char is not None and self.current_char.isdigit():
-            return self.rs127()
-        
         if self._comp_delims(Delimiters._get_delimiters()["MINUS_DELIM"]): return self.rs127()
         if self.current_char == "#": return self.rs128()
         if self.current_char == "=": return self.rs130()
-        if self.current_char == self.current_char.isdigit(): return self.c235()
+        if self.current_char == "0": return self.rs132()
+        if self.current_char is not None and self.current_char in "123456789": return self.c238()
 
         # DELIMITERS
-        exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
+        exp = ["#", "=", "(", "-", "0", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
     def rs127(self): return Token("-", self.current_token_text(), self.line, self.col - 1)
 
     # --- DEC '-#' ---
-    def rs128(self): 
+    def rs128(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs129()
-        
+
         # DELIMITERS
         self.errors.append(self._create_sym_error(["lowlet"]))
-        
+
     def rs129(self): return Token("-#", self.current_token_text(), self.line, self.col - 1)
-    
+
     # --- SUB-ASSIGN '-=' ---
-    def rs130(self):  
+    def rs130(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs131()
 
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
+
     def rs131(self): return Token("-=", self.current_token_text(), self.line, self.col - 1)
-    
+
+    # --- NEGATIVE ZERO '-0' ---
+    def rs132(self):
+        self.advance()
+        if self.current_char == ".": return self.d268()
+
+        # DELIMITERS
+        self.errors.append(self._create_sym_error(["."]))
+
     # =============================================
     # [ARITHMETIC] MULTI '*': *, *=
     # =============================================
-    def rs132(self): 
+    def rs133(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs133()
-        if self.current_char == "=": return self.rs134()
-        
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs134()
+        if self.current_char == "=": return self.rs135()
+
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs133(self): return Token("*", self.current_token_text(), self.line, self.col - 1)
+    def rs134(self): return Token("*", self.current_token_text(), self.line, self.col - 1)
 
     # --- MULTI-ASSIGN '*=' ---
-    def rs134(self):  
+    def rs135(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs135()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs136()
 
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs135(self): return Token("*=", self.current_token_text(), self.line, self.col - 1)
+    def rs136(self): return Token("*=", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [ARITHMETIC] DIVIDE '/': /, /=
     # =============================================
-    def rs136(self): 
+    def rs137(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs137()
-        if self.current_char == "=": return self.rs138()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs138()
+        if self.current_char == "=": return self.rs139()
 
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs137(self): return Token("/", self.current_token_text(), self.line, self.col - 1)
+
+    def rs138(self): return Token("/", self.current_token_text(), self.line, self.col - 1)
 
     # --- DIV-ASSIGN '/=' ---
-    def rs138(self):  
+    def rs139(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs139()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs140()
 
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs139(self): return Token("/=", self.current_token_text(), self.line, self.col - 1)
+
+    def rs140(self): return Token("/=", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [ARITHMETIC] MOD '%': %, %=
     # =============================================
-    def rs140(self): 
+    def rs141(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs141()
-        if self.current_char == "=": return self.rs142()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs142()
+        if self.current_char == "=": return self.rs143()
 
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs141(self): return Token("%", self.current_token_text(), self.line, self.col - 1)
+
+    def rs142(self): return Token("%", self.current_token_text(), self.line, self.col - 1)
 
     # --- MOD-ASSIGN '%=' ---
-    def rs142(self):  
+    def rs143(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs143()
-        
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs144()
+
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs143(self): return Token("%=", self.current_token_text(), self.line, self.col - 1)
+    def rs144(self): return Token("%=", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [ARITHMETIC] EXPONENT '^': ^, ^=
     # =============================================
-    def rs144(self): 
+    def rs145(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs145()
-        if self.current_char == "=": return self.rs146()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs146()
+        if self.current_char == "=": return self.rs147()
 
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs145(self): return Token("^", self.current_token_text(), self.line, self.col - 1)
+
+    def rs146(self): return Token("^", self.current_token_text(), self.line, self.col - 1)
 
     # --- EXP-ASSIGN '^=' ---
-    def rs146(self):  
+    def rs147(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs147()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs148()
 
         # DELIMITERS
         exp = ["#", "=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs147(self): return Token("^=", self.current_token_text(), self.line, self.col - 1)
+    def rs148(self): return Token("^=", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [ARITHMETIC] ASSIGN '=': =, ==
     # =============================================
-    def rs148(self): 
+    def rs149(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["ASSIGN_DELIM"]): return self.rs149()
-        if self.current_char == "=": return self.rs150()
+        if self._comp_delims(Delimiters._get_delimiters()["ASSIGN_DELIM"]): return self.rs150()
+        if self.current_char == "=": return self.rs151()
 
         # DELIMITERS
         exp = ["=", "[", "(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs149(self): return Token("=", self.current_token_text(), self.line, self.col - 1)
+    def rs150(self): return Token("=", self.current_token_text(), self.line, self.col - 1)
 
     # --- EQUAL '==' ---
-    def rs150(self):  
+    def rs151(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs151()
-        
+        if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs152()
+
         # DELIMITERS
         exp = ["[", "(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs151(self): return Token("==", self.current_token_text(), self.line, self.col - 1)
+    def rs152(self): return Token("==", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [REL-LOG] NOT '!': !, !!, !#, !=
     # =============================================
-    def rs152(self): 
+    def rs153(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]): return self.rs153()
-        if self.current_char == "!": return self.rs154()
-        if self.current_char == "#": return self.rs156()
-        if self.current_char == "=": return self.rs158()
+        if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]): return self.rs154()
+        if self.current_char == "!": return self.rs155()
+        if self.current_char == "#": return self.rs157()
+        if self.current_char == "=": return self.rs159()
 
         # DELIMITERS
         exp = ["!", "#", "=", "(", "A", "N", "lowlet"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs153(self): return Token("!", self.current_token_text(), self.line, self.col - 1)
+    def rs154(self): return Token("!", self.current_token_text(), self.line, self.col - 1)
 
     # --- STMT TERM '!!' ---
-    def rs154(self):  
+    def rs155(self):
         self.advance()
         valid_delims = Delimiters._get_delimiters()["TERMINATOR_DELIM"] | set("]")
-        
-        if self._comp_delims(valid_delims): return self.rs155()
-        
+
+        if self._comp_delims(valid_delims): return self.rs156()
+
         # DELIMITERS
         self.errors.append(self._create_sym_error(["]", "+", "-", "A", "C", "E", "H", "L", "B", "D", "M", "P", "S", "lowlet", "whitespace"]))
-        
-    def rs155(self): return Token("!!", self.current_token_text(), self.line, self.col - 1)
-    
+
+    def rs156(self): return Token("!!", self.current_token_text(), self.line, self.col - 1)
+
     # --- DOUBLE-NOT '!#' ---
-    def rs156(self):  
+    def rs157(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]): return self.rs157()
-        
+        if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]): return self.rs158()
+
         # DELIMITERS
         exp = ["(", "A", "N", "lowlet"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs157(self): return Token("!#", self.current_token_text(), self.line, self.col - 1)
-    
+
+    def rs158(self): return Token("!#", self.current_token_text(), self.line, self.col - 1)
+
     # --- NOT-EQUAL '!=' ---
-    def rs158(self):  
+    def rs159(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs159()
-        
+        if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs160()
+
         # DELIMITERS
         exp = ["[", "(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs159(self): return Token("!=", self.current_token_text(), self.line, self.col - 1)
-    
+
+    def rs160(self): return Token("!=", self.current_token_text(), self.line, self.col - 1)
+
     # =============================================
     # [REL-LOG] LESS '<': <, <=
     # =============================================
-    def rs160(self): 
+    def rs161(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs161()
-        if self.current_char == "=": return self.rs162()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs162()
+        if self.current_char == "=": return self.rs163()
 
         # DELIMITERS
         exp = ["=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs161(self): return Token("<", self.current_token_text(), self.line, self.col - 1)
+
+    def rs162(self): return Token("<", self.current_token_text(), self.line, self.col - 1)
 
     # --- LESS-EQ '<=' ---
-    def rs162(self):  
+    def rs163(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs163()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs164()
 
         # DELIMITERS
         exp = ["(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs163(self): return Token("<=", self.current_token_text(), self.line, self.col - 1)
+
+    def rs164(self): return Token("<=", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [REL-LOG] GREAT '>': >, >=
     # =============================================
-    def rs164(self): 
+    def rs165(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs165()
-        if self.current_char == "=": return self.rs166()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs166()
+        if self.current_char == "=": return self.rs167()
 
         # DELIMITERS
         exp = ["=", "(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs165(self): return Token(">", self.current_token_text(), self.line, self.col - 1)
+
+    def rs166(self): return Token(">", self.current_token_text(), self.line, self.col - 1)
 
     # --- GREAT-E '>=' ---
-    def rs166(self):  
+    def rs167(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs167()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs168()
 
         # DELIMITERS
         exp = ["(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-    
-    def rs167(self): return Token(">=", self.current_token_text(), self.line, self.col - 1)
+
+    def rs168(self): return Token(">=", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [REL-LOG] CONCAT '&': &, &&
     # =============================================
-    def rs168(self): 
+    def rs169(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["CONCAT_DELIM"]): return self.rs169()
-        if self.current_char == "&": return self.rs170()
+        if self._comp_delims(Delimiters._get_delimiters()["CONCAT_DELIM"]): return self.rs170()
+        if self.current_char == "&": return self.rs171()
 
         # DELIMITERS
         exp = ["&", "'", "(", "lowlet", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
 
-    def rs169(self): return Token("&", self.current_token_text(), self.line, self.col - 1)
+    def rs170(self): return Token("&", self.current_token_text(), self.line, self.col - 1)
 
     # --- AND '&&' ---
-    def rs170(self):  
+    def rs171(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs171()
+        if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs172()
 
         # DELIMITERS
         exp = ["(", "-", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-    
-    def rs171(self): return Token("&&", self.current_token_text(), self.line, self.col - 1)
+
+    def rs172(self): return Token("&&", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [REL-LOG] OR '||': ||
     # =============================================
-    def rs172(self): 
+    def rs173(self):
         self.advance()
-        if self.current_char == "|": return self.rs173()
+        if self.current_char == "|": return self.rs174()
         self.errors.append(self._create_sym_error(["|"]))
-    
-    def rs173(self): 
+
+    def rs174(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs174()
+        if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs175()
 
         # DELIMITERS
         exp = ["(", "'", '"', "-", "A", "N", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-    
-    def rs174(self): return Token("||", self.current_token_text(), self.line, self.col - 1)
+
+    def rs175(self): return Token("||", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [REL-LOG] COLON ':'
     # =============================================
-    def rs175(self):  
+    def rs176(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["COLON_DELIM"]): return self.rs176()
+        if self._comp_delims(Delimiters._get_delimiters()["COLON_DELIM"]): return self.rs177()
 
         # DELIMITERS
         exp = ["+", "-", "A", "C", "E", "H", "L", "lowlet", "newline", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-    
-    def rs176(self): return Token(":", self.current_token_text(), self.line, self.col - 1)
+
+    def rs177(self): return Token(":", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] ADDR '@'
     # =============================================
-    def rs177(self):  
+    def rs178(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs178()
+        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs179()
 
         # DELIMITERS
         self.errors.append(self._create_sym_error(["lowlet"]))
-        
-    def rs178(self): return Token("@", self.current_token_text(), self.line, self.col - 1)
+
+    def rs179(self): return Token("@", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] MEM '$'
     # =============================================
-    def rs179(self):  
+    def rs180(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs180()
+        if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs181()
 
         # DELIMITERS
         self.errors.append(self._create_sym_error(["lowlet"]))
-        
-    def rs180(self): return Token("$", self.current_token_text(), self.line, self.col - 1)
+
+    def rs181(self): return Token("$", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] COMMA ','
     # =============================================
-    def rs181(self):  
+    def rs182(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["COMMA_DELIM"]): return self.rs182()
+        if self._comp_delims(Delimiters._get_delimiters()["COMMA_DELIM"]): return self.rs183()
 
         # DELIMITERS
         exp = ["(", "@", '-', "'", '"', "A", "N", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs182(self): return Token(",", self.current_token_text(), self.line, self.col - 1)
+
+    def rs183(self): return Token(",", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] OPEN-CB '{'
     # =============================================
-    def rs183(self):  
+    def rs184(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs184()
+        if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs185()
 
         # DELIMITERS
         self.errors.append(self._create_sym_error(["alphanumeric"]))
-        
-    def rs184(self): return Token("{", self.current_token_text(), self.line, self.col - 1)
+
+    def rs185(self): return Token("{", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] CLOSED-CB '}'
     # =============================================
-    def rs185(self):  
+    def rs186(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["CLOSECB_DELIM"]): return self.rs186()
+        if self._comp_delims(Delimiters._get_delimiters()["CLOSECB_DELIM"]): return self.rs187()
 
         # DELIMITERS
         exp = ["+", ",", "-", "*", "/", "%", "^", "<", ">", "=", "!", "&", "|", "]", ")", "{", "&", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs186(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
+
+    def rs187(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] OPEN-P '('
     # =============================================
-    def rs187(self):  
+    def rs188(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["OPENP_DELIM"]): return self.rs188()
+        if self._comp_delims(Delimiters._get_delimiters()["OPENP_DELIM"]): return self.rs189()
 
         # DELIMITERS
         exp = ["(", ")", "!", '"', "-", "A", "B", "C", "D", "N", "P", "S", "alphanumeric"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs188(self): return Token("(", self.current_token_text(), self.line, self.col - 1)
+
+    def rs189(self): return Token("(", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] CLOSED-P ')'
     # =============================================
-    def rs189(self):  
+    def rs190(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["CLOSEP_DELIM"]): return self.rs190()
+        if self._comp_delims(Delimiters._get_delimiters()["CLOSEP_DELIM"]): return self.rs191()
 
         # DELIMITERS
         exp = ["+", "-", "*", "/", "%", "^", "<", ">", "=", "!", "&", "|", ")", "[", "]", ",", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-    
-    def rs190(self): return Token(")", self.current_token_text(), self.line, self.col - 1)
+
+    def rs191(self): return Token(")", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] OPEN-SB '['
     # =============================================
-    def rs191(self):  
+    def rs192(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["OPENSB_DELIM"]): return self.rs192()
+        if self._comp_delims(Delimiters._get_delimiters()["OPENSB_DELIM"]): return self.rs193()
 
         # DELIMITERS
         exp = ['(', '[', '!', "'", '"', '-', "A", "B", 'C', "D", "E", "H", "L", "M", 'N', "P", "S", "alphanumeric", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs192(self): return Token("[", self.current_token_text(), self.line, self.col - 1)
+
+    def rs193(self): return Token("[", self.current_token_text(), self.line, self.col - 1)
 
     # =============================================
     # [OTHERS] CLOSED-SB ']'
     # =============================================
-    def rs193(self):  
+    def rs194(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["CLOSESB_DELIM"]): return self.rs194()
+        if self._comp_delims(Delimiters._get_delimiters()["CLOSESB_DELIM"]): return self.rs195()
 
         # DELIMITERS
         exp = [ "]", "}", "!", ",", "A", "B", "C", "D", "E", "H", "L", "S", "lowlet", "whitespace"]
         self.errors.append(self._create_sym_error(exp))
-        
-    def rs194(self): return Token("]", self.current_token_text(), self.line, self.col - 1)
+
+    def rs195(self): return Token("]", self.current_token_text(), self.line, self.col - 1)

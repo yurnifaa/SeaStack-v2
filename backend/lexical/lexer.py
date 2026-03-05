@@ -149,60 +149,53 @@ class Lexer(
         
         # --- Symbols / Operators ---
         if char == "+": return self.rs120() # State 120 is '+'
-        # Check for Negative Number vs Subtraction ---
-        if char == "-": 
-            # Lookahead: If the NEXT char is a digit, it's a negative number
-            if self.peek() is not None and self.peek().isdigit():
-                self.mark_token_start()
-                return self._make_digit() 
-            # Otherwise, it's a subtraction symbol
-            return self.rs126()
-        if char == "*": return self.rs132() # State 132 is '*'
-        if char == "/": return self.rs136() # State 136 is '/'
-        if char == "%": return self.rs140() # State 140 is '%'
-        if char == "^": return self.rs144() # State 144 is '^'
+        if char == "-": return self.rs126()
+        if char == "*": return self.rs133() # State 133 is '*'
+        if char == "/": return self.rs137() # State 137 is '/'
+        if char == "%": return self.rs141() # State 141 is '%'
+        if char == "^": return self.rs145() # State 145 is '^'
 
         # Assignment & Equality
-        if char == "=": return self.rs148() # State 148 is '='
+        if char == "=": return self.rs149() # State 149 is '='
 
         # Logical / Relational
-        if char == "!": return self.rs152() # State 152 is '!'
-        if char == "<": return self.rs160() # State 160 is '<'
-        if char == ">": return self.rs164() # State 164 is '>'
-        if char == "&": return self.rs168() # State 168 is '&'
-        if char == "|": return self.rs172() # State 172 is '|'
+        if char == "!": return self.rs153() # State 153 is '!'
+        if char == "<": return self.rs161() # State 161 is '<'
+        if char == ">": return self.rs165() # State 165 is '>'
+        if char == "&": return self.rs169() # State 169 is '&'
+        if char == "|": return self.rs173() # State 173 is '|'
 
         # Others
-        if char == ":": return self.rs175() # State 175 is 
-        if char == "@": return self.rs177() # State 177 is '@'
-        if char == "$": return self.rs179() # State 179 is '$'
-        if char == ",": return self.rs181() # State 181 is ','
-        
-        # Brackets (States 183-194)
-        if char == "{": return self.rs183() # Corrected: State 183 is '{'
-        if char == "}": return self.rs185() # Corrected: State 185 is '}'
-        if char == "(": return self.rs187() # Corrected: State 187 is '('
-        if char == ")": return self.rs189() # Corrected: State 189 is ')'
-        if char == "[": return self.rs191() # Corrected: State 191 is '['
-        if char == "]": return self.rs193() # Corrected: State 193 is ']'
-        
-        # --- Identifiers (Start at State 195) ---
-        if char.islower():
-            self.advance() 
-            return self.id195()
+        if char == ":": return self.rs176() # State 176 is ':'
+        if char == "@": return self.rs178() # State 178 is '@'
+        if char == "$": return self.rs180() # State 180 is '$'
+        if char == ",": return self.rs182() # State 182 is ','
 
-        # --- Digits (Start at State 235) ---
+        # Brackets (States 184-195)
+        if char == "{": return self.rs184() # State 184 is '{'
+        if char == "}": return self.rs186() # State 186 is '}'
+        if char == "(": return self.rs188() # State 188 is '('
+        if char == ")": return self.rs190() # State 190 is ')'
+        if char == "[": return self.rs192() # State 192 is '['
+        if char == "]": return self.rs194() # State 194 is ']'
+        
+        # --- Identifiers (Start at State 196) ---
+        if char.islower():
+            self.advance()
+            return self.id196()
+
+        # --- Digits (Start at State 236) ---
         if char.isdigit():
             self.mark_token_start()
-            return self.c235()
+            return self.c236()
 
-        # --- Literals (Start at State 284) ---
-        if char == "'": return self.p284() # State 284 is PARCH 
-        if char == '"': return self.s289() # State 289 is SCROLL 
+        # --- Literals (Start at State 285) ---
+        if char == "'": return self.p285() # State 285 is PARCH
+        if char == '"': return self.s290() # State 290 is SCROLL
 
-        # --- Comments (Start at State 293) ---
+        # --- Comments (Start at State 295) ---
         if char == "~":
-            return self.cm294()
+            return self.cm295()
 
         # --- Whitespace ---
         if char.isspace():
