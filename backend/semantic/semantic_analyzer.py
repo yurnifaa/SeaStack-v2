@@ -195,7 +195,8 @@ class SemanticAnalyzer:
                     f"Cannot initialize '{node.dtype}' variable '{node.name}' "
                     f"with a '{self._type_name(init_type)}' value.")
         self.sym.declare(Symbol(node.name, node.dtype, 'var', node.token,
-                                is_initialized=(node.init_value is not None)))
+                                is_initialized=(node.init_value is not None),
+                                init_expr=node.init_value))
 
     def visit_ArrayDeclNode(self, node):
         if self.sym.lookup_current_scope(node.name):
@@ -703,7 +704,34 @@ class SemanticAnalyzer:
     def visit_ArrayAccessNode(self, node):
         sym = self.sym.lookup(node.name)
         if sym is None:
-            self.error(node.token, f"Undeclared array '{node.name}'."); return None
+            self.error(node.token, f"Undeclared variable '{node.name}'."); return None
+
+        # Handle SCROLL character indexing (syntax: scrollVar{index})
+        if sym.dtype == 'SCROLL':
+            if len(node.indices) != 1:
+                self.error(node.token, f"SCROLL variable '{node.name}' only supports single indexing.")
+                return None
+            idx = node.indices[0]
+            it = self.visit(idx)
+            if it and it != 'COIN':
+                self.error(node.token, f"SCROLL character index must be COIN, got '{self._type_name(it)}'.")
+
+            # Compile-time bounds check for SCROLL variables initialized with literals
+            idx_val = self._literal_int(idx)
+            if idx_val is not None and sym.init_expr is not None:
+                # Try to get the literal string value from the initialization expression
+                init_expr_type = type(sym.init_expr).__name__
+                if init_expr_type == 'LiteralNode' and getattr(sym.init_expr, 'dtype', None) == 'SCROLL':
+                    str_val = getattr(sym.init_expr, 'value', '')
+                    str_len = len(str(str_val))
+                    if idx_val < 0 or idx_val >= str_len:
+                        self.error(node.token,
+                            f"SCROLL character index {idx_val} is out of bounds for '{node.name}' "
+                            f"(length {str_len}, valid range 0–{str_len - 1}).")
+
+            return 'SCROLL'  # SCROLL character access returns single-char SCROLL
+
+        # Handle array indexing
         if sym.kind != 'array':
             self.error(node.token, f"'{node.name}' is not an array (it is a '{sym.kind}')."); return None
         for i, idx in enumerate(node.indices):

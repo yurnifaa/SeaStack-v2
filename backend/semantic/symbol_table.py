@@ -10,12 +10,13 @@
 
 class Symbol:
     """Base symbol entry."""
-    def __init__(self, name, dtype, kind, token, is_initialized=False):
+    def __init__(self, name, dtype, kind, token, is_initialized=False, init_expr=None):
         self.name = name
         self.dtype = dtype
         self.kind = kind           # 'var'|'const'|'array'|'func'|'struct'|'struct_var'|'param'
         self.token = token
         self.is_initialized = is_initialized
+        self.init_expr = init_expr  # Store the initialization expression (AST node) for bounds checking
 
     def __repr__(self):
         return (f"Symbol(name={self.name!r}, dtype={self.dtype!r}, "
