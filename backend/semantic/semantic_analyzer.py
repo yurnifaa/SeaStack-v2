@@ -657,7 +657,29 @@ class SemanticAnalyzer:
                 f"but '{node.var_name}' is '{sym.dtype}'.")
 
     def visit_FuncCallStmtNode(self, node):
-        self.visit(node.call_expr)
+        # Special handling for function calls in statement context.
+        # ABYSS functions can only be called as statements, not expressions.
+        call = node.call_expr
+        sym = self.sym.lookup(call.name)
+        if sym is None:
+            self.error(call.token, f"Call to undeclared function '{call.name}'."); return
+        if sym.kind != 'func':
+            self.error(call.token, f"'{call.name}' is not a function."); return
+
+        # Check argument count and types
+        exp_cnt, act_cnt = len(sym.params), len(call.args)
+        if exp_cnt != act_cnt:
+            self.error(call.token,
+                f"Function '{call.name}' expects '{exp_cnt}' argument(s), got '{act_cnt}'.")
+        else:
+            for i, (p, a) in enumerate(zip(sym.params, call.args)):
+                at = self.visit(a)
+                if at and not self._compatible(p.dtype, at):
+                    self.error(call.token,
+                        f"Argument {i+1} of '{call.name}': expected '{p.dtype}', got '{self._type_name(at)}'.")
+
+        # ABYSS functions are allowed in statement context (this is their only valid use).
+        # For non-ABYSS functions called as statements, the return value is just discarded.
 
     # =====================================================================
     # EXPRESSIONS
