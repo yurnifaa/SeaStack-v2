@@ -718,12 +718,18 @@ class SemanticAnalyzer:
 
             # Compile-time bounds check for SCROLL variables initialized with literals
             idx_val = self._literal_int(idx)
-            if idx_val is not None and sym.init_expr is not None:
+            init_expr = getattr(sym, 'init_expr', None)
+
+            if idx_val is not None and init_expr is not None:
                 # Try to get the literal string value from the initialization expression
-                init_expr_type = type(sym.init_expr).__name__
-                if init_expr_type == 'LiteralNode' and getattr(sym.init_expr, 'dtype', None) == 'SCROLL':
-                    str_val = getattr(sym.init_expr, 'value', '')
-                    str_len = len(str(str_val))
+                init_expr_type = type(init_expr).__name__
+                if init_expr_type == 'LiteralNode' and getattr(init_expr, 'dtype', None) == 'SCROLL':
+                    str_val = getattr(init_expr, 'value', '')
+                    # Strip quotes from SCROLL literal (lexer stores "hi" as "hi" with quotes)
+                    if isinstance(str_val, str) and len(str_val) >= 2:
+                        if str_val[0] == '"' and str_val[-1] == '"':
+                            str_val = str_val[1:-1]
+                    str_len = len(str_val)
                     if idx_val < 0 or idx_val >= str_len:
                         self.error(node.token,
                             f"SCROLL character index {idx_val} is out of bounds for '{node.name}' "
