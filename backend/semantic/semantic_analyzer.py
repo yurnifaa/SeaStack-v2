@@ -698,7 +698,28 @@ class SemanticAnalyzer:
         self.known_values.pop(node.var_name, None)
 
     def visit_FuncCallStmtNode(self, node):
-        self.visit(node.call_expr)
+        # Validate the call directly so that ABYSS-returning functions are allowed.
+        # visit_FuncCallNode rejects ABYSS in expression context — but a standalone
+        # call statement (greet()!!) is the ONLY legal way to invoke an ABYSS function.
+        call = node.call_expr
+        sym = self.sym.lookup(call.name)
+        if sym is None:
+            self.error(call.token, f"Call to undeclared function '{call.name}'."); return
+        if sym.kind != 'func':
+            self.error(call.token, f"'{call.name}' is not a function."); return
+        exp_cnt, act_cnt = len(sym.params), len(call.args)
+        if exp_cnt != act_cnt:
+            self.error(call.token,
+                f"Function '{call.name}' expects '{exp_cnt}' argument(s), got '{act_cnt}'.")
+        else:
+            for idx, (p, a) in enumerate(zip(sym.params, call.args)):
+                at = self.visit(a)
+                if at and not self._compatible(p.dtype, at):
+                    self.error(call.token,
+                        f"Argument {idx+1} of '{call.name}': expected '{p.dtype}', "
+                        f"got '{self._type_name(at)}'.")
+        # Non-ABYSS functions may also be called as statements (return value is discarded).
+        # ABYSS functions are intentionally allowed here and nowhere else.
 
     # =====================================================================
     # EXPRESSIONS
