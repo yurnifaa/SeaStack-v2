@@ -408,6 +408,12 @@ class IROptimizer:
                     for item in q.arg2:
                         if isinstance(item, str):
                             used.add(item)
+                elif isinstance(q.arg2, dict):
+                    # STRUCT_INIT: arg2 is {member_name: val_temp, ...}
+                    # The values are temps being read — mark them as used.
+                    for v in q.arg2.values():
+                        if isinstance(v, str):
+                            used.add(v)
                 elif isinstance(q.arg2, list):
                     for item in q.arg2:
                         if isinstance(item, str):
@@ -426,6 +432,15 @@ class IROptimizer:
             # ASSIGN result is the destination var, but arg1 is the source temp
             if q.op == ASSIGN and q.arg1 is not None and isinstance(q.arg1, str):
                 used.add(q.arg1)
+            # For store ops, `result` holds the VALUE temp being stored — it is
+            # an INPUT to the instruction, not an output.  The general result-scan
+            # above doesn't cover these because result normally means "destination".
+            # Not marking these as used causes the optimizer to incorrectly eliminate
+            # the LITERAL quad that produced the value (e.g. _t5=99 for nums{0}=99),
+            # which then appears as an undefined variable at runtime.
+            if q.op in (ASSIGN_ARR, ASSIGN_ARR2, ASSIGN_MEMBER):
+                if q.result is not None and isinstance(q.result, str):
+                    used.add(q.result)
 
         # Remove LITERAL instructions whose result is never used
         new_instrs = []

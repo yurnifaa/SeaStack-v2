@@ -331,19 +331,6 @@ export default function Home() {
   // --- RUN LOGIC  (SSE streaming)         ---
   // ==========================================
   const handleRun = async () => {
-    if (!code.trim()) {
-      setErrors([{
-        line: "-", col: "-",
-        errorType: "Input Error",
-        headerStr: "No source code",
-        sourceCode: null,
-        expectedStr: "Please write or load a SeaStack program before running.",
-        isStructured: true
-      }]);
-      setErrorPhase("Input");
-      return;
-    }
-
     // Clear previous state
     setErrors([]);
     setErrorPhase(null);
@@ -594,7 +581,7 @@ const handleInputKeyDown = (e) => {
                     </span>
                   </GooeyButton>
                 ) : (
-                  <GooeyButton onClick={handleRun}>
+                  <GooeyButton onClick={handleRun} disabled={!code.trim()}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor">
                         <polygon points="0,0 10,6 0,12" />
@@ -699,6 +686,7 @@ const handleInputKeyDown = (e) => {
                 flex: 1,
                 padding: '12px 15px',
                 overflowY: 'auto',
+                overflowX: 'auto',
                 fontFamily: '"Fira Code", monospace',
                 fontVariantLigatures: 'none',
                 fontSize: '0.88rem',

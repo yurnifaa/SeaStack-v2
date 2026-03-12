@@ -642,12 +642,12 @@ prod_num	non_terminal	body
 641	<adrift-body>	<statements><adrift-body>
 642	<adrift-body>	λ
 643	<hoist-stmnt>	HOIST (<hoist-init>!! <hoist-cond>!! <hoist-upd>) [ <look-body> <jump-stmnt> ]
-644	<hoist-init>	COIN id = COIN-lit <init1-mult>
-645	<hoist-init>	id<arr-str> = COIN-lit <init2-mult>
+644	<hoist-init>	COIN id = <coin-val> <init1-mult>
+645	<hoist-init>	id<arr-str> = <coin-val> <init2-mult>
 646	<hoist-init>	λ
-647	<init1-mult>	, id = COIN-lit <init1-mult>
+647	<init1-mult>	, id = <coin-val> <init1-mult>
 648	<init1-mult>	λ
-649	<init2-mult>	, id<arr-str> = COIN-lit <init2-mult>
+649	<init2-mult>	, id<arr-str> = <coin-val> <init2-mult>
 650	<init2-mult>	λ
 651	<hoist-cond>	<dime-val><bool-arith><releq-op><dime-val><bool-arith3-grp><hoist-log>
 652	<releq-op>	<rel-op>

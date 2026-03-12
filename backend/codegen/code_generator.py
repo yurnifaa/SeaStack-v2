@@ -94,11 +94,11 @@ def _format_spec_to_python(fmt_str):
 # ─── Default values ──────────────────────────────────────────────────────────
 
 _DEFAULT_VALUES = {
-    'COIN': '0',
-    'DIME': '0.0',
-    'PARCH': "''",
-    'SCROLL': '""',
-    'BOOL': 'False',
+    'COIN':   '0',
+    'DIME':   '0.0',
+    'PARCH':  "'\\x00'",  # SeaStack default: null char  '\x00'
+    'SCROLL': '"\\x00"',  # SeaStack default: null string "\x00"
+    'BOOL':   'False',    # SeaStack NAY
 }
 
 _INPUT_CONVERTERS = {
@@ -183,7 +183,12 @@ class CodeGenerator:
         if dtype == 'COIN':
             return str(int(value))
         elif dtype == 'DIME':
-            return repr(float(value))
+            f = float(value)
+            s = repr(f)
+            # Guarantee a decimal point so whole numbers display as e.g. 5.0
+            if '.' not in s and 'e' not in s and 'n' not in s:
+                s += '.0'
+            return s
         elif dtype == 'BOOL':
             return 'True' if value else 'False'
         elif dtype == 'PARCH':
@@ -222,6 +227,15 @@ class CodeGenerator:
         self._indent_inc()
         self._emit("if isinstance(val, bool): return 'AYE' if val else 'NAY'")
         self._emit("return str(val)")
+        self._indent_dec()
+        self._emit_blank()
+        # SCROLL character access: index at len(s) returns the SeaStack null
+        # terminator '\x00', matching the rule that the char immediately after
+        # the last character of a SCROLL string is always '\x00'.
+        self._emit("def _ss_scroll_char(s, idx):")
+        self._indent_inc()
+        self._emit("if idx == len(s): return '\\x00'")
+        self._emit("return s[idx]")
         self._indent_dec()
         self._emit_blank()
 
@@ -329,17 +343,40 @@ class CodeGenerator:
 
     def _gen_ARR_INIT_1D(self, q):
         name = self._sanitize_name(q.arg1)
-        vals = q.arg2
+        vals = q.arg2 or []
         if vals:
+            dtype   = self._var_types.get(q.arg1, '')
+            default = _DEFAULT_VALUES.get(dtype, 'None')
             val_strs = [self._val(v) for v in vals]
+            n = len(val_strs)
+            # If more init values are supplied than the declared size, extend
+            # the array in-place so the index assignment never goes out of bounds.
+            # (Fewer values than declared size already works — DECL_ARR pre-fills
+            # every slot with the type default.)
+            self._emit(
+                f"if len({name}) < {n}: "
+                f"{name} += [{default}] * ({n} - len({name}))"
+            )
             for i, vs in enumerate(val_strs):
                 self._emit(f"{name}[{i}] = {vs}")
 
     def _gen_ARR_INIT_2D(self, q):
         name = self._sanitize_name(q.arg1)
-        rows = q.arg2
+        rows = q.arg2 or []
         if rows:
+            dtype   = self._var_types.get(q.arg1, '')
+            default = _DEFAULT_VALUES.get(dtype, 'None')
+            n_rows = len(rows)
+            self._emit(
+                f"if len({name}) < {n_rows}: "
+                f"{name} += [[{default}]] * ({n_rows} - len({name}))"
+            )
             for ri, row in enumerate(rows):
+                n_cols = len(row)
+                self._emit(
+                    f"if len({name}[{ri}]) < {n_cols}: "
+                    f"{name}[{ri}] += [{default}] * ({n_cols} - len({name}[{ri}]))"
+                )
                 for ci, v in enumerate(row):
                     self._emit(f"{name}[{ri}][{ci}] = {self._val(v)}")
 
@@ -482,7 +519,8 @@ class CodeGenerator:
     def _gen_SCROLL_CHAR(self, q):
         s = self._val(q.arg1)
         idx = self._val(q.arg2)
-        expr = f"({s})[{idx}]"
+        # _ss_scroll_char honours the SeaStack rule: s[len(s)] == '\x00'
+        expr = f"_ss_scroll_char({s}, {idx})"
         self._temps[q.result] = expr
         self._emit(f"{q.result} = {expr}")
 
@@ -752,7 +790,13 @@ class StructuralCodeGenerator:
 
     def _py_lit(self, dtype, value):
         if dtype == 'COIN': return str(int(value))
-        if dtype == 'DIME': return repr(float(value))
+        if dtype == 'DIME':
+            f = float(value)
+            s = repr(f)
+            # Guarantee a decimal point so whole numbers display as e.g. 5.0
+            if '.' not in s and 'e' not in s and 'n' not in s:
+                s += '.0'
+            return s
         if dtype == 'BOOL': return 'True' if value else 'False'
         if dtype == 'PARCH': return repr(_convert_parch_escapes(value))
         if dtype == 'SCROLL': return repr(_convert_scroll_escapes(value))
@@ -788,6 +832,15 @@ class StructuralCodeGenerator:
         self._inc()
         self._emit("if isinstance(val, bool): return 'AYE' if val else 'NAY'")
         self._emit("return str(val)")
+        self._dec()
+        self._emit_blank()
+        # SCROLL character access: index at len(s) returns the SeaStack null
+        # terminator '\x00', satisfying the rule that the char immediately after
+        # the last character of a SCROLL string must equal '\x00'.
+        self._emit("def _ss_scroll_char(s, idx):")
+        self._inc()
+        self._emit("if idx == len(s): return '\\x00'")
+        self._emit("return s[idx]")
         self._dec()
         self._emit_blank()
         self._emit("def _ss_parse_input(raw_line, types):")
@@ -911,11 +964,20 @@ class StructuralCodeGenerator:
         while i < len(instrs):
             q = instrs[i]
 
-            # --- LITERAL: register in temps (silent — value is inlined) ---
+            # --- LITERAL: register in temps AND emit the Python assignment ---
+            # Registering in self._temps allows _val() to inline the literal
+            # wherever it is later referenced.  Emitting the assignment is the
+            # essential safety net: if _val() is called from a nested/recursive
+            # _emit_block call that hasn't processed this LITERAL yet, the temp
+            # name (e.g. '_t5') would appear as an unresolved bare variable —
+            # causing the "Variable '_t5' is not defined" runtime error seen with
+            # array and struct initialisation.  Always emitting the line ensures
+            # the variable is unconditionally present in the generated Python scope.
             if q.op == LITERAL:
                 py_val = self._py_lit(q.arg1, q.arg2)
                 self._temps[q.result] = py_val
-                # Do NOT emit a line — the value is inlined where used
+                self._emit(f"{q.result} = {py_val}")
+                emitted_any = True
                 i += 1
                 continue
 
@@ -981,14 +1043,42 @@ class StructuralCodeGenerator:
                 continue
 
             if q.op in (ARR_INIT_1D, ARR_INIT_2D):
-                name = self._sanitize(q.arg1)
+                name   = self._sanitize(q.arg1)
+                dtype  = self._var_types.get(q.arg1, '')
+                default = _DEFAULT_VALUES.get(dtype, 'None')
+
                 if q.op == ARR_INIT_1D:
-                    for idx, v in enumerate(q.arg2 or []):
-                        self._emit(f"{name}[{idx}] = {self._val(v)}")
-                else:
-                    for ri, row in enumerate(q.arg2 or []):
-                        for ci, v in enumerate(row):
-                            self._emit(f"{name}[{ri}][{ci}] = {self._val(v)}")
+                    vals = q.arg2 or []
+                    if vals:
+                        val_strs = [self._val(v) for v in vals]
+                        n = len(val_strs)
+                        # Extend the array when the init list is longer than the
+                        # declared size so index assignment never goes out of bounds.
+                        # Fewer values than declared is handled automatically:
+                        # DECL_ARR already pre-fills every slot with the type default.
+                        self._emit(
+                            f"if len({name}) < {n}: "
+                            f"{name} += [{default}] * ({n} - len({name}))"
+                        )
+                        for idx, vs in enumerate(val_strs):
+                            self._emit(f"{name}[{idx}] = {vs}")
+                else:  # ARR_INIT_2D
+                    rows = q.arg2 or []
+                    if rows:
+                        n_rows = len(rows)
+                        self._emit(
+                            f"if len({name}) < {n_rows}: "
+                            f"{name} += [[{default}]] * ({n_rows} - len({name}))"
+                        )
+                        for ri, row in enumerate(rows):
+                            n_cols = len(row)
+                            self._emit(
+                                f"if len({name}[{ri}]) < {n_cols}: "
+                                f"{name}[{ri}] += [{default}] * "
+                                f"({n_cols} - len({name}[{ri}]))"
+                            )
+                            for ci, v in enumerate(row):
+                                self._emit(f"{name}[{ri}][{ci}] = {self._val(v)}")
                 emitted_any = True
                 i += 1
                 continue
@@ -1084,7 +1174,8 @@ class StructuralCodeGenerator:
 
             if q.op == SCROLL_CHAR:
                 s, idx = self._val(q.arg1), self._val(q.arg2)
-                expr = f"({s})[{idx}]"
+                # _ss_scroll_char honours the SeaStack rule: s[len(s)] == '\x00'
+                expr = f"_ss_scroll_char({s}, {idx})"
                 self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
                 emitted_any = True

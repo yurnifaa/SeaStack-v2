@@ -9,6 +9,8 @@
 #   - Compound assignment now checks target is initialized
 #   - Improved COURSE duplicate label detection using value comparison
 #   - Assignment marks arrays/structs as initialized at base level
+#   - HoistInitNode now visits and type-checks the init value expression
+#     (supports variables, elements, members, func calls, and arithmetic)
 # =============================================================================
 
 import re
@@ -97,6 +99,7 @@ class SemanticAnalyzer:
         if ('sail' in m or 'land' in m) and 'outside' in m: return 'Invalid Jump Context'
         if 'cannot be used as an expression' in m: return 'Invalid Expression Context'
         if 'condition' in m and 'must' in m: return 'Invalid Condition Type'
+        if 'hoist init' in m and 'must be coin' in m: return 'Type Mismatch'
         return 'Semantic Error'
 
     # ── Type Helpers ─────────────────────────────────────────────────────
@@ -601,12 +604,26 @@ class SemanticAnalyzer:
         self.sym.pop_scope()
 
     def visit_HoistInitNode(self, node):
+        # Visit the init value expression and type-check it.
+        # The value can now be a literal, variable, element, member,
+        # function call, or arithmetic expression — but must resolve to COIN.
+        val_type = None
+        if node.value is not None:
+            val_type = self.visit(node.value)
+
         if node.declares_new:
+            # COIN id = <coin-val>  — declares a new loop variable
             if self.sym.lookup_current_scope(node.var_name):
                 self.error(node.token, f"Loop variable '{node.var_name}' conflicts with existing declaration.")
             else:
                 self.sym.declare(Symbol(node.var_name, 'COIN', 'var', node.token, is_initialized=True))
+            # Type-check the init value: must be COIN (or compatible)
+            if val_type and not self._compatible('COIN', val_type):
+                self.error(node.token,
+                    f"HOIST init value for '{node.var_name}' must be COIN, "
+                    f"got '{self._type_name(val_type)}'.")
         else:
+            # id = <coin-val>  — assigns to an existing variable
             sym = self.sym.lookup(node.var_name)
             if sym is None:
                 self.error(node.token, f"Undeclared variable '{node.var_name}' in HOIST init.")
@@ -615,6 +632,14 @@ class SemanticAnalyzer:
             elif sym.dtype != 'COIN':
                 self.error(node.token,
                     f"HOIST init variable '{node.var_name}' must be COIN, got '{sym.dtype}'.")
+            else:
+                # Type-check the init value: must be COIN
+                if val_type and not self._compatible('COIN', val_type):
+                    self.error(node.token,
+                        f"HOIST init value for '{node.var_name}' must be COIN, "
+                        f"got '{self._type_name(val_type)}'.")
+                # Mark the variable as initialized
+                self.sym.update_initialized(node.var_name)
 
     def visit_HoistUpdateNode(self, node):
         sym = self.sym.lookup(node.var_name)

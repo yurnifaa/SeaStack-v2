@@ -8,7 +8,7 @@ PREDICT = {
     '<global-dec>': {
         'BOOL': 2, 'COIN': 2, 'DIME': 2, 'PARCH': 2, 'SCROLL': 2,
         'LOCKE': 3,
-        'MAST': 4,
+        'MAST': 4, 
         'ABYSS': 5,
         'AHOY': 6
     },

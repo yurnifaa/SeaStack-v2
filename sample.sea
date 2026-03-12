@@ -1,8 +1,0 @@
-~ this is a comment
-COIN global_val = 100!!
-
-AHOY() [
-    COIN x = 10!!
-
-    ECHO("Hello, SeaStack!")!!
-]

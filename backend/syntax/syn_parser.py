@@ -3969,14 +3969,14 @@ class Parser:
             self.eat('COIN')
             self.eat('id')
             self.eat('=')
-            self.eat('COIN-lit')
+            self.coin_val()
             self.init1_mult()
         elif prod == 645:
             self.eat('id')
             if self.current_token.type in ['{', '$']:
                 self.arr_str()
             self.eat('=')
-            self.eat('COIN-lit')
+            self.coin_val()
             self.init2_mult()
         elif prod == 646:
             pass  # Lambda
@@ -3990,7 +3990,7 @@ class Parser:
             self.eat(',')
             self.eat('id')
             self.eat('=')
-            self.eat('COIN-lit')
+            self.coin_val()
             self.init1_mult()
         elif prod == 648:
             pass  # Lambda
@@ -4006,7 +4006,7 @@ class Parser:
             if self.current_token.type in ['{', '$']:
                 self.arr_str()
             self.eat('=')
-            self.eat('COIN-lit')
+            self.coin_val()
             self.init2_mult()
         elif prod == 650:
             pass  # Lambda

@@ -9,6 +9,9 @@
 #   - Added missing boolean continuations in multiple expression tails:
 #     _parch_tail_as, _scroll_tail_as, _parch_tail_str, _scroll_tail_str,
 #     _releq_str, _releq_as, _releqvar_grp
+#   - hoist_init/init1_mult/init2_mult now use coin_val() instead of
+#     eating COIN-lit directly, to support variable/element/member/arith
+#     expressions in HOIST initialization
 # =============================================================================
 
 from syntax.Predict_Set import PREDICT
@@ -1246,42 +1249,49 @@ class ASTParser:
         return HoistNode(inits, cond, updates, body, None, tok)
 
     def hoist_init(self):
+        """Parse HOIST initializer(s).
+
+        Now uses coin_val() instead of eating a bare COIN-lit, so the
+        init value can be a variable, array element, struct member,
+        function call, or arithmetic expression — as long as the
+        overall type is COIN.
+        """
         prod = self.get_production('<hoist-init>')
         inits = []
         if prod == 644:
+            # COIN id = <coin-val> ...
             self.eat('COIN'); nt = self.current_token; self.eat('id')
-            self.eat('='); vt = self.current_token; self.eat('COIN-lit')
-            inits.append(HoistInitNode(True, nt.value,
-                LiteralNode('COIN', int(vt.value), vt), nt))
+            self.eat('='); val = self.coin_val()
+            inits.append(HoistInitNode(True, nt.value, val, nt))
             inits.extend(self.init1_mult())
         elif prod == 645:
+            # id [arr_str] = <coin-val> ...
             nt = self.current_token; self.eat('id')
             if self.current_token and self.current_token.type in ('{', '$'):
                 self.arr_str()
-            self.eat('='); vt = self.current_token; self.eat('COIN-lit')
-            inits.append(HoistInitNode(False, nt.value,
-                LiteralNode('COIN', int(vt.value), vt), nt))
+            self.eat('='); val = self.coin_val()
+            inits.append(HoistInitNode(False, nt.value, val, nt))
             inits.extend(self.init2_mult())
         return inits  # prod 646: λ
 
     def init1_mult(self):
+        """Multiple new-variable HOIST inits: , id = <coin-val> ..."""
         inits = []
         while self.get_production('<init1-mult>') == 647:
             self.eat(','); nt = self.current_token; self.eat('id')
-            self.eat('='); vt = self.current_token; self.eat('COIN-lit')
-            inits.append(HoistInitNode(True, nt.value,
-                LiteralNode('COIN', int(vt.value), vt), nt))
+            self.eat('='); val = self.coin_val()
+            inits.append(HoistInitNode(True, nt.value, val, nt))
         return inits
 
     def init2_mult(self):
+        """Multiple existing-variable HOIST inits: , id [arr_str] = <coin-val> ..."""
         inits = []
         while self.get_production('<init2-mult>') == 649:
             self.eat(','); nt = self.current_token; self.eat('id')
             if self.current_token and self.current_token.type in ('{', '$'):
                 self.arr_str()
-            self.eat('='); vt = self.current_token; self.eat('COIN-lit')
-            inits.append(HoistInitNode(False, nt.value,
-                LiteralNode('COIN', int(vt.value), vt), nt))
+            self.eat('='); val = self.coin_val()
+            inits.append(HoistInitNode(False, nt.value, val, nt))
         return inits
 
     def hoist_cond(self):
