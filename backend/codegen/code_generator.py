@@ -427,6 +427,7 @@ class CodeGenerator:
         # Check if both operands are COIN for integer division
         t1 = self._var_types.get(q.arg1)
         t2 = self._var_types.get(q.arg2)
+        self._emit(f"if ({b}) == 0: raise ZeroDivisionError('Division by zero is not allowed.')")
         if t1 == 'COIN' and t2 == 'COIN':
             expr = f"int(({a}) / ({b}))"
         else:
@@ -439,9 +440,7 @@ class CodeGenerator:
         b = self._val(q.arg2)
         result = q.result
         # SeaStack modulo preserves the sign of the dividend (like C's %)
-        expr = f"(int({a}) % int({b}) if int({b}) != 0 else 0)"
-        # For simplicity use Python's % but note SeaStack rule: sign of dividend
-        # Python's % already returns result with sign of divisor, so we need math.fmod
+        self._emit(f"if ({b}) == 0: raise ZeroDivisionError('Modulo by zero is not allowed.')")
         expr = f"int(__import__('math').fmod({a}, {b}))" if self._var_types.get(q.arg1) == 'COIN' else f"__import__('math').fmod({a}, {b})"
         self._temps[result] = expr
         self._emit(f"{result} = {expr}")
@@ -623,21 +622,59 @@ class CodeGenerator:
 
         for i, tgt in enumerate(targets):
             dtype = specs[i] if i < len(specs) else 'SCROLL'
-            converter = _INPUT_CONVERTERS.get(dtype, 'str')
             var = self._sanitize_name(tgt['var_name'])
 
+            # Build the validated input expression for each type
+            if dtype == 'COIN':
+                raw_var = f"_ss_raw_{var}"
+                self._emit(f"{raw_var} = input().strip()")
+                self._emit(f"if not {raw_var}: raise ValueError('Input Error: Expected an integer (COIN) but received empty input.')")
+                self._emit(f"try:")
+                self._indent_inc()
+                self._emit(f"{var}_conv = int({raw_var})")
+                self._indent_dec()
+                self._emit(f"except ValueError:")
+                self._indent_inc()
+                self._emit(f"raise ValueError(f'Input Error: Expected a whole number (COIN), got {{{raw_var}!r}}. Do not use decimals or letters.')")
+                self._indent_dec()
+                self._emit(f"if len({raw_var}.lstrip('-+')) > 16: raise RuntimeError('Overflow Error: COIN input exceeds 16 digits.')")
+                assign_expr = f"{var}_conv"
+            elif dtype == 'DIME':
+                raw_var = f"_ss_raw_{var}"
+                self._emit(f"{raw_var} = input().strip()")
+                self._emit(f"if not {raw_var}: raise ValueError('Input Error: Expected a decimal number (DIME) but received empty input.')")
+                self._emit(f"try:")
+                self._indent_inc()
+                self._emit(f"{var}_conv = float({raw_var})")
+                self._indent_dec()
+                self._emit(f"except ValueError:")
+                self._indent_inc()
+                self._emit(f"raise ValueError(f'Input Error: Expected a numeric value (DIME), got {{{raw_var}!r}}. Please enter a number.')")
+                self._indent_dec()
+                assign_expr = f"{var}_conv"
+            elif dtype == 'PARCH':
+                raw_var = f"_ss_raw_{var}"
+                self._emit(f"{raw_var} = input().strip()")
+                self._emit(f"if not {raw_var}: raise ValueError('Input Error: Expected a single character (PARCH) but received empty input.')")
+                self._emit(f"if len({raw_var}) != 1: raise ValueError(f'Input Error: Expected exactly one character (PARCH), got {{{raw_var}!r}} ({{len({raw_var})}} chars).')")
+                assign_expr = f"{raw_var}"
+            elif dtype == 'BOOL':
+                assign_expr = f"_ss_bool_input(input().strip())"
+            else:
+                assign_expr = "input()"
+
             if tgt['target_kind'] == 'var':
-                self._emit(f"{var} = {converter}(input())")
+                self._emit(f"{var} = {assign_expr}")
             elif tgt['target_kind'] == 'array1d':
                 idx = self._val(tgt['index1'])
-                self._emit(f"{var}[{idx}] = {converter}(input())")
+                self._emit(f"{var}[{idx}] = {assign_expr}")
             elif tgt['target_kind'] == 'array2d':
                 i1 = self._val(tgt['index1'])
                 i2 = self._val(tgt['index2'])
-                self._emit(f"{var}[{i1}][{i2}] = {converter}(input())")
+                self._emit(f"{var}[{i1}][{i2}] = {assign_expr}")
             elif tgt['target_kind'] == 'member':
                 member = tgt['member']
-                self._emit(f"{var}['{member}'] = {converter}(input())")
+                self._emit(f"{var}['{member}'] = {assign_expr}")
 
     def _gen_OUTPUT(self, q):
         fmt_str = q.arg1
@@ -824,8 +861,39 @@ class StructuralCodeGenerator:
         self._emit_blank()
         self._emit("def _ss_make_array(dims, default=None):")
         self._inc()
+        self._emit("for _d in dims:")
+        self._inc()
+        self._emit("if not isinstance(_d, int) or _d <= 0:")
+        self._inc()
+        self._emit("raise ValueError(f'Invalid array size {_d!r}: array dimensions must be positive integers.')")
+        self._dec()
+        self._dec()
         self._emit("if len(dims) == 1: return [default] * dims[0]")
         self._emit("return [[default] * dims[1] for _ in range(dims[0])]")
+        self._dec()
+        self._emit_blank()
+        self._emit("def _ss_check_div(divisor):")
+        self._inc()
+        self._emit("if divisor == 0:")
+        self._inc()
+        self._emit("raise ZeroDivisionError('Division by zero is not allowed.')")
+        self._dec()
+        self._dec()
+        self._emit_blank()
+        self._emit("def _ss_check_arr_bounds(arr, idx, arr_name='array'):")
+        self._inc()
+        self._emit("if not isinstance(idx, int):")
+        self._inc()
+        self._emit("raise TypeError(f'Array index must be an integer, got {type(idx).__name__!r}.')")
+        self._dec()
+        self._emit("if idx < 0:")
+        self._inc()
+        self._emit("raise IndexError(f'Index out of bounds: index {idx} is negative for array \\''+arr_name+'\\'')")
+        self._dec()
+        self._emit("if idx >= len(arr):")
+        self._inc()
+        self._emit("raise IndexError(f'Index out of bounds: index {idx} exceeds size {len(arr)} of array \\''+arr_name+'\\'')")
+        self._dec()
         self._dec()
         self._emit_blank()
         self._emit("def _ss_display(val):")
@@ -851,21 +919,75 @@ class StructuralCodeGenerator:
         self._emit("for i, t in enumerate(types):")
         self._inc()
         self._emit("tok = tokens[i] if i < len(tokens) else ''")
+        # ── COIN (integer) ────────────────────────────────────────────────
         self._emit("if t == 'COIN':")
         self._inc()
-        self._emit("if not tok: raise ValueError('invalid literal for int')")
-        self._emit("if len(tok.lstrip('-')) > 16: raise RuntimeError('Overflow Error: COIN input exceeds 16 digits.')")
-        self._emit("results.append(int(tok))")
+        self._emit("if not tok:")
+        self._inc()
+        self._emit("raise ValueError('Input Error: Expected an integer (COIN) but received empty input.')")
         self._dec()
+        self._emit("try:")
+        self._inc()
+        self._emit("_coin_val = int(tok)")
+        self._dec()
+        self._emit("except ValueError:")
+        self._inc()
+        self._emit("raise ValueError(f'Input Error: Expected a whole number (COIN), got {tok!r}. Do not use decimals or letters.')")
+        self._dec()
+        self._emit("if len(tok.lstrip('-+')) > 16:")
+        self._inc()
+        self._emit("raise RuntimeError('Overflow Error: COIN input exceeds 16 digits.')")
+        self._dec()
+        self._emit("results.append(_coin_val)")
+        self._dec()
+        # ── DIME (float) ──────────────────────────────────────────────────
         self._emit("elif t == 'DIME':")
         self._inc()
-        self._emit("if not tok: raise ValueError('could not convert string to float')")
-        self._emit("if len(tok.lstrip('-').replace('.', '')) > 8: raise RuntimeError('Overflow Error: DIME input exceeds 8 digits.')")
-        self._emit("results.append(float(tok))")
+        self._emit("if not tok:")
+        self._inc()
+        self._emit("raise ValueError('Input Error: Expected a decimal number (DIME) but received empty input.')")
         self._dec()
-        self._emit("elif t == 'BOOL': results.append(_ss_bool_input(tok))")
-        self._emit("elif t == 'PARCH': results.append(tok[0] if tok else '')")
-        self._emit("else: results.append(tok)")
+        self._emit("try:")
+        self._inc()
+        self._emit("_dime_val = float(tok)")
+        self._dec()
+        self._emit("except ValueError:")
+        self._inc()
+        self._emit("raise ValueError(f'Input Error: Expected a numeric value (DIME), got {tok!r}. Please enter a number.')")
+        self._dec()
+        self._emit("if len(tok.lstrip('-+').replace('.', '', 1).replace('e', '', 1).replace('E', '', 1)) > 8:")
+        self._inc()
+        self._emit("raise RuntimeError('Overflow Error: DIME input exceeds 8 significant digits.')")
+        self._dec()
+        self._emit("results.append(_dime_val)")
+        self._dec()
+        # ── BOOL ─────────────────────────────────────────────────────────
+        self._emit("elif t == 'BOOL':")
+        self._inc()
+        self._emit("if not tok:")
+        self._inc()
+        self._emit("raise ValueError('Input Error: Expected AYE or NAY (BOOL) but received empty input.')")
+        self._dec()
+        self._emit("results.append(_ss_bool_input(tok))")
+        self._dec()
+        # ── PARCH (single character) ──────────────────────────────────────
+        self._emit("elif t == 'PARCH':")
+        self._inc()
+        self._emit("if not tok:")
+        self._inc()
+        self._emit("raise ValueError('Input Error: Expected a single character (PARCH) but received empty input.')")
+        self._dec()
+        self._emit("if len(tok) != 1:")
+        self._inc()
+        self._emit("raise ValueError(f'Input Error: Expected exactly one character (PARCH), got {tok!r} ({len(tok)} characters).')")
+        self._dec()
+        self._emit("results.append(tok)")
+        self._dec()
+        # ── SCROLL (string) ───────────────────────────────────────────────
+        self._emit("else:")
+        self._inc()
+        self._emit("results.append(tok)")
+        self._dec()
         self._dec()
         self._emit("return results")
         self._dec()
@@ -1015,6 +1137,10 @@ class StructuralCodeGenerator:
                 self._var_types[q.arg1] = q.arg2
                 dims = q.result
                 default = _DEFAULT_VALUES.get(q.arg2, 'None')
+                # Validate each dimension at code-generation time (constant dims)
+                for _d in dims:
+                    if isinstance(_d, int) and _d <= 0:
+                        self._emit(f"raise ValueError('Invalid array size {_d} for {name!r}: dimensions must be positive integers.')")
                 self._emit(f"{name} = _ss_make_array({list(dims)}, {default})")
                 emitted_any = True
                 i += 1
@@ -1092,11 +1218,13 @@ class StructuralCodeGenerator:
                 if q.op == DIV:
                     t1 = self._var_types.get(q.arg1)
                     t2 = self._var_types.get(q.arg2)
+                    self._emit(f"_ss_check_div({b})")
                     if t1 == 'COIN' and t2 == 'COIN':
                         expr = f"int(({a}) / ({b}))"
                     else:
                         expr = f"({a} {op} {b})"
                 elif q.op == MOD:
+                    self._emit(f"_ss_check_div({b})")
                     expr = f"int(math.fmod({a}, {b}))"
                 else:
                     expr = f"({a} {op} {b})"
@@ -1186,7 +1314,9 @@ class StructuralCodeGenerator:
             if q.op == LOAD_ARR:
                 self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
-                expr = f"{name}[{self._val(q.arg2)}]"
+                idx  = self._val(q.arg2)
+                self._emit(f"_ss_check_arr_bounds({name}, {idx}, {name!r})")
+                expr = f"{name}[{idx}]"
                 self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
                 emitted_any = True
@@ -1197,7 +1327,10 @@ class StructuralCodeGenerator:
                 self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 i1, i2 = q.arg2
-                expr = f"{name}[{self._val(i1)}][{self._val(i2)}]"
+                r1, r2 = self._val(i1), self._val(i2)
+                self._emit(f"_ss_check_arr_bounds({name}, {r1}, {name!r})")
+                self._emit(f"_ss_check_arr_bounds({name}[{r1}], {r2}, {name!r}+'[row]')")
+                expr = f"{name}[{r1}][{r2}]"
                 self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
                 emitted_any = True
@@ -1217,7 +1350,9 @@ class StructuralCodeGenerator:
             # --- Stores ---
             if q.op == ASSIGN_ARR:
                 name = self._sanitize(q.arg1)
-                self._emit(f"{name}[{self._val(q.arg2)}] = {self._val(q.result)}")
+                idx  = self._val(q.arg2)
+                self._emit(f"_ss_check_arr_bounds({name}, {idx}, {name!r})")
+                self._emit(f"{name}[{idx}] = {self._val(q.result)}")
                 emitted_any = True
                 i += 1
                 continue
@@ -1225,7 +1360,10 @@ class StructuralCodeGenerator:
             if q.op == ASSIGN_ARR2:
                 name = self._sanitize(q.arg1)
                 i1, i2 = q.arg2
-                self._emit(f"{name}[{self._val(i1)}][{self._val(i2)}] = {self._val(q.result)}")
+                r1, r2 = self._val(i1), self._val(i2)
+                self._emit(f"_ss_check_arr_bounds({name}, {r1}, {name!r})")
+                self._emit(f"_ss_check_arr_bounds({name}[{r1}], {r2}, {name!r}+'[row]')")
+                self._emit(f"{name}[{r1}][{r2}] = {self._val(q.result)}")
                 emitted_any = True
                 i += 1
                 continue

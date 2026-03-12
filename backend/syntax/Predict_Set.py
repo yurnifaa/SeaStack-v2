@@ -916,7 +916,9 @@ PREDICT = {
         ']': 475
     },
     '<sub-func>': {
-        'ABYSS': 478, 'AHOY': 478, 'BOOL': 478, 'COIN': 478, 'DIME': 478, 'PARCH': 478, 'SCROLL': 478
+        'BOOL': 476, 'COIN': 476, 'DIME': 476, 'PARCH': 476, 'SCROLL': 476,
+        'ABYSS': 477,
+        'AHOY': 478
     },
     '<return-func>': {
         'COIN': 479,
