@@ -507,10 +507,17 @@ class IRGenerator:
                 raise ValueError(f"Overflow Error: COIN literal '{node.value}' is too large. It exceeds the 16-digit limit.")
                 
         elif node.dtype == 'DIME':
-            # Remove negative sign and decimal point to count total digits
-            val_str = str(node.value).lstrip('-').replace('.', '')
-            if len(val_str) > 8:
-                raise ValueError(f"Overflow Error: DIME literal '{node.value}' is too large. It exceeds the 8-digit limit.")
+            # Check integer part (max 16) and decimal part (max 8)
+            val_str = str(node.value).lstrip('-')
+            if '.' in val_str:
+                int_part, dec_part = val_str.split('.')
+            else:
+                int_part, dec_part = val_str, ''
+
+            if len(int_part) > 16:
+                raise ValueError(f"Overflow Error: DIME literal '{node.value}' is too large. Integer part exceeds 16-digit limit.")
+            if len(dec_part) > 8:
+                raise ValueError(f"Overflow Error: DIME literal '{node.value}' is too large. Decimal part exceeds 8-digit limit.")
 
         t = self._new_temp()
         self.ir.emit(LITERAL, node.dtype, node.value, t)
