@@ -357,3 +357,99 @@ body.dark-mode table tr:hover {
 .moon { position: absolute; left: -100%; top: 50%; opacity: 0; background-color: #333; width: 1.25rem; height: 1.25rem; border-radius: 50%; transform: translateY(-50%); transition: all 0.4s; }
 .shine { display: block; position: absolute; top: 50%; left: 50%; width: 0.25rem; height: 0.25rem; background-color: #ffffff; border-radius: 1rem; transition: all 0.4s; }
 .shine-1 { transform: translate(-50%, -375%); } .shine-2 { transform: translate(175%, -275%); } .shine-3 { transform: translate(275%, -50%); } .shine-4 { transform: translate(175%, 175%); } .shine-5 { transform: translate(-50%, 275%); } .shine-6 { transform: translate(-275%, 175%); } .shine-7 { transform: translate(-375%, -50%); } .shine-8 { transform: translate(-275%, -275%); }
+
+/* =========================================
+   MOBILE RESPONSIVE
+   ========================================= */
+@media (max-width: 768px) {
+    .header {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .header-left {
+        gap: 8px;
+    }
+
+    .header-right {
+        gap: 8px;
+    }
+
+    .logo {
+        height: 24px;
+        width: 24px;
+        margin-right: 4px;
+    }
+
+    .title {
+        font-size: 1rem;
+        margin-right: 8px;
+    }
+
+    .main-nav ul {
+        gap: 8px;
+    }
+
+    .btn-header {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .main-content {
+        flex-direction: column;
+        padding: 10px;
+        gap: 10px;
+        overflow-y: auto;
+    }
+
+    .panel-left {
+        flex: none;
+        height: 45vh;
+        min-height: 180px;
+    }
+
+    .panel-right {
+        flex: none;
+        height: 25vh;
+        min-height: 120px;
+    }
+
+    .footer {
+        height: 130px;
+        margin: 0 10px 10px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 6px 10px;
+    }
+
+    .title {
+        font-size: 0.85rem;
+    }
+
+    .c-button {
+        font-size: 10px;
+        padding: 0.6em 0.9em;
+    }
+
+    .main-content {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .panel-left {
+        height: 40vh;
+    }
+
+    .panel-right {
+        height: 22vh;
+    }
+
+    .footer {
+        height: 115px;
+        margin: 0 8px 8px 8px;
+    }
+}

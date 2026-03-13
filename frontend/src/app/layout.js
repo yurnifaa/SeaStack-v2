@@ -16,6 +16,11 @@ export const metadata = {
   description: "SeaStack is a web-based program analysis tool that performs lexical analysis on source code, providing insights into tokens, errors, and logs to help developers understand and debug their code effectively.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
