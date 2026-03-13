@@ -20,6 +20,8 @@ const GooeyButton = ({ onClick, children, disabled, style }) => {
   );
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+
 export default function Home() {
   const [code, setCode] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -331,6 +333,7 @@ export default function Home() {
   // --- RUN LOGIC  (SSE streaming)         ---
   // ==========================================
   const handleRun = async () => {
+    console.log("Attempting to connect to:", API_URL);
     // Clear previous state
     setErrors([]);
     setErrorPhase(null);
@@ -340,7 +343,7 @@ export default function Home() {
     setIsRunning(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/run', {
+      const response = await fetch(`${API_URL}/api/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: code, session_id: sessionId }),
@@ -451,7 +454,7 @@ export default function Home() {
     }
     // Tell the server to stop the execution thread
     try {
-      await fetch('http://127.0.0.1:5000/api/stop', {
+      await fetch(`${API_URL}/api/stop`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId }),
@@ -478,7 +481,7 @@ const handleInputKeyDown = (e) => {
       setConsoleOutput(prev => prev + value + '\n');
 
       // Send the entire line unmodified to backend
-      fetch('http://127.0.0.1:5000/api/input', {
+      fetch(`${API_URL}/api/input`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, input: value }),
