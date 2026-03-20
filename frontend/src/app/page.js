@@ -248,25 +248,17 @@ export default function Home() {
     };
   };
 
-  const formatSemanticError = (errObj, sourceCode) => {
-    if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
-      return { ...errObj, isStructured: false };
-    }
-
-    let actualLine = errObj.actual_line || "";
-    if (!actualLine && sourceCode) {
-      const lineNum = parseInt(errObj.line, 10);
-      const lines = sourceCode.split('\n');
-      actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
-    }
-
+  const formatSemanticError = (errObj) => {
+    // Backend (sem_error_msg.py) guarantees all fields are populated.
+    // Guard only against the internal-error case where line is '?'.
+    if (errObj.line === '?') return { ...errObj, isStructured: false };
     return {
-      line: errObj.line,
-      col: errObj.col,
-      errorType: errObj.error_type || errObj.type || "Semantic Error",
-      headerStr: errObj.error_type || errObj.type || "Semantic Error",
-      sourceCode: actualLine || null,
-      expectedStr: errObj.message || "",
+      line:        errObj.line,
+      col:         errObj.col,
+      errorType:   errObj.error_type,
+      headerStr:   errObj.error_type,
+      sourceCode:  errObj.actual_line || null,
+      expectedStr: errObj.message,
       isStructured: true,
     };
   };
@@ -398,7 +390,7 @@ export default function Home() {
               } else if (phase === "Syntax") {
                 formatted = event.errors.map(e => formatSyntaxError(e, code));
               } else if (phase === "Semantic") {
-                formatted = event.errors.map(e => formatSemanticError(e, code));
+                formatted = event.errors.map(e => formatSemanticError(e));
               } else {
                 formatted = event.errors.map(e => ({
                   line: e.line || "-", col: e.col || "-",
