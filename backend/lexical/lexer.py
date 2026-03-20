@@ -148,36 +148,36 @@ class Lexer(
             return self._make_keyword()
         
         # --- Symbols / Operators ---
-        if char == "+": return self.rs120() # State 120 is '+'
+        if char == "+": return self.rs120()
         if char == "-": return self.rs126()
-        if char == "*": return self.rs133() # State 133 is '*'
-        if char == "/": return self.rs137() # State 137 is '/'
-        if char == "%": return self.rs141() # State 141 is '%'
-        if char == "^": return self.rs145() # State 145 is '^'
+        if char == "*": return self.rs133()
+        if char == "/": return self.rs137()
+        if char == "%": return self.rs141()
+        if char == "^": return self.rs145()
 
         # Assignment & Equality
-        if char == "=": return self.rs149() # State 149 is '='
+        if char == "=": return self.rs149()
 
         # Logical / Relational
-        if char == "!": return self.rs153() # State 153 is '!'
-        if char == "<": return self.rs161() # State 161 is '<'
-        if char == ">": return self.rs165() # State 165 is '>'
-        if char == "&": return self.rs169() # State 169 is '&'
-        if char == "|": return self.rs173() # State 173 is '|'
+        if char == "!": return self.rs153()
+        if char == "<": return self.rs161()
+        if char == ">": return self.rs165()
+        if char == "&": return self.rs169()
+        if char == "|": return self.rs173()
 
         # Others
-        if char == ":": return self.rs176() # State 176 is ':'
-        if char == "@": return self.rs178() # State 178 is '@'
-        if char == "$": return self.rs180() # State 180 is '$'
-        if char == ",": return self.rs182() # State 182 is ','
+        if char == ":": return self.rs176()
+        if char == "@": return self.rs178()
+        if char == "$": return self.rs180()
+        if char == ",": return self.rs182()
 
         # Brackets (States 184-195)
-        if char == "{": return self.rs184() # State 184 is '{'
-        if char == "}": return self.rs186() # State 186 is '}'
-        if char == "(": return self.rs188() # State 188 is '('
-        if char == ")": return self.rs190() # State 190 is ')'
-        if char == "[": return self.rs192() # State 192 is '['
-        if char == "]": return self.rs194() # State 194 is ']'
+        if char == "{": return self.rs184()
+        if char == "}": return self.rs186()
+        if char == "(": return self.rs188()
+        if char == ")": return self.rs190()
+        if char == "[": return self.rs192()
+        if char == "]": return self.rs194()
         
         # --- Identifiers (Start at State 196) ---
         if char.islower():

@@ -46,6 +46,7 @@ class IROptimizer:
         self._stats = {
             'const_folded': 0,
             'const_propagated': 0,
+            'copy_propagated': 0,
             'strength_reduced': 0,
             'dead_eliminated': 0,
             'jumps_optimized': 0,
@@ -54,12 +55,32 @@ class IROptimizer:
     # ── Entry Point ──────────────────────────────────────────────────────
 
     def optimize(self):
-        """Run all optimization passes and return the modified IRProgram."""
-        self._pass_constant_folding()
-        self._pass_constant_propagation()
-        self._pass_strength_reduction()
-        self._pass_dead_code_elimination()
+        """Run all optimization passes and return the modified IRProgram.
+
+        Passes are looped until no further changes occur so that each pass
+        can feed the next (e.g. folding enables propagation enables DCE).
+        """
+        changed = True
+        while changed:
+            before = len(self.ir.instructions)
+            before_stats = dict(self._stats)
+
+            self._pass_constant_folding()
+            self._pass_constant_propagation()
+            self._pass_copy_propagation()
+            self._pass_strength_reduction()
+            self._pass_dead_code_elimination()
+
+            # Check if anything actually changed this iteration
+            after_stats = dict(self._stats)
+            changed = (
+                len(self.ir.instructions) != before or
+                any(after_stats[k] != before_stats[k] for k in after_stats)
+            )
+
+        # Jump optimization is a single structural cleanup — run once at the end
         self._pass_jump_optimization()
+
         # Remove NOP instructions produced by other passes
         self.ir.instructions = [q for q in self.ir.instructions if q.op != NOP]
         return self.ir
@@ -262,8 +283,14 @@ class IROptimizer:
     # fresh LITERAL instructions.
 
     def _pass_constant_propagation(self):
-        # Ops whose arg1/arg2 can be propagated
-        propagatable_arg = {
+        """Replace temp references with their known compile-time literal values.
+
+        When a temp holds a known scalar (recorded during folding), any
+        subsequent instruction that reads that temp as arg1/arg2 can have
+        the temp replaced with the literal value directly.  This enables
+        further folding on the next iteration.
+        """
+        propagatable_ops = {
             ADD, SUB, MUL, DIV, MOD, POW,
             LT, GT, LE, GE, EQ, NE,
             LOG_AND, LOG_OR, LOG_NOT, LOG_DNOT,
@@ -272,22 +299,103 @@ class IROptimizer:
         }
         count = 0
         for q in self.ir.instructions:
-            if q.op in propagatable_arg:
-                if q.arg1 is not None and isinstance(q.arg1, str) and q.arg1 in self.temp_values:
-                    v = self.temp_values[q.arg1]
-                    # Only propagate simple scalars
-                    if isinstance(v, (int, float, bool, str)):
-                        q.arg1 = q.arg1  # keep temp reference (code gen resolves)
-                        count += 1
-                if q.arg2 is not None and isinstance(q.arg2, str) and q.arg2 in self.temp_values:
-                    v = self.temp_values[q.arg2]
-                    if isinstance(v, (int, float, bool, str)):
-                        q.arg2 = q.arg2  # keep temp reference
-                        count += 1
-        self._stats['const_propagated'] = count
+            # Invalidate propagated knowledge when a variable is reassigned
+            if q.op == ASSIGN and isinstance(q.result, str):
+                self.temp_values.pop(q.result, None)
+
+            if q.op not in propagatable_ops:
+                continue
+
+            if isinstance(q.arg1, str) and q.arg1 in self.temp_values:
+                v = self.temp_values[q.arg1]
+                if isinstance(v, (int, float, bool, str)):
+                    q.arg1 = v   # ← actually substitute the value
+                    count += 1
+
+            if isinstance(q.arg2, str) and q.arg2 in self.temp_values:
+                v = self.temp_values[q.arg2]
+                if isinstance(v, (int, float, bool, str)):
+                    q.arg2 = v   # ← actually substitute the value
+                    count += 1
+
+        self._stats['const_propagated'] += count
 
     # =====================================================================
-    # PASS 3: STRENGTH REDUCTION
+    # PASS 3: COPY PROPAGATION
+    # =====================================================================
+    # When an ASSIGN copies one temp/var into another (result = arg1),
+    # replace all subsequent reads of `result` with `arg1` directly —
+    # until `result` or `arg1` is overwritten.  The now-redundant ASSIGN
+    # becomes dead and is removed by the next DCE pass.
+
+    def _pass_copy_propagation(self):
+        # copy_map: dest → source  (e.g. '_t3' → '_t1')
+        # Tracks active copy relationships through the instruction stream.
+        copy_map = {}
+        count = 0
+
+        # Ops whose result is a fresh computation — invalidate any copy into result
+        write_result_ops = {
+            ADD, SUB, MUL, DIV, MOD, POW,
+            LT, GT, LE, GE, EQ, NE,
+            LOG_AND, LOG_OR, LOG_NOT, LOG_DNOT,
+            UNARY_NEG, CONCAT, LITERAL,
+            LOAD_ARR, LOAD_ARR2, LOAD_MEMBER, SCROLL_CHAR,
+            CALL,
+        }
+
+        def _resolve_copy(name):
+            """Chase copy chain: a→b→c returns c."""
+            seen = set()
+            while name in copy_map and name not in seen:
+                seen.add(name)
+                name = copy_map[name]
+            return name
+
+        for q in self.ir.instructions:
+            # --- Record new copy relationships ---
+            if q.op == ASSIGN and isinstance(q.arg1, str) and isinstance(q.result, str):
+                # result = arg1  →  add to copy map
+                src = _resolve_copy(q.arg1)
+                copy_map[q.result] = src
+
+            # --- Invalidate stale copies when a variable is written ---
+            if q.result is not None and isinstance(q.result, str):
+                if q.op in write_result_ops:
+                    # This result is freshly computed, not a copy — remove any
+                    # stale entry so we don't propagate the old value
+                    copy_map.pop(q.result, None)
+                    # Also invalidate any copy whose SOURCE is now overwritten
+                    stale = [k for k, v in copy_map.items() if v == q.result]
+                    for k in stale:
+                        del copy_map[k]
+
+            # Stores to variables kill copies involving that variable
+            if q.op in (ASSIGN, ASSIGN_ARR, ASSIGN_ARR2, ASSIGN_MEMBER,
+                        UNARY_INC, UNARY_DEC):
+                if isinstance(q.result, str):
+                    stale = [k for k, v in copy_map.items()
+                             if k == q.result or v == q.result]
+                    for k in stale:
+                        del copy_map[k]
+
+            # --- Substitute copies in arg1/arg2 ---
+            if isinstance(q.arg1, str) and q.arg1 in copy_map:
+                new_val = copy_map[q.arg1]
+                if new_val != q.arg1:
+                    q.arg1 = new_val
+                    count += 1
+
+            if isinstance(q.arg2, str) and q.arg2 in copy_map:
+                new_val = copy_map[q.arg2]
+                if new_val != q.arg2:
+                    q.arg2 = new_val
+                    count += 1
+
+        self._stats['copy_propagated'] += count
+
+    # =====================================================================
+    # PASS 4: STRENGTH REDUCTION
     # =====================================================================
     # Replace expensive operations with cheaper equivalents.
 
@@ -374,15 +482,18 @@ class IROptimizer:
         return q
 
     # =====================================================================
-    # PASS 4: DEAD CODE ELIMINATION
+    # PASS 5: DEAD CODE ELIMINATION
     # =====================================================================
-    # Remove instructions that write to temporaries never read.
 
     def _pass_dead_code_elimination(self):
-        # Build set of all referenced names (used as arg1, arg2, OR result
-        # in declaration ops where result holds an init-value temp)
-        used = set()
-        # Certain ops always have side effects — never eliminate them
+        """Remove instructions that write to temporaries never read downstream.
+
+        Any instruction whose ONLY effect is writing to a temp that nothing
+        else reads is dead.  Instructions with side effects (I/O, calls,
+        jumps, declarations, stores) are always kept regardless.
+        """
+        # Ops that have observable side effects beyond writing their result temp.
+        # These are ALWAYS kept even if their result temp is unused.
         side_effect_ops = {
             PROGRAM_START, PROGRAM_END, AHOY_BEGIN, AHOY_END,
             FUNC_BEGIN, FUNC_END, PARAM_DECL,
@@ -390,17 +501,27 @@ class IROptimizer:
             ARR_INIT_1D, ARR_INIT_2D, STRUCT_INIT,
             ASSIGN, ASSIGN_ARR, ASSIGN_ARR2, ASSIGN_MEMBER,
             LABEL, JUMP, JUMP_FALSE, JUMP_TRUE, BREAK, CONTINUE,
-            ARG, CALL, CALL_VOID, INPUT, OUTPUT,
+            ARG, CALL_VOID, INPUT, OUTPUT,
             RETURN, RETURN_VOID,
             UNARY_INC, UNARY_DEC,
+            COMPOUND_ASSIGN,
         }
-        # Declaration ops whose result field references a temp (init value)
+
+        # Ops that write a result temp AND have a side effect (keep always,
+        # but also mark their result as used so dependent temps survive)
+        side_effect_with_result = {CALL}
+
+        # Declaration ops where result holds an init-value temp (that temp is
+        # consumed by the declaration itself, so mark it as used)
         decl_result_ops = {DECL_VAR, DECL_CONST}
 
-        # Gather all referenced temps/vars
+        # --- Build the used-temps set ---
+        used = set()
         for q in self.ir.instructions:
-            if q.arg1 is not None and isinstance(q.arg1, str):
+            # arg1 is read
+            if isinstance(q.arg1, str):
                 used.add(q.arg1)
+            # arg2 is read — handle scalars, tuples, lists, dicts
             if q.arg2 is not None:
                 if isinstance(q.arg2, str):
                     used.add(q.arg2)
@@ -408,12 +529,6 @@ class IROptimizer:
                     for item in q.arg2:
                         if isinstance(item, str):
                             used.add(item)
-                elif isinstance(q.arg2, dict):
-                    # STRUCT_INIT: arg2 is {member_name: val_temp, ...}
-                    # The values are temps being read — mark them as used.
-                    for v in q.arg2.values():
-                        if isinstance(v, str):
-                            used.add(v)
                 elif isinstance(q.arg2, list):
                     for item in q.arg2:
                         if isinstance(item, str):
@@ -426,32 +541,39 @@ class IROptimizer:
                             for v in item.values():
                                 if isinstance(v, str):
                                     used.add(v)
-            # Declaration result fields hold temps that were previously emitted
-            if q.op in decl_result_ops and q.result is not None and isinstance(q.result, str):
+                elif isinstance(q.arg2, dict):
+                    for v in q.arg2.values():
+                        if isinstance(v, str):
+                            used.add(v)
+            # Declaration result fields hold init-value temps — mark as used
+            if q.op in decl_result_ops and isinstance(q.result, str):
                 used.add(q.result)
-            # ASSIGN result is the destination var, but arg1 is the source temp
-            if q.op == ASSIGN and q.arg1 is not None and isinstance(q.arg1, str):
-                used.add(q.arg1)
-            # For store ops, `result` holds the VALUE temp being stored — it is
-            # an INPUT to the instruction, not an output.  The general result-scan
-            # above doesn't cover these because result normally means "destination".
-            # Not marking these as used causes the optimizer to incorrectly eliminate
-            # the LITERAL quad that produced the value (e.g. _t5=99 for nums{0}=99),
-            # which then appears as an undefined variable at runtime.
+            # Store ops: result holds the VALUE temp being stored — it is an
+            # input, not an output, so mark it used
             if q.op in (ASSIGN_ARR, ASSIGN_ARR2, ASSIGN_MEMBER):
-                if q.result is not None and isinstance(q.result, str):
+                if isinstance(q.result, str):
                     used.add(q.result)
 
-        # Remove LITERAL instructions whose result is never used
+        # --- Eliminate dead instructions ---
+        # Pure expression ops: can be removed if their result temp is never used.
+        pure_expr_ops = {
+            LITERAL, ADD, SUB, MUL, DIV, MOD, POW,
+            LT, GT, LE, GE, EQ, NE,
+            LOG_AND, LOG_OR, LOG_NOT, LOG_DNOT,
+            UNARY_NEG, CONCAT, SCROLL_CHAR,
+            LOAD_ARR, LOAD_ARR2, LOAD_MEMBER,
+            CALL,  # CALL result may be unused (void-use pattern)
+        }
+
         new_instrs = []
         for q in self.ir.instructions:
-            if q.op == LITERAL and q.result not in used:
-                self._stats['dead_eliminated'] += 1
-                continue
             if q.op in side_effect_ops:
                 new_instrs.append(q)
                 continue
-            # Keep everything else (expressions that produce temps used later)
+            if q.op in pure_expr_ops:
+                if q.result is not None and q.result not in used:
+                    self._stats['dead_eliminated'] += 1
+                    continue  # drop it
             new_instrs.append(q)
 
         self.ir.instructions = new_instrs

@@ -1,24 +1,21 @@
-"""
-generate_predict_set.py
-=======================
-Reads the grammar TSV and automatically computes FIRST, FOLLOW, and PREDICT
-sets using standard LL(1) table construction, then outputs a Predict_Set.py.
+# generate_predict_set.py
+# Reads the grammar TSV and automatically computes FIRST, FOLLOW, and PREDICT
+# sets using standard LL(1) table construction, then outputs a Predict_Set.py.
 
-ALGORITHM:
-  FIRST(A)  → terminals that can start any string derived from A
-              λ is added to FIRST(A) if A can produce the empty string
-  FOLLOW(A) → terminals that can appear immediately after A in any sentential form
-              only computed for nullable non-terminals (those with a λ production)
-  PREDICT(A → α):
-              = FIRST(α)           if α cannot derive λ
-              = FIRST(α) ∪ FOLLOW(A) if α can derive λ  (λ itself is excluded)
+# ALGORITHM:
+#  FIRST(A)  → terminals that can start any string derived from A
+#              λ is added to FIRST(A) if A can produce the empty string
+#  FOLLOW(A) → terminals that can appear immediately after A in any sentential form
+#              only computed for nullable non-terminals (those with a λ production)
+#  PREDICT(A → α):
+#              = FIRST(α)           if α cannot derive λ
+#              = FIRST(α) ∪ FOLLOW(A) if α can derive λ  (λ itself is excluded)
 
-The production numbers from the TSV are used directly as predict table values,
-matching exactly how the hand-written Predict_Set.py maps terminals → prod_num.
+# The production numbers from the TSV are used directly as predict table values,
+# matching exactly how the hand-written Predict_Set.py maps terminals → prod_num.
 
-USAGE:
-  python generate_predict_set.py grammar.tsv
-"""
+# USAGE:
+#  python generate_predict_set.py grammar.tsv
 
 import csv
 import re

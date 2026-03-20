@@ -1,29 +1,21 @@
-"""
-generate_syn_parser.py
-======================
-Reads a grammar TSV file and generates a syn_parser.py-style recursive descent parser.
+# Reads a grammar TSV file and generates a syn_parser.py-style recursive descent parser.
 
-TSV FORMAT (save from Google Sheets as .tsv):
-----------------------------------------------
-  Column 1 (prod_num)    : integer production number
-  Column 2 (non_terminal): e.g.  <program>  or  <coin-var>
-  Column 3 (body)        : space-separated list of symbols:
-                             - Non-terminals → <angle-brackets>
-                             - Terminals     → "quoted-strings"  e.g. "COIN"  "id"  "!!"
-                             - Lambda/empty  → the word:  lambda
+# TSV FORMAT (save from Google Sheets as .tsv):
+# ----------------------------------------------
+#  Column 1 (prod_num)    : integer production number
+#  Column 2 (non_terminal): e.g.  <program>  or  <coin-var>
+#  Column 3 (body)        : space-separated list of symbols:
+#                             - Non-terminals → <angle-brackets>
+#                             - Terminals     → "quoted-strings"  e.g. "COIN"  "id"  "!!"
+#                             - Lambda/empty  → the word:  lambda
 
-EXAMPLE ROWS:
-  1   <program>       <global-dec> "AHOY" "(" ")" "[" <ahoy-local-dec> <ahoy-stmnts> "]"
-  2   <global-dec>    <var-arr-func>
-  3   <global-dec>    <const> <global-dec>
-  6   <global-dec>    lambda
-  28  <coin-exp>      <arith-op> <coin-val> <coin-exp>
-  29  <coin-exp>      lambda
+# EXAMPLE ROWS:
+#  1   <program>       <global-dec> "AHOY" "(" ")" "[" <ahoy-local-dec> <ahoy-stmnts> "]"
+#  2   <global-dec>    <var-arr-func>
 
-USAGE:
-  python generate_syn_parser.py grammar.tsv
-  python generate_syn_parser.py grammar.tsv --out my_parser.py
-"""
+#USAGE:
+#  python generate_syn_parser.py grammar.tsv
+#  python generate_syn_parser.py grammar.tsv --out my_parser.py
 
 import sys
 import re

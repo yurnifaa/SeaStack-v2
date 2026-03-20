@@ -1,6 +1,8 @@
 # =============================================================================
 # symbol_table.py — SeaStack Symbol Table
 # Scope stack implementation for semantic analysis.
+# Stores five kinds of symbols: plain variables (Symbol), arrays (ArraySymbol), 
+# functions (FunctionSymbol), struct type definitions (StructTypeSymbol), struct variable instances (StructVarSymbol). 
 # =============================================================================
 
 
@@ -9,7 +11,7 @@
 # =============================================================================
 
 class Symbol:
-    """Base symbol entry."""
+    # Base symbol entry.
     def __init__(self, name, dtype, kind, token, is_initialized=False, init_expr=None):
         self.name = name
         self.dtype = dtype

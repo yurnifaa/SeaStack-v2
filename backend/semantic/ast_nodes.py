@@ -12,6 +12,8 @@
 
 class ASTNode:
     """Base class for all AST nodes."""
+    resolved_type: str = None  # Filled in by SemanticAnalyzer for expression nodes.
+
     def __repr__(self):
         attrs = ', '.join(f'{k}={v!r}' for k, v in self.__dict__.items() if k != 'token')
         return f'{self.__class__.__name__}({attrs})'

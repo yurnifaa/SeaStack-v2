@@ -173,6 +173,7 @@ class IRProgram:
     struct_types: dict = field(default_factory=dict)   # name → {member: dtype}
     struct_orders: dict = field(default_factory=dict)   # name → [member_names]
     func_signatures: dict = field(default_factory=dict) # name → (ret_type, [(p_dtype, p_name)])
+    temp_types: dict = field(default_factory=dict)      # temp_name → dtype (e.g. '_t0' → 'COIN')
 
     def emit(self, op, arg1=None, arg2=None, result=None, comment="", line=None):
         q = Quad(op, arg1, arg2, result, comment, line)
@@ -186,4 +187,10 @@ class IRProgram:
         lines.append("-" * 92)
         for i, q in enumerate(self.instructions):
             lines.append(f"{i:4d}  {q}")
+        if self.temp_types:
+            lines.append("")
+            lines.append("Temp Types:")
+            for name, dtype in sorted(self.temp_types.items(),
+                                      key=lambda x: int(x[0][2:])):
+                lines.append(f"  {name:10s} → {dtype}")
         return "\n".join(lines)

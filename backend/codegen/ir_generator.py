@@ -47,6 +47,13 @@ class IRGenerator:
         self._temp_counter += 1
         return t
 
+    def _new_temp_typed(self, dtype):
+        """Allocate a new temporary and register its type in temp_types."""
+        t = self._new_temp()
+        if dtype:
+            self.ir.temp_types[t] = dtype
+        return t
+
     def _new_label(self):
         lbl = f"_L{self._label_counter}"
         self._label_counter += 1
@@ -501,13 +508,11 @@ class IRGenerator:
     def visit_LiteralNode(self, node):
         # Overflow Checks for COIN and DIME
         if node.dtype == 'COIN':
-            # Remove negative sign to accurately count digits
             val_str = str(node.value).lstrip('-')
             if len(val_str) > 16:
                 raise ValueError(f"Overflow Error: COIN literal '{node.value}' is too large. It exceeds the 16-digit limit.")
                 
         elif node.dtype == 'DIME':
-            # Check integer part (max 16) and decimal part (max 8)
             val_str = str(node.value).lstrip('-')
             if '.' in val_str:
                 int_part, dec_part = val_str.split('.')
@@ -519,7 +524,7 @@ class IRGenerator:
             if len(dec_part) > 8:
                 raise ValueError(f"Overflow Error: DIME literal '{node.value}' is too large. Decimal part exceeds 8-digit limit.")
 
-        t = self._new_temp()
+        t = self._new_temp_typed(node.dtype)
         self.ir.emit(LITERAL, node.dtype, node.value, t)
         return t
 
@@ -528,7 +533,7 @@ class IRGenerator:
         return node.name
 
     def visit_ArrayAccessNode(self, node):
-        t = self._new_temp()
+        t = self._new_temp_typed(getattr(node, 'resolved_type', None))
         if len(node.indices) == 1:
             idx = self._emit_expr(node.indices[0])
             self.ir.emit(LOAD_ARR, node.name, idx, t)
@@ -539,24 +544,24 @@ class IRGenerator:
         return t
 
     def visit_MemberAccessNode(self, node):
-        t = self._new_temp()
+        t = self._new_temp_typed(getattr(node, 'resolved_type', None))
         self.ir.emit(LOAD_MEMBER, node.var_name, node.member_name, t)
         return t
 
     def visit_ScrollCharAccessNode(self, node):
         scroll_temp = self._emit_expr(node.scroll_expr)
         idx_temp = self._emit_expr(node.index)
-        t = self._new_temp()
+        t = self._new_temp_typed('SCROLL')
         self.ir.emit(SCROLL_CHAR, scroll_temp, idx_temp, t)
         return t
 
     def visit_StringConcatNode(self, node):
         if not node.operands:
-            return self._new_temp()
+            return self._new_temp_typed('SCROLL')
         result = self._emit_expr(node.operands[0])
         for operand in node.operands[1:]:
             right = self._emit_expr(operand)
-            t = self._new_temp()
+            t = self._new_temp_typed('SCROLL')
             self.ir.emit(CONCAT, result, right, t)
             result = t
         return result
@@ -568,20 +573,24 @@ class IRGenerator:
         for at in arg_temps:
             self.ir.emit(ARG, at)
 
-        # Check if function returns a value
-        sig = self.ir.func_signatures.get(node.name)
-        if sig and sig[0] == 'ABYSS':
+        # Use resolved_type stamped by semantic analyzer; fall back to sig lookup
+        resolved = getattr(node, 'resolved_type', None)
+        if resolved is None:
+            sig = self.ir.func_signatures.get(node.name)
+            resolved = sig[0] if sig else None
+
+        if resolved == 'ABYSS' or resolved is None:
             self.ir.emit(CALL_VOID, node.name, len(arg_temps))
             return None
         else:
-            t = self._new_temp()
+            t = self._new_temp_typed(resolved)
             self.ir.emit(CALL, node.name, len(arg_temps), t)
             return t
 
     def visit_BinaryOpNode(self, node):
         left_temp = self._emit_expr(node.left)
         right_temp = self._emit_expr(node.right)
-        t = self._new_temp()
+        t = self._new_temp_typed(getattr(node, 'resolved_type', None))
         op = node.operator
         if op in ARITH_OP_MAP:
             self.ir.emit(ARITH_OP_MAP[op], left_temp, right_temp, t)
@@ -596,7 +605,7 @@ class IRGenerator:
 
     def visit_UnaryOpNode(self, node):
         operand_temp = self._emit_expr(node.operand)
-        t = self._new_temp()
+        t = self._new_temp_typed(getattr(node, 'resolved_type', None))
         if node.operator == '-':
             self.ir.emit(UNARY_NEG, operand_temp, None, t)
         elif node.operator == '!':

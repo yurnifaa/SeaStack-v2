@@ -750,20 +750,20 @@ class SemanticAnalyzer:
     # EXPRESSIONS
     # =====================================================================
 
-    def visit_LiteralNode(self, node): return node.dtype
+    def visit_LiteralNode(self, node):
+        node.resolved_type = node.dtype
+        return node.resolved_type
 
     def visit_IdentNode(self, node):
         sym = self.sym.lookup(node.name)
         if sym is None:
             self.error(node.token, f"Undeclared variable '{node.name}'."); return None
-        # A lone identifier (no parentheses) is ONLY a variable or constant.
-        # If the name resolves to a function, it must be treated as undeclared
-        # because function references require parentheses: greet() not greet.
         if sym.kind == 'func':
             self.error(node.token, f"Undeclared variable '{node.name}'."); return None
         if not sym.is_initialized:
             self.error(node.token, f"Variable '{node.name}' may be used before it is initialized.")
-        return sym.dtype
+        node.resolved_type = sym.dtype
+        return node.resolved_type
 
     def visit_ArrayAccessNode(self, node):
         sym = self.sym.lookup(node.name)
@@ -778,7 +778,8 @@ class SemanticAnalyzer:
             if i < len(sym.dimensions):
                 lbl = 'column index' if (sym.is_2d and i == 1) else 'row index' if (sym.is_2d and i == 0) else 'index'
                 self._check_bounds(node.name, lbl, idx, sym.dimensions[i], node.token)
-        return sym.dtype
+        node.resolved_type = sym.dtype
+        return node.resolved_type
 
     def visit_MemberAccessNode(self, node):
         sym = self.sym.lookup(node.var_name)
@@ -791,7 +792,8 @@ class SemanticAnalyzer:
             self.error(node.token, f"Cannot resolve struct type '{sym.struct_type_name}'."); return None
         if node.member_name not in ts.members:
             self.error(node.token, f"Struct '{sym.struct_type_name}' has no member '{node.member_name}'."); return None
-        return ts.members[node.member_name]
+        node.resolved_type = ts.members[node.member_name]
+        return node.resolved_type
 
     def visit_ScrollCharAccessNode(self, node):
         st = self.visit(node.scroll_expr)
@@ -810,7 +812,8 @@ class SemanticAnalyzer:
                     self.error(node.token,
                         f"SCROLL character index {idx_val} is out of bounds "
                         f"(length {str_len}, valid range 0–{str_len - 1}).")
-        return 'SCROLL'  # SCROLL char access returns single-char SCROLL (rule p.16)
+        node.resolved_type = 'SCROLL'
+        return node.resolved_type  # SCROLL char access returns single-char SCROLL (rule p.16)
 
     def visit_StringConcatNode(self, node):
         for op in node.operands:
@@ -818,7 +821,8 @@ class SemanticAnalyzer:
             if ot and ot != 'SCROLL':
                 self.error(node.token,
                     f"String concatenation (&) requires SCROLL operands, got '{self._type_name(ot)}'.")
-        return 'SCROLL'
+        node.resolved_type = 'SCROLL'
+        return node.resolved_type
 
     def visit_FuncCallNode(self, node):
         sym = self.sym.lookup(node.name)
@@ -840,7 +844,8 @@ class SemanticAnalyzer:
             self.error(node.token,
                 f"Function '{node.name}' is declared ABYSS and cannot be used as an expression.")
             return None
-        return sym.return_type
+        node.resolved_type = sym.return_type
+        return node.resolved_type
 
     def visit_BinaryOpNode(self, node):
         lt = self.visit(node.left); rt = self.visit(node.right)
@@ -850,34 +855,40 @@ class SemanticAnalyzer:
                 self.error(node.token, f"Operator '{op}' requires numeric operands, left is '{self._type_name(lt)}'.")
             if rt and not self._is_numeric(rt):
                 self.error(node.token, f"Operator '{op}' requires numeric operands, right is '{self._type_name(rt)}'.")
-            return 'DIME' if (lt == 'DIME' or rt == 'DIME') else 'COIN'
+            result = 'DIME' if (lt == 'DIME' or rt == 'DIME') else 'COIN'
         elif op in ('<', '>', '<=', '>='):
             if lt and not self._is_numeric(lt):
                 self.error(node.token, f"Relational operator '{op}' requires numeric operands, left is '{self._type_name(lt)}'.")
             if rt and not self._is_numeric(rt):
                 self.error(node.token, f"Relational operator '{op}' requires numeric operands, right is '{self._type_name(rt)}'.")
-            return 'BOOL'
+            result = 'BOOL'
         elif op in ('==', '!='):
             if lt and rt and not self._compatible_expr(lt, rt):
                 self.error(node.token,
                     f"Cannot compare '{self._type_name(lt)}' and '{self._type_name(rt)}' with '{op}'.")
-            return 'BOOL'
+            result = 'BOOL'
         elif op in ('&&', '||'):
             if lt and not self._is_bool(lt):
                 self.error(node.token, f"Logical operator '{op}' requires BOOL operands, left is '{self._type_name(lt)}'.")
             if rt and not self._is_bool(rt):
                 self.error(node.token, f"Logical operator '{op}' requires BOOL operands, right is '{self._type_name(rt)}'.")
-            return 'BOOL'
-        return None
+            result = 'BOOL'
+        else:
+            result = None
+        node.resolved_type = result
+        return node.resolved_type
 
     def visit_UnaryOpNode(self, node):
         ot = self.visit(node.operand); op = node.operator
         if op == '-':
             if ot and not self._is_numeric(ot):
                 self.error(node.token, f"Unary '-' requires a numeric operand, got '{self._type_name(ot)}'.")
-            return ot
+            result = ot
         elif op in ('!', '!#'):
             if ot and not self._is_bool(ot):
                 self.error(node.token, f"Operator '{op}' requires a BOOL operand, got '{self._type_name(ot)}'.")
-            return 'BOOL'
-        return None
+            result = 'BOOL'
+        else:
+            result = None
+        node.resolved_type = result
+        return node.resolved_type
