@@ -30,9 +30,9 @@ class Digits(LexerErrors):
                 return self.d268()
 
             if self.current_char is not None and self.current_char.isdigit():
-                return self.error("Invalid COIN-lit.")
+                return self.error()
 
-            return self.error("Invalid COIN-lit.")
+            return self.error()
 
         # PATH B: Non-Zero Digit
         elif self.current_char in Delimiters._get_delimiters()["NONZERO"]:
@@ -45,10 +45,10 @@ class Digits(LexerErrors):
             if self.current_char is not None and self.current_char.isdigit():
                 return self.c238()
 
-            return self.error("Invalid COIN-lit.")
+            return self.error()
 
         self.advance()
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c237(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -59,7 +59,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c240()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c239(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -70,7 +70,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c242()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c241(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -81,7 +81,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c244()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c243(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -92,7 +92,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c246()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c245(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -103,7 +103,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c248()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c247(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -114,7 +114,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c250()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c249(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -125,7 +125,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c252()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c251(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -136,7 +136,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c254()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c253(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -147,7 +147,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c256()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c255(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -158,7 +158,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c258()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c257(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -169,7 +169,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c260()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c259(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -180,7 +180,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c262()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c261(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -191,7 +191,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c264()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c263(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -202,7 +202,7 @@ class Digits(LexerErrors):
         if self.current_char == ".": return self.d268()
         if self.current_char is not None and self.current_char.isdigit(): return self.c266()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c265(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -214,9 +214,9 @@ class Digits(LexerErrors):
 
         # Limit Exceeded
         if self.current_char is not None and self.current_char.isdigit():
-            return self.error("Invalid COIN-lit.")
+            return self.error()
 
-        return self.error("Invalid COIN-lit.")
+        return self.error()
 
     def c267(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -229,7 +229,7 @@ class Digits(LexerErrors):
         self.advance()
         if self.current_char is not None and self.current_char.isdigit(): return self.d269()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     # --- DIME Digit 1 (State 269) ---
     def d269(self):
@@ -237,7 +237,7 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d270()
         if self.current_char is not None and self.current_char.isdigit(): return self.d271()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     def d270(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -247,7 +247,7 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d272()
         if self.current_char is not None and self.current_char.isdigit(): return self.d273()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     def d272(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -257,7 +257,7 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d274()
         if self.current_char is not None and self.current_char.isdigit(): return self.d275()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     def d274(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -267,7 +267,7 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d276()
         if self.current_char is not None and self.current_char.isdigit(): return self.d277()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     def d276(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -277,7 +277,7 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d278()
         if self.current_char is not None and self.current_char.isdigit(): return self.d279()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
     
     def d278(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -287,7 +287,7 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d280()
         if self.current_char is not None and self.current_char.isdigit(): return self.d281()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     def d280(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -297,7 +297,7 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d282()
         if self.current_char is not None and self.current_char.isdigit(): return self.d283()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     def d282(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
 
@@ -307,9 +307,9 @@ class Digits(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
             return self.d284()
         if self.current_char is not None and self.current_char.isdigit():
-            return self.error("Invalid DIME-lit.")
+            return self.error()
 
-        return self.error("Invalid DIME-lit.")
+        return self.error()
 
     def d284(self):
         return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)

@@ -14,7 +14,7 @@ class Symbols(LexerErrors):
         if self.current_char == "#": return self.rs122()
         if self.current_char == "=": return self.rs124()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs121(self): return Token("+", self.current_token_text(), self.line, self.col - 1)
 
@@ -23,7 +23,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs123()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs123(self): return Token("+#", self.current_token_text(), self.line, self.col - 1)
 
@@ -32,7 +32,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs125()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs125(self): return Token("+=", self.current_token_text(), self.line, self.col - 1)
 
@@ -48,7 +48,7 @@ class Symbols(LexerErrors):
         if self.current_char == "0": return self.rs132()
         if self.current_char is not None and self.current_char in "123456789": return self.c238()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs127(self): return Token("-", self.current_token_text(), self.line, self.col - 1)
 
@@ -57,7 +57,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs129()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs129(self): return Token("-#", self.current_token_text(), self.line, self.col - 1)
 
@@ -66,7 +66,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs131()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs131(self): return Token("-=", self.current_token_text(), self.line, self.col - 1)
 
@@ -75,7 +75,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self.current_char == ".": return self.d268()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     # =============================================
     # [ARITHMETIC] MULTI '*': *, *=
@@ -85,7 +85,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs134()
         if self.current_char == "=": return self.rs135()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs134(self): return Token("*", self.current_token_text(), self.line, self.col - 1)
 
@@ -94,7 +94,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs136()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs136(self): return Token("*=", self.current_token_text(), self.line, self.col - 1)
 
@@ -106,7 +106,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs138()
         if self.current_char == "=": return self.rs139()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs138(self): return Token("/", self.current_token_text(), self.line, self.col - 1)
 
@@ -115,7 +115,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs140()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs140(self): return Token("/=", self.current_token_text(), self.line, self.col - 1)
 
@@ -127,7 +127,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs142()
         if self.current_char == "=": return self.rs143()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs142(self): return Token("%", self.current_token_text(), self.line, self.col - 1)
 
@@ -136,7 +136,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs144()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs144(self): return Token("%=", self.current_token_text(), self.line, self.col - 1)
 
@@ -148,7 +148,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs146()
         if self.current_char == "=": return self.rs147()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs146(self): return Token("^", self.current_token_text(), self.line, self.col - 1)
 
@@ -157,7 +157,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs148()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs148(self): return Token("^=", self.current_token_text(), self.line, self.col - 1)
 
@@ -169,7 +169,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["ASSIGN_DELIM"]): return self.rs150()
         if self.current_char == "=": return self.rs151()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs150(self): return Token("=", self.current_token_text(), self.line, self.col - 1)
 
@@ -178,7 +178,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs152()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs152(self): return Token("==", self.current_token_text(), self.line, self.col - 1)
 
@@ -192,7 +192,7 @@ class Symbols(LexerErrors):
         if self.current_char == "#": return self.rs157()
         if self.current_char == "=": return self.rs159()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs154(self): return Token("!", self.current_token_text(), self.line, self.col - 1)
 
@@ -203,7 +203,7 @@ class Symbols(LexerErrors):
 
         if self._comp_delims(valid_delims): return self.rs156()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs156(self): return Token("!!", self.current_token_text(), self.line, self.col - 1)
 
@@ -212,7 +212,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["NOT_DELIM"]): return self.rs158()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs158(self): return Token("!#", self.current_token_text(), self.line, self.col - 1)
 
@@ -221,7 +221,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs160()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs160(self): return Token("!=", self.current_token_text(), self.line, self.col - 1)
 
@@ -233,7 +233,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs162()
         if self.current_char == "=": return self.rs163()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs162(self): return Token("<", self.current_token_text(), self.line, self.col - 1)
 
@@ -242,7 +242,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs164()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs164(self): return Token("<=", self.current_token_text(), self.line, self.col - 1)
 
@@ -254,7 +254,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs166()
         if self.current_char == "=": return self.rs167()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs166(self): return Token(">", self.current_token_text(), self.line, self.col - 1)
 
@@ -263,7 +263,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs168()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs168(self): return Token(">=", self.current_token_text(), self.line, self.col - 1)
 
@@ -275,7 +275,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["CONCAT_DELIM"]): return self.rs170()
         if self.current_char == "&": return self.rs171()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs170(self): return Token("&", self.current_token_text(), self.line, self.col - 1)
 
@@ -284,7 +284,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["GEN_OP_DELIM"]): return self.rs172()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs172(self): return Token("&&", self.current_token_text(), self.line, self.col - 1)
 
@@ -294,13 +294,13 @@ class Symbols(LexerErrors):
     def rs173(self):
         self.advance()
         if self.current_char == "|": return self.rs174()
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs174(self):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOG_OP_DELIM"]): return self.rs175()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs175(self): return Token("||", self.current_token_text(), self.line, self.col - 1)
 
@@ -312,7 +312,7 @@ class Symbols(LexerErrors):
         if self._comp_delims(Delimiters._get_delimiters()["COLON_DELIM"]): return self.rs177()
 
         # DELIMITERS
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs177(self): return Token(":", self.current_token_text(), self.line, self.col - 1)
 
@@ -323,7 +323,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs179()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs179(self): return Token("@", self.current_token_text(), self.line, self.col - 1)
 
@@ -334,7 +334,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["LOWLET"]): return self.rs181()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs181(self): return Token("$", self.current_token_text(), self.line, self.col - 1)
 
@@ -345,7 +345,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["COMMA_DELIM"]): return self.rs183()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs183(self): return Token(",", self.current_token_text(), self.line, self.col - 1)
 
@@ -356,7 +356,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["ALPHANUMERIC"]): return self.rs185()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs185(self): return Token("{", self.current_token_text(), self.line, self.col - 1)
 
@@ -367,7 +367,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["CLOSECB_DELIM"]): return self.rs187()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs187(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
 
@@ -378,7 +378,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["OPENP_DELIM"]): return self.rs189()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs189(self): return Token("(", self.current_token_text(), self.line, self.col - 1)
 
@@ -389,7 +389,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["CLOSEP_DELIM"]): return self.rs191()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs191(self): return Token(")", self.current_token_text(), self.line, self.col - 1)
 
@@ -400,7 +400,7 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["OPENSB_DELIM"]): return self.rs193()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs193(self): return Token("[", self.current_token_text(), self.line, self.col - 1)
 
@@ -411,6 +411,6 @@ class Symbols(LexerErrors):
         self.advance()
         if self._comp_delims(Delimiters._get_delimiters()["CLOSESB_DELIM"]): return self.rs195()
 
-        self.error("Invalid symbol.")
+        return self.error()
 
     def rs195(self): return Token("]", self.current_token_text(), self.line, self.col - 1)

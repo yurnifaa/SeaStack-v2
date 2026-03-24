@@ -15,41 +15,6 @@ class Identifiers:
         # RULE: Lowercase, Digit, or Underscore ONLY. No Uppercase.
         return char is not None and (char.islower() or char.isdigit() or char == "_")
 
-    # --- HELPER: Sanitize Delimiters for Display ---
-    def _sanitize_delims(self, delim_set):
-        # Convert set to list
-        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
-        cleaned_list = []
-        has_whitespace = False
-
-        # Filter loop
-        for d in delims:
-            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
-                has_whitespace = True
-            else:
-                cleaned_list.append(d)
-
-        if has_whitespace:
-            cleaned_list.append("whitespace")
-
-        cleaned_list.sort(key=str)
-        return cleaned_list
-
-    # --- HELPER: Create Error with Expected List ---
-    def _create_id_error(self, message):
-        raw_delims = Delimiters._get_delimiters()["ID_DELIM"]
-        valid_delims = self._sanitize_delims(raw_delims)
-
-        err_token = Token(
-            "ERROR",
-            self.current_token_text(),
-            self.line,
-            self.col - 1,
-            message
-        )
-        err_token.expected = valid_delims
-        return err_token
-
     # =========================================================================
     # START: ENTRY POINT (State 196)
     # The Lexer has already consumed the 1st char (lowercase).
@@ -232,9 +197,7 @@ class Identifiers:
                 # so the lexer doesn't try to tokenize the tail as a new ID.
                 # while self._is_valid_id_char():
                 #     self.advance()
-                msg = "Invalid Identifier. Exceeds 20 characters."
-                self.errors.append(self._create_id_error(msg))
-                return None
+                return self.error()
             return self.i235()
 
         return self.i235()
@@ -260,6 +223,4 @@ class Identifiers:
             return Token(token_type, result, line, col - 1)
 
         else:
-            # Invalid Delimiter Error
-            self.errors.append(self._create_id_error(f"Invalid Identifier. '{self.current_char}'."))
-            return None
+            return self.error()
