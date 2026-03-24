@@ -1,25 +1,25 @@
 import sys
 
-from backend.lexical.lexer_token import Token
+from backend.lexical.token import Token
 
-from backend.lexical.handlers.comment_hndlr import CommentHandler
-from backend.lexical.handlers.digit_hndlr import DigitHandler
-from backend.lexical.handlers.identifier_hndlr import IdentifierHandler
-from backend.lexical.handlers.resword_hndlr import ReservedWordHandler
-from backend.lexical.handlers.sp_lits_hndlr import LiteralHandler
-from backend.lexical.handlers.symbol_hndlr import SymbolHandler
+from backend.lexical.handlers.comments import Comments
+from backend.lexical.handlers.digits import Digits
+from backend.lexical.handlers.identifiers import Identifiers
+from backend.lexical.handlers.reserved_words import ReservedWords
+from backend.lexical.handlers.texts import Texts
+from backend.lexical.handlers.symbols import Symbols
 from backend.lexical.handlers.delimiters import Delimiters
 
 # =========================================================================
 # Lexer Class
 # =========================================================================
 class Lexer(
-    CommentHandler,
-    DigitHandler,
-    IdentifierHandler,
-    ReservedWordHandler,
-    LiteralHandler,
-    SymbolHandler
+    Comments,
+    Digits,
+    Identifiers,
+    ReservedWords,
+    Texts,
+    Symbols
 ):
     def __init__(self, text):
         self.text = text

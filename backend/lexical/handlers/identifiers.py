@@ -1,5 +1,5 @@
 # lexer_handlers/identifier_handler.py
-from backend.lexical.lexer_token import Token
+from backend.lexical.token import Token
 from backend.lexical.handlers.delimiters import Delimiters
 
 # =================================================================================================
@@ -7,7 +7,7 @@ from backend.lexical.handlers.delimiters import Delimiters
 # Rule: Must start with lowercase. Followed by lowercase, digit, or underscore. Max 20 chars.
 # =================================================================================================
 
-class IdentifierHandler:
+class Identifiers:
 
     # --- HELPER: STRICT Validation ---
     def _is_valid_id_char(self):
