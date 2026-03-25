@@ -611,7 +611,7 @@ class SemanticErrorHandler:
         return self._build(
             token,
             'Invalid Jump Context',
-            "SAIL!! used outside of a loop or conditional block."
+            "SAIL!! can only be used inside a loop."
         )
 
     def sail_inside_adrift(self, token) -> dict:
@@ -625,7 +625,7 @@ class SemanticErrorHandler:
         return self._build(
             token,
             'Invalid Jump Context',
-            "LAND!! used outside of a loop or conditional block."
+            "LAND!! can only be used inside a loop or CHART block."
         )
 
     # =========================================================================

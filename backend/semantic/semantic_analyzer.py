@@ -592,11 +592,11 @@ class SemanticAnalyzer:
     def visit_SailNode(self, node):
         if self.in_adrift:
             self._e(self.err.sail_inside_adrift(node.token)); return
-        if self.loop_depth == 0 and self.in_conditional == 0:
+        if self.loop_depth == 0:
             self._e(self.err.sail_outside_loop(node.token))
 
     def visit_LandNode(self, node):
-        if self.loop_depth == 0 and self.in_conditional == 0:
+        if self.loop_depth == 0 and not self.in_chart:
             self._e(self.err.land_outside_loop(node.token))
 
     def visit_ReturnNode(self, node):
