@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import SeaStackEditor from "../components/CodeEditor";
+import { simplifyRuntimeMessage } from "../utils/runtimeErrorMsg";
 
 const GooeyButton = ({ onClick, children, disabled, style }) => {
   return (
@@ -230,7 +231,9 @@ export default function Home() {
 
     const lineNum = parseInt(errObj.line, 10);
     const lines = sourceCode.split('\n');
-    const actualLine = lines[lineNum - 1] ? lines[lineNum - 1].trim() : "";
+    const rawLine = lines[lineNum - 1] || "";
+    const leadingSpaces = rawLine.length - rawLine.trimStart().length;
+    const actualLine = rawLine.trim();
 
     const found = errObj.found || "unknown";
     const expected = errObj.expected && errObj.expected.length > 0
@@ -243,6 +246,7 @@ export default function Home() {
       errorType: errObj.error_header || "Syntax Error",
       headerStr: `${errObj.error_header || "Syntax Error"}: '${found}'`,
       sourceCode: actualLine,
+      leadingSpaces,
       expectedStr: expected,
       isStructured: true
     };
@@ -252,44 +256,18 @@ export default function Home() {
     // Backend (sem_error_msg.py) guarantees all fields are populated.
     // Guard only against the internal-error case where line is '?'.
     if (errObj.line === '?') return { ...errObj, isStructured: false };
+    const rawLine = errObj.actual_line || "";
+    const leadingSpaces = rawLine.length - rawLine.trimStart().length;
     return {
-      line:        errObj.line,
-      col:         errObj.col,
-      errorType:   errObj.error_type,
-      headerStr:   errObj.error_type,
-      sourceCode:  errObj.actual_line || null,
-      expectedStr: errObj.message,
+      line:         errObj.line,
+      col:          errObj.col,
+      errorType:    errObj.error_type,
+      headerStr:    errObj.error_type,
+      sourceCode:   rawLine.trim() || null,
+      leadingSpaces,
+      expectedStr:  errObj.message,
       isStructured: true,
     };
-  };
-
-  // Runtime exception messages
-  const simplifyRuntimeMessage = (msg) => {
-    if (!msg) return "An error occurred during program execution.";
-    const m = msg.toLowerCase();
-    if (m.includes('coin input exceeds 16 digits')) 
-      return "Overflow Error: COIN input exceeds 16 digits.";
-    if (m.includes('dime input exceeds 8 digits')) 
-      return "Overflow Error: DIME input exceeds 8 digits.";
-    if (m.includes('division by zero') || m.includes('zerodivisionerror'))
-      return "Cannot divide by zero.";
-    if (m.includes('invalid literal for int') || m.includes('base 10') || (m.includes('invalid') && m.includes('int')))
-      return "Invalid input: COIN was expected but the value entered cannot be converted.";
-    if ((m.includes('could not convert') && m.includes('float')) || (m.includes('valueerror') && m.includes('float')))
-      return "Invalid input: DIME was expected but the value entered cannot be converted.";
-    if (m.includes('expected aye or nay'))
-      return "Invalid input: a BOOL value was expected.";
-    if (m.includes('list index out of range') || m.includes('indexerror'))
-      return "Array index is out of bounds.";
-    if (m.includes('keyerror'))
-      return "Struct member not found. A field was accessed that does not exist in the struct.";
-    if (m.includes('recursionerror') || m.includes('maximum recursion') || m.includes('stack overflow'))
-      return "Stack overflow: too many nested function calls.";
-    if (m.includes('valueerror'))
-      return "Invalid value encountered during execution. Check the inputs and expressions in your program.";
-    if (m.includes('typeerror'))
-      return "A value of the wrong type was used in an operation.";
-    return msg;
   };
 
   const formatRuntimeError = (errObj) => {
@@ -300,13 +278,21 @@ export default function Home() {
       : "-";
 
     // Prefer actual_line from backend; fall back to looking it up from source
-    let sourceCode = errObj.actual_line || null;
-    if (!sourceCode && line !== "-") {
+    let sourceCode = null;
+    let leadingSpaces = 0;
+    if (errObj.actual_line) {
+      const rawLine = errObj.actual_line;
+      leadingSpaces = rawLine.length - rawLine.trimStart().length;
+      sourceCode = rawLine.trim();
+    } else if (line !== "-") {
       const lineNum = parseInt(line, 10);
       if (!isNaN(lineNum) && lineNum > 0) {
         const srcLines = code.split('\n');
         const candidate = srcLines[lineNum - 1];
-        if (candidate && candidate.trim()) sourceCode = candidate.trim();
+        if (candidate && candidate.trim()) {
+          leadingSpaces = candidate.length - candidate.trimStart().length;
+          sourceCode = candidate.trim();
+        }
       }
     }
 
@@ -316,6 +302,7 @@ export default function Home() {
       errorType: errObj.error_type || "Runtime Error",
       headerStr: errObj.error_type || "Runtime Error",
       sourceCode: sourceCode || null,
+      leadingSpaces,
       expectedStr: simplifyRuntimeMessage(errObj.message),
       isStructured: true,
     };
@@ -525,11 +512,18 @@ const handleInputKeyDown = (e) => {
                   </span>
                 </div>
 
-                {/* Line 3: Source code line (if available) */}
+                {/* Line 3: Source code line + column caret */}
                 {err.sourceCode && (
-                  <div style={{ marginLeft: '130px', color: '#94a3b8', fontStyle: 'italic', fontSize: '0.82rem' }}>
-                    → {err.sourceCode}
-                  </div>
+                  <>
+                    <div style={{ marginLeft: '130px', color: '#94a3b8', fontStyle: 'italic', fontSize: '0.82rem', whiteSpace: 'pre' }}>
+                      {'→ '}{err.sourceCode}
+                    </div>
+                    {err.col !== "-" && err.col !== undefined && !isNaN(Number(err.col)) && (
+                      <div style={{ marginLeft: '130px', color: '#94a3b8', fontSize: '0.82rem', whiteSpace: 'pre' }}>
+                        {'  ' + ' '.repeat(Math.max(0, Number(err.col) - 1 - (err.leadingSpaces || 0))) + '^'}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Line 4: Expected / Description */}

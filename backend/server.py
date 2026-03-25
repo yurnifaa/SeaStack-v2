@@ -29,6 +29,17 @@ except ImportError as e:
 app = Flask(__name__)
 CORS(app)
 
+# Suppress "* Serving Flask app" / "* Debug mode" banner
+import flask.cli
+flask.cli.show_server_banner = lambda *args, **kwargs: None
+
+# Suppress "WARNING: This is a development server. Do not use it in a production deployment."
+import logging
+class _SuppressDevWarning(logging.Filter):
+    def filter(self, record):
+        return 'Do not use it in a production deployment' not in record.getMessage()
+logging.getLogger('werkzeug').addFilter(_SuppressDevWarning())
+
 # ─── Global state for running programs ───────────────────────────────────────
 _running_flags = {}   # session_id → threading.Event  (set = stop requested)
 _input_queues  = {}   # session_id → queue.Queue       (frontend → execution thread)
