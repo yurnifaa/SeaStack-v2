@@ -1709,11 +1709,29 @@ class ASTParser:
     def dime_ope(self):
         return self.dime_val()
 
+    def _dime_atom(self):
+        """Parse a single atomic term without arith continuation.
+        Used by arith_fold so that a - b - c stays left-associative:
+        arith_fold consumes one atom at a time instead of letting
+        dime_val() greedily consume the entire right-hand chain."""
+        prod = self.get_production('<dime-val>')
+        tok = self.current_token
+        if prod == 68:
+            self.eat('DIME-lit'); return LiteralNode('DIME', float(tok.value), tok)
+        elif prod == 69:
+            self.eat('COIN-lit'); return LiteralNode('COIN', int(tok.value), tok)
+        else:
+            has_neg = (self.current_token.type == '-')
+            if has_neg: self.eat('-')
+            node = self.neg_dime_val()
+            if has_neg: return UnaryOpNode('-', node, tok)
+            return node
+
     def arith_fold(self, left):
         """Left-associative fold of arith_op dime_val chains."""
         while self.current_token and self.current_token.type in ('+', '-', '*', '/', '%', '^'):
             op_tok = self.current_token; op = self.arith_op()
-            right = self.dime_val()
+            right = self._dime_atom()
             left = BinaryOpNode(left, op, right, op_tok)
         return left
 

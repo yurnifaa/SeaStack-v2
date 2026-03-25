@@ -1327,7 +1327,6 @@ class StructuralCodeGenerator:
                 idx  = self._val(q.arg2)
                 self._emit(f"_ss_check_arr_bounds({name}, {idx}, {name!r})")
                 expr = f"{name}[{idx}]"
-                self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
                 emitted_any = True
                 i += 1
@@ -1341,7 +1340,6 @@ class StructuralCodeGenerator:
                 self._emit(f"_ss_check_arr_bounds({name}, {r1}, {name!r})")
                 self._emit(f"_ss_check_arr_bounds({name}[{r1}], {r2}, {name!r}+'[row]')")
                 expr = f"{name}[{r1}][{r2}]"
-                self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
                 emitted_any = True
                 i += 1
@@ -1351,7 +1349,6 @@ class StructuralCodeGenerator:
                 self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 expr = f"{name}['{q.arg2}']"
-                self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
                 emitted_any = True
                 i += 1

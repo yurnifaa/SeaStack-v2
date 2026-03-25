@@ -95,6 +95,18 @@ class IROptimizer:
     # Evaluate expressions that have compile-time-known operands.
 
     def _pass_constant_folding(self):
+        # Pre-scan: find all variables that are modified by UNARY_INC/DEC.
+        # These are loop induction variables (e.g. i, j from HOIST +#i / -#j).
+        # Their initial ASSIGN values must NOT be treated as compile-time constants
+        # because the folding pass processes instructions linearly and would
+        # incorrectly fold expressions like `j + 1` to `1` using only j's
+        # initialisation value, ignoring subsequent increments inside the loop.
+        self._induction_vars = {
+            q.arg1
+            for q in self.ir.instructions
+            if q.op in (UNARY_INC, UNARY_DEC) and isinstance(q.arg1, str)
+        }
+
         changed = True
         while changed:
             changed = False
@@ -125,13 +137,21 @@ class IROptimizer:
                 self.temp_types[q.arg1] = q.arg2
             return q
 
-        # Record variable assignments of known values
+        # Record variable assignments of known values.
+        # Skip induction variables (loop counters modified by UNARY_INC/DEC):
+        # their "initial" value must not be treated as a compile-time constant
+        # because the folding pass is linear and would incorrectly propagate
+        # the initialisation value (e.g. j=0) into the loop body.
         if q.op == ASSIGN and q.arg1 is not None and q.result is not None:
-            v = self._resolve(q.arg1)
-            if v is not None:
-                self.temp_values[q.result] = v
-            else:
+            if hasattr(self, '_induction_vars') and q.result in self._induction_vars:
                 self.temp_values.pop(q.result, None)
+                self.constants.pop(q.result, None)
+            else:
+                v = self._resolve(q.arg1)
+                if v is not None:
+                    self.temp_values[q.result] = v
+                else:
+                    self.temp_values.pop(q.result, None)
             return q
 
         # Fold arithmetic binary ops
@@ -303,6 +323,20 @@ class IROptimizer:
             if q.op == ASSIGN and isinstance(q.result, str):
                 self.temp_values.pop(q.result, None)
 
+            # FIX: UNARY_INC/DEC store their target in arg1 (result is None).
+            # Without this, j=0 stays in temp_values after j+=1, causing the
+            # loop condition LT j limit1 to be folded to LT 0 limit1 (always
+            # True) and creating an infinite loop at runtime.
+            if q.op in (UNARY_INC, UNARY_DEC) and isinstance(q.arg1, str):
+                self.temp_values.pop(q.arg1, None)
+
+            # FIX: INPUT writes to its target variable at runtime.
+            # Without this, a variable read before ASK could be stale.
+            if q.op == INPUT:
+                for tgt in (q.arg2 or []):
+                    if isinstance(tgt, dict) and tgt.get('target_kind') == 'var':
+                        self.temp_values.pop(tgt['var_name'], None)
+
             if q.op not in propagatable_ops:
                 continue
 
@@ -355,9 +389,9 @@ class IROptimizer:
         for q in self.ir.instructions:
             # --- Record new copy relationships ---
             if q.op == ASSIGN and isinstance(q.arg1, str) and isinstance(q.result, str):
-                # result = arg1  →  add to copy map
                 src = _resolve_copy(q.arg1)
-                copy_map[q.result] = src
+                if q.result.startswith('_t'):
+                    copy_map[q.result] = src
 
             # --- Invalidate stale copies when a variable is written ---
             if q.result is not None and isinstance(q.result, str):
@@ -378,6 +412,16 @@ class IROptimizer:
                              if k == q.result or v == q.result]
                     for k in stale:
                         del copy_map[k]
+
+            # FIX: UNARY_INC/DEC store their target in arg1 (result is None),
+            # so the check above (isinstance(q.result, str)) never fires for
+            # them.  Chase both the key and value sides of the copy map so that
+            # after j += 1 we no longer treat j as an alias for _t0 = 0.
+            if q.op in (UNARY_INC, UNARY_DEC) and isinstance(q.arg1, str):
+                stale = [k for k, v in copy_map.items()
+                         if k == q.arg1 or v == q.arg1]
+                for k in stale:
+                    del copy_map[k]
 
             # --- Substitute copies in arg1/arg2 ---
             if isinstance(q.arg1, str) and q.arg1 in copy_map:
