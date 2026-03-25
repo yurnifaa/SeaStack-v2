@@ -4,35 +4,38 @@ from backend.lexical.lexer_errors import LexerErrors
 
 # =========================================================================================
 # PARCH: single char except newline, ', \; supports \s, \n, \t, \0, \\
-# SCROLL: sequence of any ASCII char except newline, ", \; supports \d, \n, \t, \0,\\
+# SCROLL: sequence of any char except newline, ", \; supports \d, \n, \t, \0,\\
 # =========================================================================================
 
 class Texts(LexerErrors):
 
-    # =========================================================================
+    # =======================
     # TEXT HELPERS
-    # =========================================================================
+    # =======================
+
+    # check delimeter if valid
     def check_pdelim(self):
-        return self._comp_delims(Delimiters._get_delimiters()["PARCH_DELIM"])
+        return self._comp_delims(Delimiters.delims()["PARCH_DELIM"])
 
     def check_sdelim(self):
-        return self._comp_delims(Delimiters._get_delimiters()["SCR_DELIM"])
+        return self._comp_delims(Delimiters.delims()["SCR_DELIM"])
     
+    # check char if valid as PARCH or SCROLL literal
     def check_parch(self):
-        delims = Delimiters._get_delimiters()
+        delims = Delimiters.delims()
         allowed = delims["ASCII"] - set("'\\\n\r")
         return self.current_char is not None and self.current_char in allowed
     
     def check_scroll(self):
-        delims = Delimiters._get_delimiters()
+        delims = Delimiters.delims()
         allowed = delims["ASCII"] - set("\"\\\n\r")
         return self.current_char is not None and self.current_char in allowed
 
-    # =========================================================================
-    # PARCH literals 
-    # =========================================================================
 
-    # start of PARCH literal
+    # =======================
+    # PARCH LITERALS
+    # =======================
+
     def p287(self):
         self.advance() 
         char = self.current_char
@@ -44,13 +47,13 @@ class Texts(LexerErrors):
         
         return self.error() 
     
-    # close PARCH literal
+    # valid PARCH char
     def p288(self):
         self.advance()
         if self.current_char == "'": return self.p289()
         return self.error()
     
-    # close PARCH literal
+    # closing single quote
     def p289(self):
         self.advance()
         if self.check_pdelim(): return self.p290()
@@ -59,7 +62,7 @@ class Texts(LexerErrors):
     # tokenize PARCH literal
     def p290(self): return Token("PARCH-lit", self.current_token_text(), self.token_start_line, self.token_start_col)
     
-    # escape sequences in PARCH literal
+    # PARCH escape sequences 
     def p291(self):
         self.advance()
         valid_escapes = ['s', 'n', 't', '0', '\\']
@@ -67,11 +70,11 @@ class Texts(LexerErrors):
         if self.current_char in valid_escapes: return self.p288() 
         return self.error()
 
-    # =========================================================================
-    # SCROLL literals
-    # =========================================================================
 
-    # start of SCROLL literal
+    # =======================
+    # SCROLL LITERALS
+    # =======================
+
     def s292(self):
         self.advance() 
         char = self.current_char
@@ -83,7 +86,7 @@ class Texts(LexerErrors):
 
         return self.error()
 
-    # body of SCROLL literal
+    # valid SCROLL chars
     def s293(self):
         self.advance()
         char = self.current_char
@@ -95,7 +98,7 @@ class Texts(LexerErrors):
 
         return self.error()
 
-    # SCROLL delimeter
+    # closing double quote
     def s294(self):
         self.advance()
         if self.check_sdelim(): return self.s295()
@@ -104,7 +107,7 @@ class Texts(LexerErrors):
     # tokenize SCROLL literal
     def s295(self): return Token("SCROLL-lit", self.current_token_text(), self.token_start_line, self.token_start_col)
 
-    # escape sequences in SCROLL literal
+    # SCROLL escape sequences
     def s296(self):
         self.advance()
         valid_escapes = ['d', 'n', 't', '0', '\\']

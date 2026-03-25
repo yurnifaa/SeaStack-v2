@@ -9,28 +9,29 @@ from backend.lexical.lexer_errors import LexerErrors
 
 class Digits(LexerErrors):
 
-    # ==================================================
-    # HELPERS
-    # ==================================================
+    # =======================
+    # DIGIT HELPERS
+    # =======================
 
-    # check digit if valid
+    # check char if valid as digit
     def check_digit(self):
         return self.current_char is not None and self.current_char.isdigit()
     
-    # finalize COIN or DIME literal token
+    # finalize COIN-lit or DIME-lit token
     def finalize_coin(self):
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
+        if self._comp_delims(Delimiters.delims()["DIGIT_DELIM"]):
             return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
         return self.error()
 
     def finalize_dime(self):
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
+        if self._comp_delims(Delimiters.delims()["DIGIT_DELIM"]):
             return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
         return self.error()
 
-    # ==================================================
-    # COIN Literals
-    # ==================================================
+
+    # =======================
+    # COIN LITERALS
+    # =======================
 
     # lone 0
     def c236(self):
@@ -184,9 +185,9 @@ class Digits(LexerErrors):
 
     def c269(self): return self.finalize_coin()
 
-    # =========================================================================
-    # DIME Literals
-    # =========================================================================
+    # =======================
+    # DIME LITERALS
+    # =======================
 
     # decimal point
     def d270(self):

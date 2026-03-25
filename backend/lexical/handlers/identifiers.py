@@ -7,11 +7,11 @@ from backend.lexical.handlers.delimiters import Delimiters
 
 class Identifiers:
 
-    # ==================================================
-    # HELPERS
-    # ==================================================
+    # =======================
+    # IDENTIFIER HELPERS
+    # =======================
 
-    # check character if valid
+    # check char if valid as identifier
     def check_id(self):
         char = self.current_char
         return char is not None and (char.islower() or char.isdigit() or char == "_")
@@ -22,7 +22,7 @@ class Identifiers:
         line, col = self.line, self.col
 
         # validate delimeter and check if id is new
-        if self._comp_delims(Delimiters._get_delimiters()["ID_DELIM"]):
+        if self._comp_delims(Delimiters.delims()["ID_DELIM"]):
 
             if result not in self.identifier_table:
                 self.identifier_table[result] = f"id{len(self.identifier_table) + 1}"
@@ -32,9 +32,9 @@ class Identifiers:
 
         return self.error()
     
-    # ==================================================
-    # Identifier Characters
-    # ==================================================
+    # =======================
+    # IDENTIFIERS
+    # =======================
 
     # char 1
     def i196(self):

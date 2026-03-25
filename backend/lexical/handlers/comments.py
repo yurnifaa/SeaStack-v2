@@ -7,7 +7,10 @@ from backend.lexical.lexer_errors import LexerErrors
 
 class Comments(LexerErrors):
 
-    # start of comment
+    # =======================
+    # SINGLE-LINE COMMENT
+    # =======================
+
     def cm297(self):
         self.advance()
 
@@ -36,8 +39,12 @@ class Comments(LexerErrors):
         if self.current_char == '\n': return self.cm298()
 
         return self.error()
+    
+    
+    # =======================
+    # MULTI-LINE COMMENT
+    # =======================
 
-    # start of multi-Line comment
     def cm300(self):
         self.advance() 
 

@@ -3,27 +3,29 @@ import string
 class Delimiters:
     
     @staticmethod 
-    def _get_delimiters():
+    def delims():
 
-    # =========================================================================
-    # REGULAR DEFINITIONS
-    # =========================================================================
+    # =======================
+    # REGULAR DEFINITION
+    # =======================
+
         LOWLET = set(string.ascii_lowercase)
         UPLET = set("ABCDEHLMNPS")
         DIGIT = set("0123456789")
         NONZERO = set("123456789")
         ALPHANUMERIC = LOWLET | DIGIT
         ASCII = set(string.printable)
-        DECIMAL = set(".") # remove?
 
         WHITESPACE = {' ', '\t', '\n', '\r'} 
 
         ARITH_OP = set("+-*/%^")
         GEN_OP = ARITH_OP | set("<>=!&|")
 
-    # =========================================================================
-    # DELIMITERS
-    # =========================================================================
+
+    # =======================
+    # DELIMETERS
+    # =======================
+
         ID_DELIM = WHITESPACE | GEN_OP | set("()]{}$,")
 
         GEN_OP_DELIM = WHITESPACE | ALPHANUMERIC | set("-(")
@@ -32,8 +34,6 @@ class Delimiters:
         NOT_DELIM = LOWLET | set("AN(")
         CONCAT_DELIM = WHITESPACE | LOWLET | set('("')
         ASSIGN_DELIM = LOG_OP_DELIM | set(['[', '!'])
-
-        BACK_DELIM = WHITESPACE | set("(!") # remove?
 
         DIGIT_DELIM = WHITESPACE | GEN_OP | set(")]}:,")
         BOOL_DELIM = WHITESPACE | set(")]&|!=,")
@@ -58,7 +58,6 @@ class Delimiters:
             "NONZERO": NONZERO,
             "ALPHANUMERIC": ALPHANUMERIC,
             "ASCII": ASCII,
-            "DECIMAL": DECIMAL, # remove?
             "WHITESPACE": WHITESPACE,
             "ARITH_OP": ARITH_OP,
             "GEN_OP": GEN_OP,
@@ -69,7 +68,6 @@ class Delimiters:
             "NOT_DELIM": NOT_DELIM,
             "CONCAT_DELIM": CONCAT_DELIM,
             "ASSIGN_DELIM": ASSIGN_DELIM,
-            "BACK_DELIM": BACK_DELIM, # remove?
             "DIGIT_DELIM": DIGIT_DELIM,
             "BOOL_DELIM": BOOL_DELIM,
             "PARCH_DELIM": PARCH_DELIM,
