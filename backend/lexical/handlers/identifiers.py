@@ -1,5 +1,5 @@
 # lexer_handlers/identifier_handler.py
-from backend.lexical.lexer_token import Token
+from backend.lexical.token import Token
 from backend.lexical.handlers.delimiters import Delimiters
 
 # =================================================================================================
@@ -7,48 +7,13 @@ from backend.lexical.handlers.delimiters import Delimiters
 # Rule: Must start with lowercase. Followed by lowercase, digit, or underscore. Max 20 chars.
 # =================================================================================================
 
-class IdentifierHandler:
+class Identifiers:
 
     # --- HELPER: STRICT Validation ---
     def _is_valid_id_char(self):
         char = self.current_char
         # RULE: Lowercase, Digit, or Underscore ONLY. No Uppercase.
         return char is not None and (char.islower() or char.isdigit() or char == "_")
-
-    # --- HELPER: Sanitize Delimiters for Display ---
-    def _sanitize_delims(self, delim_set):
-        # Convert set to list
-        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
-        cleaned_list = []
-        has_whitespace = False
-
-        # Filter loop
-        for d in delims:
-            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
-                has_whitespace = True
-            else:
-                cleaned_list.append(d)
-
-        if has_whitespace:
-            cleaned_list.append("whitespace")
-
-        cleaned_list.sort(key=str)
-        return cleaned_list
-
-    # --- HELPER: Create Error with Expected List ---
-    def _create_id_error(self, message):
-        raw_delims = Delimiters._get_delimiters()["ID_DELIM"]
-        valid_delims = self._sanitize_delims(raw_delims)
-
-        err_token = Token(
-            "ERROR",
-            self.current_token_text(),
-            self.line,
-            self.col - 1,
-            message
-        )
-        err_token.expected = valid_delims
-        return err_token
 
     # =========================================================================
     # START: ENTRY POINT (State 196)
@@ -232,9 +197,7 @@ class IdentifierHandler:
                 # so the lexer doesn't try to tokenize the tail as a new ID.
                 # while self._is_valid_id_char():
                 #     self.advance()
-                msg = "Invalid Identifier. Exceeds 20 characters."
-                self.errors.append(self._create_id_error(msg))
-                return None
+                return self.error()
             return self.i235()
 
         return self.i235()
@@ -260,6 +223,4 @@ class IdentifierHandler:
             return Token(token_type, result, line, col - 1)
 
         else:
-            # Invalid Delimiter Error
-            self.errors.append(self._create_id_error(f"Invalid Identifier. '{self.current_char}'."))
-            return None
+            return self.error()

@@ -1,45 +1,8 @@
 # lexer_handlers/comment_handler.py
-from backend.lexical.lexer_token import Token
+from backend.lexical.token import Token
+from backend.lexical.lexer_errors import LexerErrors
 
-class CommentHandler:
-
-    # =========================================================================
-    # HELPER: Sanitize Delimiters for Display
-    # =========================================================================
-    def _sanitize_delims(self, delim_set):
-        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
-        cleaned_list = []
-        has_whitespace = False
-
-        for d in delims:
-            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
-                has_whitespace = True
-            elif d == "whitespace":
-                has_whitespace = True
-            else:
-                cleaned_list.append(d)
-
-        if has_whitespace:
-            cleaned_list.append("whitespace")
-
-        cleaned_list = list(set(cleaned_list))
-        cleaned_list.sort(key=str)
-        return cleaned_list
-
-    # =========================================================================
-    # HELPER: Syntax Errors
-    # =========================================================================
-    def _report_comment_error(self, message, expected_list):
-        err_token = Token(
-            "ERROR",
-            self.current_token_text(),
-            self.token_start_line,
-            self.token_start_col,
-            message
-        )
-        err_token.expected = self._sanitize_delims(expected_list)
-        self.errors.append(err_token)
-        return None
+class Comments(LexerErrors):
 
     # =========================================================================
     # ENTRY POINT (State 295)
@@ -57,24 +20,21 @@ class CommentHandler:
     def cm296(self):
         char = self.current_char
 
-        # Path 1: '(' -> State 299 (Start Multi-line)
-        if char == '(':
-            return self.cm299()
-
-        # Path 2: newline -> State 298 (Empty Single Line Accept)
-        if char == '\n':
-            return self.cm298()
-
         # Path 3: ASCII except newline and ~ -> State 297 (Single Line Body)
         # Note: If we see '~' here, it's technically allowed in single line text
         # unless rules forbid it, but usually single line consumes everything until \n.
         if char is not None:
             return self.cm297()
 
-        return self._report_comment_error(
-            "Invalid Comment Start. Expected '(', newline, or text.",
-            ["(", "newline", "text"]
-        )
+        # Path 2: newline -> State 298 (Empty Single Line Accept)
+        if char == '\n':
+            return self.cm298()
+        
+        # Path 1: '(' -> State 299 (Start Multi-line)
+        if char == '(':
+            return self.cm299()
+        
+        return self.error(line=self.token_start_line, col=self.token_start_col)
 
     # =========================================================================
     # STATE 297: Single-Line Body Loop
@@ -90,10 +50,7 @@ class CommentHandler:
         if self.current_char == '\n':
             return self.cm298()
 
-        return self._report_comment_error(
-            "Unterminated Single-line Comment. Expected newline.",
-            ["newline"]
-        )
+        return self.error(line=self.token_start_line, col=self.token_start_col)
 
     # =========================================================================
     # STATE 298: Single-Line Final (Accepting)
@@ -119,10 +76,7 @@ class CommentHandler:
         if char is not None:
             return self.cm300()
 
-        return self._report_comment_error(
-            "Invalid Multi-line Comment. Unexpected end of file.",
-            ["ASCII Character (Except newline and ~)", ")"]
-        )
+        return self.error(line=self.token_start_line, col=self.token_start_col)
 
     # =========================================================================
     # STATE 300: Multi-Line Body Loop
@@ -136,10 +90,7 @@ class CommentHandler:
         if self.current_char == ')':
             return self.cm301()
 
-        return self._report_comment_error(
-            "Unterminated Multi-line Comment. Expected ')'.",
-            [")"]
-        )
+        return self.error(line=self.token_start_line, col=self.token_start_col)
 
     # =========================================================================
     # STATE 301: Check Closing Tilde (After ')')
@@ -158,10 +109,7 @@ class CommentHandler:
         if char is not None:
             return self.cm300()
 
-        return self._report_comment_error(
-            "Unterminated Multi-line Comment. Expected '~' or text.",
-            ["~", "text"]
-        )
+        return self.error(line=self.token_start_line, col=self.token_start_col)
 
     # =========================================================================
     # STATE 302: Multi-Line Final (Accepting)

@@ -1,25 +1,27 @@
 import sys
 
-from backend.lexical.lexer_token import Token
+from backend.lexical.token import Token
 
-from backend.lexical.handlers.comment_hndlr import CommentHandler
-from backend.lexical.handlers.digit_hndlr import DigitHandler
-from backend.lexical.handlers.identifier_hndlr import IdentifierHandler
-from backend.lexical.handlers.resword_hndlr import ReservedWordHandler
-from backend.lexical.handlers.sp_lits_hndlr import LiteralHandler
-from backend.lexical.handlers.symbol_hndlr import SymbolHandler
+from backend.lexical.handlers.comments import Comments
+from backend.lexical.handlers.digits import Digits
+from backend.lexical.handlers.identifiers import Identifiers
+from backend.lexical.handlers.reserved_words import ReservedWords
+from backend.lexical.handlers.texts import Texts
+from backend.lexical.handlers.symbols import Symbols
 from backend.lexical.handlers.delimiters import Delimiters
+from backend.lexical.lexer_errors import LexerErrors
 
 # =========================================================================
 # Lexer Class
 # =========================================================================
 class Lexer(
-    CommentHandler,
-    DigitHandler,
-    IdentifierHandler,
-    ReservedWordHandler,
-    LiteralHandler,
-    SymbolHandler
+    Comments,
+    Digits,
+    Identifiers,
+    ReservedWords,
+    Texts,
+    Symbols,
+    LexerErrors
 ):
     def __init__(self, text):
         self.text = text
@@ -89,49 +91,6 @@ class Lexer(
             return char in delims[delim_set_name]
 
         return False
-
-    # --- NEW HELPER: Replaces invisible chars with "whitespace" ---
-    def _sanitize_delims(self, delim_set):
-        delims = list(delim_set) if isinstance(delim_set, set) else delim_set
-        cleaned_list = []
-        has_whitespace = False
-        
-        for d in delims:
-            # Check for space, tab, newline, return, vertical tab, form feed
-            if d in [' ', '\t', '\n', '\r', '\v', '\f']:
-                has_whitespace = True
-            else:
-                cleaned_list.append(d)
-        
-        if has_whitespace:
-            cleaned_list.append("whitespace")
-            
-        cleaned_list.sort(key=str)
-        return cleaned_list
-        
-    def _add_or_error(self, token_type, token_value, line, col, delim_set_name): 
-        if self._is_valid_delimiter(delim_set_name):
-            self.tokens.append(Token(token_type, token_value, line, col))
-        else:
-            char = self.current_char if self.current_char else "EOF"
-            error_msg = f"Invalid Identifier"
-
-            if delim_set_name == "ID_DELIM":
-                 error_msg = f"Invalid Identifier"
-            
-            err_token = Token(
-                "ERROR",
-                token_value + (char if char != "End Of File" else ""),
-                line,
-                col,
-                error_msg
-            )
-            
-            # Fetch valid delimiters dynamically AND SANITIZE
-            raw_delims = Delimiters._get_delimiters().get(delim_set_name, ["Valid Delimiter"])
-            err_token.expected = self._sanitize_delims(raw_delims)
-            
-            self.errors.append(err_token)
 
     # ============================================================================================================
     # Transition Diagram State 0 
@@ -206,11 +165,8 @@ class Lexer(
             return Token(token_type, lexeme, l, c)
 
         # Catch-all for unknown characters
-        err_msg = f"Unknown Character '{char}'"
-        err_token = Token("ERROR", char, self.line, self.col, err_msg)
-        self.errors.append(err_token)
         self.advance()
-        return None
+        return self.error()
 
     # ============================================================================================
     # PUBLIC MAIN METHOD
@@ -220,9 +176,6 @@ class Lexer(
             self.mark_token_start()          
             
             tok = self.state0()              
-            if tok:                          
-                if isinstance(tok, list):    
-                    self.tokens.extend(tok)  
-                else:                        
+            if tok:                       
                     self.tokens.append(tok)
         return self.tokens, self.errors
