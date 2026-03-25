@@ -90,7 +90,7 @@ def run_code():
                             "col":  getattr(err, 'col',  '?'),
                             "found": (f"Unknown Character '{err_val}'"
                                       if err_msg == "Unknown Character"
-                                      else f"Invalid character '{err_val}'"),
+                                      else f"Invalid character/s '{err_val}'"),
                             "expected": getattr(err, 'expected', ["Valid Token"]),
                             "message": err_msg,
                             "phase": "Lexical"

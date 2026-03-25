@@ -1,5 +1,9 @@
 from backend.lexical.token import Token
 
+# =================================================================================================
+# LEXER ERRORS CLASS: reads source code character by character and returns a list of tokens
+# =================================================================================================
+
 class LexerErrors:
 
     def error(self, context=None, *, line=None, col=None):

@@ -9,7 +9,7 @@ from backend.lexical.handlers.delimiters import Delimiters
 from backend.lexical.lexer_errors import LexerErrors
 
 # =================================================================================================
-# LEXER: reads source code character by character and returns a list of tokens
+# LEXER CLASS: reads source code character by character and returns a list of tokens
 # =================================================================================================
 
 class Lexer(

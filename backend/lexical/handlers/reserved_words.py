@@ -182,9 +182,8 @@ class ReservedWords:
         if char == 'L': return self.rw56()
 
         valid = Delimiters.delims()["WHITESPACE"] | set('[')
-        if self._comp_delims(valid):
-            return self.rw55()    
-        return self.error()
+        return self.check_rwdelim(valid, self.rw55)
+    
     def rw55(self): return self.finalize_rw("DROP")
 
     # DROPLOOK
