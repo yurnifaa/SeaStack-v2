@@ -87,7 +87,7 @@ class ReservedWords:
     def rw24(self): return self.check_rw('C', self.rw25)
     def rw25(self): return self.check_rw('K', self.rw26)
     def rw26(self):
-        valid = Delimiters._get_delimiters()["WHITESPACE"] | set('(', '!')
+        valid = Delimiters._get_delimiters()["WHITESPACE"] | set("(!")
         return self.check_delim(valid, self.rw27)
     def rw27(self): return self.finalize_rw("BACK")
 
