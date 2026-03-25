@@ -1,9 +1,8 @@
-# lexer_handlers/resword_handler.py
 from backend.lexical.token import Token
 from backend.lexical.handlers.delimiters import Delimiters
 
 # =================================================================================================
-# RESERVED WORDS TD: Reserved words state machine (rw0 - rw119)
+# RESERVED WORDS: Reserved words state machine (rw0 - rw119)
 # =================================================================================================
 
 class ReservedWords:  

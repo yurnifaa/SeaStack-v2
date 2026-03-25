@@ -1,11 +1,10 @@
-# lexer_handlers/sp_lits_hndlr.py
 import string
 from backend.lexical.token import Token
 from backend.lexical.handlers.delimiters import Delimiters
 from backend.lexical.lexer_errors import LexerErrors
 
 # =========================================================================================
-# SCROLL and PARCH TD: States 285 - 294
+# SCROLL and PARCH: States 285 - 294
 # =========================================================================================
 
 class Texts(LexerErrors):

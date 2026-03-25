@@ -1,7 +1,10 @@
-# lexer_handlers/symbol_handler.py
 from backend.lexical.token import Token
 from backend.lexical.handlers.delimiters import Delimiters
 from backend.lexical.lexer_errors import LexerErrors
+
+# =================================================================================================
+# SYMBOLS: must start with lowercase. followed by lowercase, digit, or underscore. max 20 chars.
+# =================================================================================================
 
 class Symbols(LexerErrors):
 

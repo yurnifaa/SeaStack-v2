@@ -138,31 +138,24 @@ class Lexer(
         if char == "[": return self.rs192()
         if char == "]": return self.rs194()
         
-        # --- Identifiers (Start at State 196) ---
-        if char.islower():
-            self.advance()
-            return self.id196()
+        # Identifiers
+        if char.islower(): return self.id196()
 
-        # --- Digits (Start at State 236) ---
-        if char.isdigit():
-            self.mark_token_start()
-            return self.c236()
+        # COIN and DIME literals
+        if char.isdigit(): return self.c236()
 
-        # --- Literals (Start at State 285) ---
-        if char == "'": return self.p285() # State 285 is PARCH
-        if char == '"': return self.s290() # State 290 is SCROLL
+        # PARCH and SCROLL Literals
+        if char == "'": return self.p285()
+        if char == '"': return self.s290()
 
-        # --- Comments (Start at State 295) ---
-        if char == "~":
-            return self.cm295()
+        # Comments 
+        if char == "~": return self.cm295()
 
-        # --- Whitespace ---
+        # Whitespaces
         if char.isspace():
-            token_type = "whitespace"
-            lexeme = char
             l, c = self.line, self.col
             self.advance()
-            return Token(token_type, lexeme, l, c)
+            return Token("whitespace", char, l, c)
 
         # Catch-all for unknown characters
         self.advance()
@@ -174,8 +167,8 @@ class Lexer(
     def tokenize(self):                 
         while self.current_char is not None: 
             self.mark_token_start()          
-            
             tok = self.state0()              
             if tok:                       
-                    self.tokens.append(tok)
+                self.tokens.append(tok)
+
         return self.tokens, self.errors
