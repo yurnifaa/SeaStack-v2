@@ -8,10 +8,10 @@ from backend.lexical.handlers.delimiters import Delimiters
 class Identifiers:
 
     # ==================================================
-    # HELPERS: validate characters and finalize tokens
+    # HELPERS
     # ==================================================
 
-    # check character if valid for identifier
+    # check character if valid
     def check_id(self):
         char = self.current_char
         return char is not None and (char.islower() or char.isdigit() or char == "_")
@@ -33,11 +33,11 @@ class Identifiers:
         return self.error()
     
     # ==================================================
-    # STATES: char sequences and transitions
+    # Identifier Characters
     # ==================================================
 
     # char 1
-    def id196(self):
+    def i196(self):
         self.advance() 
         if self.check_id(): return self.i198()
         return self.i197()
@@ -194,5 +194,4 @@ class Identifiers:
         if self.check_id(): return self.error()
         return self.i235()
 
-    # tokenize identifier
     def i235(self): return self.finalize_id()

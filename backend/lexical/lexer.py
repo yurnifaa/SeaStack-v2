@@ -139,17 +139,18 @@ class Lexer(
         if char == "]": return self.rs194()
         
         # Identifiers
-        if char.islower(): return self.id196()
+        if char.islower(): return self.i196()
 
         # COIN and DIME literals
-        if char.isdigit(): return self.c236()
+        if char == "0": return self.c236()
+        if char in "123456789": return self.c238()
 
         # PARCH and SCROLL Literals
-        if char == "'": return self.p285()
-        if char == '"': return self.s290()
+        if char == "'": return self.p287()
+        if char == '"': return self.s292()
 
         # Comments 
-        if char == "~": return self.cm295()
+        if char == "~": return self.cm297()
 
         # Whitespaces
         if char.isspace():

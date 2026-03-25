@@ -3,316 +3,258 @@ from backend.lexical.handlers.delimiters import Delimiters
 from backend.lexical.lexer_errors import LexerErrors
 
 # =================================================================================================
-# DIGITS: must start with lowercase. followed by lowercase, digit, or underscore. max 20 chars.
+# DIGITS: max of 16 digits for integer part, 8 digits for decimal part.
+#         no leading or trailing zeros allowed except 0 or .0
 # =================================================================================================
 
 class Digits(LexerErrors):
 
-    # =========================================================================
-    # ENTRY POINT
-    # =========================================================================
-    def _make_digit(self):
-        if self.current_char == '-':
-            self.advance()
-        return self.c236()
+    # ==================================================
+    # HELPERS
+    # ==================================================
 
-    # =========================================================================
-    # COIN-lit (Integers) - States 236 to 267
-    # =========================================================================
-
-    # --- Digit 1 (State 236) ---
-    def c236(self):
-        # PATH A: Leading Zero
-        if self.current_char == '0':
-            self.advance()
-
-            if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
-                return self.c237()
-
-            if self.current_char == ".":
-                return self.d268()
-
-            if self.current_char is not None and self.current_char.isdigit():
-                return self.error()
-
-            return self.error()
-
-        # PATH B: Non-Zero Digit
-        elif self.current_char in Delimiters._get_delimiters()["NONZERO"]:
-            self.advance()
-
-            if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
-                return self.c239()
-            if self.current_char == ".":
-                return self.d268()
-            if self.current_char is not None and self.current_char.isdigit():
-                return self.c238()
-
-            return self.error()
-
-        self.advance()
+    # check digit if valid
+    def check_digit(self):
+        return self.current_char is not None and self.current_char.isdigit()
+    
+    # finalize COIN or DIME literal token
+    def finalize_coin(self):
+        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
+            return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
         return self.error()
 
-    def c237(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
+    def finalize_dime(self):
+        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
+            return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
+        return self.error()
 
-    # --- Digit 2 (State 238) ---
+    # ==================================================
+    # COIN Literals
+    # ==================================================
+
+    # lone 0
+    def c236(self):
+        self.advance()
+        if self.check_digit(): return self.c237()
+        if self.current_char == ".": return self.d270()
+        return self.error()
+
+    def c237(self): return self.finalize_coin()
+
+    # digit 1
     def c238(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c239()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c240()
+        if self.check_digit(): return self.c240()
+        if self.current_char == ".": return self.d270()
+        return self.c239()
 
-        return self.error()
+    def c239(self): return self.finalize_coin()
 
-    def c239(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 3 (State 240) ---
+    # digit 2
     def c240(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c241()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c242()
+        if self.check_digit(): return self.c242()
+        if self.current_char == ".": return self.d270()
+        return self.c241()
 
-        return self.error()
+    def c241(self): return self.finalize_coin()
 
-    def c241(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 4 (State 242) ---
+    # digit 3
     def c242(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c243()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c244()
+        if self.check_digit(): return self.c244()
+        if self.current_char == ".": return self.d270()
+        return self.c243()
 
-        return self.error()
+    def c243(self): return self.finalize_coin()
 
-    def c243(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 5 (State 244) ---
+    # digit 4
     def c244(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c245()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c246()
+        if self.check_digit(): return self.c246()
+        if self.current_char == ".": return self.d270()
+        return self.c245()
 
-        return self.error()
+    def c245(self): return self.finalize_coin()
 
-    def c245(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 6 (State 246) ---
+    # digit 5
     def c246(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c247()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c248()
+        if self.check_digit(): return self.c248()
+        if self.current_char == ".": return self.d270()
+        return self.c247()
 
-        return self.error()
+    def c247(self): return self.finalize_coin()
 
-    def c247(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 7 (State 248) ---
+    # digit 6
     def c248(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c249()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c250()
+        if self.check_digit(): return self.c250()
+        if self.current_char == ".": return self.d270()
+        return self.c249()
 
-        return self.error()
+    def c249(self): return self.finalize_coin()
 
-    def c249(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 8 (State 250) ---
+    # digit 7
     def c250(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c251()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c252()
+        if self.check_digit(): return self.c252()
+        if self.current_char == ".": return self.d270()
+        return self.c251()
 
-        return self.error()
+    def c251(self): return self.finalize_coin()
 
-    def c251(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 9 (State 252) ---
+    # digit 8
     def c252(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c253()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c254()
+        if self.check_digit(): return self.c254()
+        if self.current_char == ".": return self.d270()
+        return self.c253()
 
-        return self.error()
+    def c253(self): return self.finalize_coin()
 
-    def c253(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 10 (State 254) ---
+    # digit 9
     def c254(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c255()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c256()
+        if self.check_digit(): return self.c256()
+        if self.current_char == ".": return self.d270()
+        return self.c255()
 
-        return self.error()
+    def c255(self): return self.finalize_coin()
 
-    def c255(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 11 (State 256) ---
+    # digit 10
     def c256(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c257()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c258()
+        if self.check_digit(): return self.c258()
+        if self.current_char == ".": return self.d270()
+        return self.c257()
 
-        return self.error()
+    def c257(self): return self.finalize_coin()
 
-    def c257(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 12 (State 258) ---
+    # digit 11
     def c258(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c259()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c260()
+        if self.check_digit(): return self.c260()
+        if self.current_char == ".": return self.d270()
+        return self.c259()
 
-        return self.error()
+    def c259(self): return self.finalize_coin()
 
-    def c259(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 13 (State 260) ---
+    # digit 12
     def c260(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c261()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c262()
+        if self.check_digit(): return self.c262()
+        if self.current_char == ".": return self.d270()
+        return self.c261()
 
-        return self.error()
+    def c261(self): return self.finalize_coin()
 
-    def c261(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 14 (State 262) ---
+    # digit 13
     def c262(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c263()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c264()
+        if self.check_digit(): return self.c264()
+        if self.current_char == ".": return self.d270()
+        return self.c263()
 
-        return self.error()
+    def c263(self): return self.finalize_coin()
 
-    def c263(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 15 (State 264) ---
+    # digit 14
     def c264(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c265()
-        if self.current_char == ".": return self.d268()
-        if self.current_char is not None and self.current_char.isdigit(): return self.c266()
+        if self.check_digit(): return self.c266()
+        if self.current_char == ".": return self.d270()
+        return self.c265()
 
-        return self.error()
+    def c265(self): return self.finalize_coin()
 
-    def c265(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- Digit 16 (State 266) - MAX LENGTH COIN ---
+    # digit 15
     def c266(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.c267()
-        if self.current_char == ".": return self.d268()
+        if self.check_digit(): return self.c268()
+        if self.current_char == ".": return self.d270()
+        return self.c267()
 
-        # Limit Exceeded
-        if self.current_char is not None and self.current_char.isdigit():
-            return self.error()
+    def c267(self): return self.finalize_coin()
 
-        return self.error()
+    # digit 16
+    def c268(self):
+        self.advance()
+        if self.check_digit(): return self.error()
+        if self.current_char == ".": return self.d270()
+        return self.c269()
 
-    def c267(self): return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
+    def c269(self): return self.finalize_coin()
 
     # =========================================================================
-    # DIME-lit (Decimals) - States 268 to 284
+    # DIME Literals
     # =========================================================================
 
-    # State 268 (The Dot)
-    def d268(self):
+    # decimal point
+    def d270(self):
         self.advance()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d269()
-
+        if self.check_digit(): return self.d271()
         return self.error()
 
-    # --- DIME Digit 1 (State 269) ---
-    def d269(self):
-        self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d270()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d271()
-
-        return self.error()
-
-    def d270(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- DIME Digit 2 (State 271) ---
+    # decimal 1
     def d271(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d272()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d273()
+        if self.check_digit(): return self.d273()
+        return self.d272()
 
-        return self.error()
+    def d272(self): return self.finalize_dime
 
-    def d272(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- DIME Digit 3 (State 273) ---
+    # decimal 2
     def d273(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d274()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d275()
+        if self.check_digit(): return self.d275()
+        return self.d274()
 
-        return self.error()
+    def d274(self): return self.finalize_dime
 
-    def d274(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- DIME Digit 4 (State 275) ---
+    # decimal 3
     def d275(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d276()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d277()
+        if self.check_digit(): return self.d277()
+        return self.d276()
 
-        return self.error()
-
-    def d276(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- DIME Digit 5 (State 277) ---
+    def d276(self): return self.finalize_dime
+    
+    # decimal 4
     def d277(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d278()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d279()
+        if self.check_digit(): return self.d279()
+        return self.d278()
 
-        return self.error()
-    
-    def d278(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
+    def d278(self): return self.finalize_dime
 
-    # --- DIME Digit 6 (State 279) ---
+    # decimal 5
     def d279(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d280()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d281()
+        if self.check_digit(): return self.d281()
+        return self.d280()
 
-        return self.error()
-
-    def d280(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- DIME Digit 7 (State 281) ---
+    def d280(self): return self.finalize_dime
+    
+    # decimal 6
     def d281(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]): return self.d282()
-        if self.current_char is not None and self.current_char.isdigit(): return self.d283()
+        if self.check_digit(): return self.d283()
+        return self.d282()
 
-        return self.error()
+    def d282(self): return self.finalize_dime
 
-    def d282(self): return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
-
-    # --- DIME Digit 8 (State 283) - MAX LENGTH DIME ---
+    # decimal 7
     def d283(self):
         self.advance()
-        if self._comp_delims(Delimiters._get_delimiters()["DIGIT_DELIM"]):
-            return self.d284()
-        if self.current_char is not None and self.current_char.isdigit():
-            return self.error()
+        if self.check_digit(): return self.d285()
+        return self.d284()
 
-        return self.error()
+    def d284(self): return self.finalize_dime
 
-    def d284(self):
-        return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
+    # decimal 8
+    def d285(self):
+        self.advance()
+        if self.check_digit(): return self.error()
+        return self.d286()
+
+    def d286(self): return self.finalize_dime
