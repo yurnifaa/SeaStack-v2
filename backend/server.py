@@ -421,7 +421,7 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
             src_lines = source_code.split('\n') if source_code else []
             idx = int(raw_line) - 1
             if 0 <= idx < len(src_lines):
-                actual_line = src_lines[idx].strip()
+                actual_line = src_lines[idx]
 
     # Fallback: scan source for identifiers from the failing Python line
     if ss_line == "-" and py_line and generated_code:
@@ -434,7 +434,7 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
                 if stripped and not stripped.startswith('~'):
                     if any(w in stripped for w in _extract_identifiers(py_code_line)):
                         ss_line     = str(si + 1)
-                        actual_line = stripped
+                        actual_line = sl
                         break
 
     return {

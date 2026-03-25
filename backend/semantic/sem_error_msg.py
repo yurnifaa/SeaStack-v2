@@ -27,11 +27,13 @@ class SemanticErrorHandler:
     # =========================================================================
 
     def _get_line_content(self, line_num) -> str:
-        """Return the trimmed source line at line_num (1-indexed), or ''."""
+        """Return the raw source line at line_num (1-indexed), or ''.
+        The frontend strips leading spaces and uses the raw length to compute
+        the caret offset, so we must not pre-strip here."""
         try:
             ln = int(line_num) - 1
             if 0 <= ln < len(self._lines):
-                return self._lines[ln].strip()
+                return self._lines[ln]
         except (TypeError, ValueError):
             pass
         return ""
