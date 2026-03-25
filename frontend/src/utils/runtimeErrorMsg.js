@@ -20,7 +20,15 @@ export function simplifyRuntimeMessage(msg) {
   if (m.includes('keyerror'))
     return "Struct member not found. A field was accessed that does not exist in the struct.";
   if (m.includes('recursionerror') || m.includes('maximum recursion') || m.includes('stack overflow'))
-    return "too many nested function calls.";
+    return "Too many nested function calls.";
+  if (m.includes("'break' outside loop") || (m.includes('break') && m.includes('outside')))
+    return "LAND!! can only be used inside a loop or CHART block.";
+  if (m.includes("'continue' outside loop") || (m.includes('continue') && m.includes('outside')))
+    return "SAIL!! can only be used inside a loop.";
+  if (m.includes("'return' outside function") || (m.includes('return') && m.includes('outside')))
+    return "BACK can only be used inside a function.";
+  if (m.includes('syntaxerror'))
+    return "Syntax Error: check that LAND!!, SAIL!!, and BACK are used in the correct context.";
   if (m.includes('valueerror'))
     return "Invalid value encountered during execution.";
   if (m.includes('typeerror'))

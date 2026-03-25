@@ -388,9 +388,22 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
     elif isinstance(exc, RecursionError):
         error_type = "Stack Overflow"
         message    = "Too many nested function calls. Check for runaway recursion."
+    elif isinstance(exc, SyntaxError):
+        error_type = "Syntax Error"
+        m = exc_msg
+        m = re.sub(r'\s*\(<[^)]*>,\s*line\s*\d+\)', '', m).strip()
+        if "'break'" in m or 'break' in m.lower():
+            message = "LAND!! can only be used inside a loop or CHART block."
+        elif "'continue'" in m or 'continue' in m.lower():
+            message = "SAIL!! can only be used inside a loop."
+        elif "'return'" in m or 'return' in m.lower():
+            message = "BACK can only be used inside a function."
+        else:
+            message = _sanitize_py_message(m)
     else:
-        error_type = type(exc).__name__
-        message    = f"An unexpected error occurred: {exc_msg}"
+        error_type = "Runtime Error"
+        m = re.sub(r'\s*\(<[^)]*>,\s*line\s*\d+\)', '', exc_msg).strip()
+        message = _sanitize_py_message(m)
 
     # ── Map to SeaStack source line ─────────────────────────────────────
     ss_line     = "-"
@@ -434,6 +447,32 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
         "phase":       "Runtime",
         "error_type":  error_type,
     }
+
+
+def _sanitize_py_message(msg):
+    """Replace Python-specific terms with SeaStack equivalents in error messages."""
+    replacements = [
+        ("'break'",    "LAND!!"),
+        ("'continue'", "SAIL!!"),
+        ("'return'",   "BACK"),
+        ("'pass'",     "NOP"),
+        ("'int'",      "'COIN'"),
+        ("'float'",    "'DIME'"),
+        ("'str'",      "'SCROLL'"),
+        ("'bool'",     "'BOOL'"),
+        ("'list'",     "'array'"),
+        ("'dict'",     "'struct'"),
+        (" int ",      " COIN "),
+        (" float ",    " DIME "),
+        (" str ",      " SCROLL "),
+        (" bool ",     " BOOL "),
+        (" list ",     " array "),
+        ("<string>",   "the program"),
+        ("<module>",   "the program"),
+    ]
+    for old, new in replacements:
+        msg = msg.replace(old, new)
+    return msg
 
 
 def _extract_identifiers(code_line):
