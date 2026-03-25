@@ -102,11 +102,20 @@ class Lexer(
         saved_state = self.save()
         char = self.current_char
 
-        # --- Reserved Words ---
-        if char.isupper():
-            return self._make_keyword()
+        # Reserved Words
+        if char == 'A': return self.rw1()
+        if char == 'B': return self.rw23()
+        if char == 'C': return self.rw32()
+        if char == 'D': return self.rw47()
+        if char == 'E': return self.rw61()
+        if char == 'H': return self.rw66()
+        if char == 'L': return self.rw81()
+        if char == 'M': return self.rw94()
+        if char == 'N': return self.rw99()
+        if char == 'P': return self.rw103()
+        if char == 'S': return self.rw109()
         
-        # --- Symbols / Operators ---
+        # Symbols 
         if char == "+": return self.rs120()
         if char == "-": return self.rs126()
         if char == "*": return self.rs133()
@@ -114,23 +123,19 @@ class Lexer(
         if char == "%": return self.rs141()
         if char == "^": return self.rs145()
 
-        # Assignment & Equality
         if char == "=": return self.rs149()
 
-        # Logical / Relational
         if char == "!": return self.rs153()
         if char == "<": return self.rs161()
         if char == ">": return self.rs165()
         if char == "&": return self.rs169()
         if char == "|": return self.rs173()
 
-        # Others
         if char == ":": return self.rs176()
         if char == "@": return self.rs178()
         if char == "$": return self.rs180()
         if char == ",": return self.rs182()
 
-        # Brackets (States 184-195)
         if char == "{": return self.rs184()
         if char == "}": return self.rs186()
         if char == "(": return self.rs188()
@@ -158,12 +163,12 @@ class Lexer(
             self.advance()
             return Token("whitespace", char, l, c)
 
-        # Catch-all for unknown characters
+        # Unknown characters
         self.advance()
         return self.error()
 
     # ============================================================================================
-    # PUBLIC MAIN METHOD
+    # TOKENIZE: tokenizes the sequence of valid characters
     # ============================================================================================
     def tokenize(self):                 
         while self.current_char is not None: 
@@ -171,5 +176,4 @@ class Lexer(
             tok = self.state0()              
             if tok:                       
                 self.tokens.append(tok)
-
         return self.tokens, self.errors
