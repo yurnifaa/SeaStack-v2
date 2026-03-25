@@ -208,8 +208,6 @@ export default function Home() {
       headerStr = foundStr;
       if (errObj.expected && errObj.expected.length > 0) {
         expectedStr = `Expected: ${errObj.expected.join(", ")}`;
-      } else {
-        expectedStr = "Expected: Valid Token";
       }
     }
 

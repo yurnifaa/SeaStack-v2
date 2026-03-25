@@ -14,7 +14,7 @@ class LexerErrors:
         line = line if line is not None else self.token_start_line
         col  = col  if col  is not None else self.token_start_col
 
-        message = f"Invalid character/s '{token_text}'"
+        message = f"Invalid character/s: '{token_text}'"
         if context:
             message += f" — {context}"
 
