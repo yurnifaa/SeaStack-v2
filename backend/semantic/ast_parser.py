@@ -623,7 +623,7 @@ class ASTParser:
         tok = self.current_token; self.eat('ABYSS')
         nt = self.current_token; self.eat('id')
         self.eat('('); params = self.params(); self.eat(')'); self.eat('[')
-        local_decls = self.local_dec()
+        local_decls = self.ahoy_local_dec()
         body = self.nonret_stmnts()
         back = self.nonret_back()
         if back: body.append(back)
@@ -1268,9 +1268,9 @@ class ASTParser:
         return inits
 
     def hoist_cond(self):
-        left = self.dime_val()
+        left = self.arith_fold(self.dime_val())
         op_tok = self.current_token; op = self.releq_op()
-        right = self.dime_val()
+        right = self.arith_fold(self.dime_val())
         node = BinaryOpNode(left, op, right, op_tok)
         return self._hoist_log_fold(node)
 
