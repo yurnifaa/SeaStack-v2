@@ -97,6 +97,7 @@ class ASTParser:
             nodes.extend(self.sub_func())
         elif prod == 5:
             nodes.append(self.nonreturn_func())
+            nodes.extend(self.sub_func())
         elif prod == 6:
             pass  # λ
         return nodes
@@ -131,7 +132,7 @@ class ASTParser:
             nodes.extend(self.coin_var_arr(dtype, nt))
             self.eat('!!'); nodes.extend(self.global_dec())
         elif prod == 13:
-            nodes.append(self.coin_func(dtype, nt))
+            nodes.extend(self.coin_func(dtype, nt))
         return nodes
 
     def dime_var_arr_func(self, dtype, nt):
@@ -141,7 +142,7 @@ class ASTParser:
             nodes.extend(self.dime_var_arr(dtype, nt))
             self.eat('!!'); nodes.extend(self.global_dec())
         elif prod == 59:
-            nodes.append(self.dime_func(dtype, nt))
+            nodes.extend(self.dime_func(dtype, nt))
         return nodes
 
     def parch_var_arr_func(self, dtype, nt):
@@ -151,7 +152,7 @@ class ASTParser:
             nodes.extend(self.parch_var_arr(dtype, nt))
             self.eat('!!'); nodes.extend(self.global_dec())
         elif prod == 99:
-            nodes.append(self.parch_func(dtype, nt))
+            nodes.extend(self.parch_func(dtype, nt))
         return nodes
 
     def scroll_var_arr_func(self, dtype, nt):
@@ -161,8 +162,7 @@ class ASTParser:
             nodes.extend(self.scroll_var_arr(dtype, nt))
             self.eat('!!'); nodes.extend(self.global_dec())
         elif prod == 123:
-            nodes.append(self.scroll_func(dtype, nt))
-            nodes.extend(self.sub_func()) 
+            nodes.extend(self.scroll_func(dtype, nt))
         return nodes
 
     def bool_var_arr_func(self, dtype, nt):
@@ -172,7 +172,7 @@ class ASTParser:
             nodes.extend(self.bool_var_arr(dtype, nt))
             self.eat('!!'); nodes.extend(self.global_dec())
         elif prod == 165:
-            nodes.append(self.bool_func(dtype, nt))
+            nodes.extend(self.bool_func(dtype, nt))
         return nodes
 
     # =====================================================================
@@ -578,10 +578,16 @@ class ASTParser:
     # =====================================================================
 
     def sub_func(self):
-        prod = self.get_production('<sub-func>')
-        if prod == 476: return [self.return_func()]
-        elif prod == 477: return [self.nonreturn_func()]
-        return []  # prod 478: λ
+        nodes = []
+        while True:
+            prod = self.get_production('<sub-func>')
+            if prod == 476:
+                nodes.extend(self.return_func())
+            elif prod == 477:
+                nodes.append(self.nonreturn_func())
+            else:
+                break  # prod 478: λ
+        return nodes
 
     def return_func(self):
         prod = self.get_production('<return-func>')
@@ -597,9 +603,8 @@ class ASTParser:
         body = self.ret_stmnts()
         self.eat('BACK'); return_expr = self._return_val_for(dtype)
         self.eat('!!'); self.eat(']')
-        more = self.sub_func()
         node = FuncDefNode(dtype, nt.value, params, local_decls, body, return_expr, nt)
-        return node 
+        return [node] + self.sub_func()
 
     def coin_func(self, dtype, nt): return self._build_return_func(dtype, nt)
     def dime_func(self, dtype, nt): return self._build_return_func(dtype, nt)
@@ -622,7 +627,7 @@ class ASTParser:
         body = self.nonret_stmnts()
         back = self.nonret_back()
         if back: body.append(back)
-        self.eat(']'); self.sub_func()
+        self.eat(']')
         return FuncDefNode('ABYSS', nt.value, params, local_decls, body, None, tok)
 
     def nonret_stmnts(self):
