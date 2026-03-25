@@ -21,7 +21,7 @@ class Identifiers:
         result = self.current_token_text()
         line, col = self.line, self.col
 
-        if self._comp_delims(Delimiters.delims()["ID_DELIM"]):
+        if self._is_valid_delimiter("ID_DELIM"):
 
             if result not in self.identifier_table:
                 self.identifier_table[result] = f"id{len(self.identifier_table) + 1}"

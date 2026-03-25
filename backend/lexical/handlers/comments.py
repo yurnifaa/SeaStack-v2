@@ -14,10 +14,10 @@ class Comments(LexerErrors):
     def cm297(self):
         self.advance()
 
-        if self.current_char == '\n': return self.cm298()
+        if self.current_char == '\n' or self.current_char is None: return self.cm298()
         if self.current_char == '(': return self.cm300()
         if self.current_char is not None: return self.cm299()
-            
+
         return self.error()
 
     # tokenize single-line comment
@@ -36,11 +36,11 @@ class Comments(LexerErrors):
 
         while self.current_char is not None and self.current_char != '\n':
             self.advance()
-        if self.current_char == '\n': return self.cm298()
+        if self.current_char == '\n' or self.current_char is None: return self.cm298()
 
         return self.error()
     
-    
+
     # =======================
     # MULTI-LINE COMMENT
     # =======================

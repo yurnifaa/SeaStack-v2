@@ -15,20 +15,18 @@ class Texts(LexerErrors):
 
     # check delimeter if valid
     def check_pdelim(self):
-        return self._comp_delims(Delimiters.delims()["PARCH_DELIM"])
+        return self._is_valid_delimiter("PARCH_DELIM")
 
     def check_sdelim(self):
-        return self._comp_delims(Delimiters.delims()["SCR_DELIM"])
+        return self._is_valid_delimiter("SCR_DELIM")
     
     # check char if valid as PARCH or SCROLL literal
     def check_parch(self):
-        delims = Delimiters.delims()
-        allowed = delims["ASCII"] - set("'\\\n\r")
+        allowed = Delimiters.delims()["ASCII"] - set("'\\\n\r")
         return self.current_char is not None and self.current_char in allowed
     
     def check_scroll(self):
-        delims = Delimiters.delims()
-        allowed = delims["ASCII"] - set("\"\\\n\r")
+        allowed = Delimiters.delims()["ASCII"] - set("\"\\\n\r")
         return self.current_char is not None and self.current_char in allowed
 
 

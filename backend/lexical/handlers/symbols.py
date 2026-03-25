@@ -14,7 +14,11 @@ class Symbols(LexerErrors):
 
     # check if delimeter is valid
     def check_delim(self, delim_key):
-        return self._comp_delims(Delimiters.delims()[delim_key])
+        return self._is_valid_delimiter(delim_key)
+
+    # =======================
+    # RESERVED SYMBOLS
+    # =======================
 
     # ADD '+' 
     def rs120(self):

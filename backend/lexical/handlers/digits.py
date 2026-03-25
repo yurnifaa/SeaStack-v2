@@ -16,15 +16,15 @@ class Digits(LexerErrors):
     # check char if valid as digit
     def check_digit(self):
         return self.current_char is not None and self.current_char.isdigit()
-    
+
     # finalize COIN-lit or DIME-lit token
     def finalize_coin(self):
-        if self._comp_delims(Delimiters.delims()["DIGIT_DELIM"]):
+        if self._is_valid_delimiter("DIGIT_DELIM"):
             return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
         return self.error()
 
     def finalize_dime(self):
-        if self._comp_delims(Delimiters.delims()["DIGIT_DELIM"]):
+        if self._is_valid_delimiter("DIGIT_DELIM"):
             return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
         return self.error()
 
@@ -201,7 +201,7 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.d273()
         return self.d272()
 
-    def d272(self): return self.finalize_dime
+    def d272(self): return self.finalize_dime()
 
     # decimal 2
     def d273(self):
@@ -209,7 +209,7 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.d275()
         return self.d274()
 
-    def d274(self): return self.finalize_dime
+    def d274(self): return self.finalize_dime()
 
     # decimal 3
     def d275(self):
@@ -217,7 +217,7 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.d277()
         return self.d276()
 
-    def d276(self): return self.finalize_dime
+    def d276(self): return self.finalize_dime()
     
     # decimal 4
     def d277(self):
@@ -225,7 +225,7 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.d279()
         return self.d278()
 
-    def d278(self): return self.finalize_dime
+    def d278(self): return self.finalize_dime()
 
     # decimal 5
     def d279(self):
@@ -233,7 +233,7 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.d281()
         return self.d280()
 
-    def d280(self): return self.finalize_dime
+    def d280(self): return self.finalize_dime()
     
     # decimal 6
     def d281(self):
@@ -241,7 +241,7 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.d283()
         return self.d282()
 
-    def d282(self): return self.finalize_dime
+    def d282(self): return self.finalize_dime()
 
     # decimal 7
     def d283(self):
@@ -249,7 +249,7 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.d285()
         return self.d284()
 
-    def d284(self): return self.finalize_dime
+    def d284(self): return self.finalize_dime()
 
     # decimal 8
     def d285(self):
@@ -257,4 +257,4 @@ class Digits(LexerErrors):
         if self.check_digit(): return self.error()
         return self.d286()
 
-    def d286(self): return self.finalize_dime
+    def d286(self): return self.finalize_dime()

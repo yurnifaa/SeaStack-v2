@@ -76,16 +76,13 @@ class Lexer(
     # DELIMETER HELPERS
     # =======================
 
-    def _comp_delims(self, delimiter_set): 
-        return self.current_char in delimiter_set or self.current_char is None
-
     def _is_valid_delimiter(self, delim_set_name):  
         char = self.current_char
-        delims = Delimiters.delims()
 
         if char is None or char.isspace():
             return True
 
+        delims = Delimiters.delims()
         if delim_set_name in delims:
             return char in delims[delim_set_name]
 
