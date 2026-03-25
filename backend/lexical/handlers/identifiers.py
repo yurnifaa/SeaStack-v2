@@ -21,7 +21,6 @@ class Identifiers:
         result = self.current_token_text()
         line, col = self.line, self.col
 
-        # validate delimeter and check if id is new
         if self._comp_delims(Delimiters.delims()["ID_DELIM"]):
 
             if result not in self.identifier_table:

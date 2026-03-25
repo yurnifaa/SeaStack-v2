@@ -47,7 +47,7 @@ class Delimiters:
         CLOSECB_DELIM = WHITESPACE | GEN_OP | set(")]{&:,")
         CLOSEP_DELIM = WHITESPACE | GEN_OP | set(")[],")
         OPENP_DELIM = LOG_OP_DELIM | set(['B', 'C', 'D', 'P', 'S', ')', '!'])
-        CLOSESB_DELIM = WHITESPACE | LOWLET | UPLET | set(["]!+-,"])
+        CLOSESB_DELIM = WHITESPACE | LOWLET | UPLET | set("]!+-,")
         OPENSB_DELIM = CLOSESB_DELIM | DIGIT |set(['[', "'", '"'])
         
 

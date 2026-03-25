@@ -1,7 +1,4 @@
-import sys
-
 from backend.lexical.token import Token
-
 from backend.lexical.handlers.comments import Comments
 from backend.lexical.handlers.digits import Digits
 from backend.lexical.handlers.identifiers import Identifiers
@@ -11,9 +8,10 @@ from backend.lexical.handlers.symbols import Symbols
 from backend.lexical.handlers.delimiters import Delimiters
 from backend.lexical.lexer_errors import LexerErrors
 
-# =========================================================================
-# Lexer Class
-# =========================================================================
+# =================================================================================================
+# LEXER: reads source code character by character and returns a list of tokens
+# =================================================================================================
+
 class Lexer(
     Comments,
     Digits,
@@ -33,10 +31,14 @@ class Lexer(
         self.tokens = []
         self.errors = []
 
-        # --- Token start tracking ---
         self.token_start_pos = 0
         self.token_start_line = 1
         self.token_start_col = 1
+
+
+    # =======================
+    # LEXER HELPERS
+    # =======================
 
     def mark_token_start(self):
         self.token_start_pos = self.pos
@@ -46,9 +48,7 @@ class Lexer(
     def current_token_text(self):
         return self.text[self.token_start_pos:self.pos]
 
-    # =========================================================================
-    # Helper Methods
-    # =========================================================================
+    # consumes char
     def advance(self):          
         if self.current_char == "\n":
             self.line += 1
@@ -62,27 +62,26 @@ class Lexer(
         else:
             self.current_char = None
 
-    def peek(self):             
-        peek_pos = self.pos + 1
-        if peek_pos < len(self.text):
-            return self.text[peek_pos]
-        return None
+    # tokenize chars
+    def tokenize(self):                 
+        while self.current_char is not None: 
+            self.mark_token_start()          
+            tok = self.state0()              
+            if tok:                       
+                self.tokens.append(tok)
+        return self.tokens, self.errors
 
-    def save(self): 
-        return (self.pos, self.line, self.col, self.current_char)
 
-    def restore(self, state): 
-        self.pos, self.line, self.col, self.current_char = state
+    # =======================
+    # DELIMETER HELPERS
+    # =======================
 
-    # =========================================================================
-    # Delimiter Comparison & Sanitization
-    # =========================================================================
     def _comp_delims(self, delimiter_set): 
         return self.current_char in delimiter_set or self.current_char is None
 
     def _is_valid_delimiter(self, delim_set_name):  
         char = self.current_char
-        delims = Delimiters._get_delimiters()
+        delims = Delimiters.delims()
 
         if char is None or char.isspace():
             return True
@@ -92,14 +91,14 @@ class Lexer(
 
         return False
 
-    # ============================================================================================================
-    # Transition Diagram State 0 
-    # ============================================================================================================
+
+    # =======================
+    # ENTRY POINT - STATE 0
+    # =======================
+
     def state0(self):
         if self.current_char is None:
             return None 
-
-        saved_state = self.save()
         char = self.current_char
 
         # Reserved Words
@@ -166,14 +165,3 @@ class Lexer(
         # Unknown characters
         self.advance()
         return self.error()
-
-    # ============================================================================================
-    # TOKENIZE: tokenizes the sequence of valid characters
-    # ============================================================================================
-    def tokenize(self):                 
-        while self.current_char is not None: 
-            self.mark_token_start()          
-            tok = self.state0()              
-            if tok:                       
-                self.tokens.append(tok)
-        return self.tokens, self.errors
