@@ -35,9 +35,8 @@ class Digits(LexerErrors):
     # lone 0
     def c236(self):
         self.advance()
-        if self.check_digit(): return self.c237()
         if self.current_char == ".": return self.d270()
-        return self.error()
+        return self.c237()
 
     def c237(self): return self.finalize_coin()
 

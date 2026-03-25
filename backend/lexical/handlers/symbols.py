@@ -76,7 +76,7 @@ class Symbols(LexerErrors):
     # --- NEGATIVE ZERO '-0' ---
     def rs132(self):
         self.advance()
-        if self.current_char == ".": return self.d268()
+        if self.current_char == ".": return self.d270()
 
         return self.error()
 
