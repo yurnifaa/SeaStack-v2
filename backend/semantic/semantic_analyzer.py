@@ -4,23 +4,12 @@
 # Walks AST via visitor pattern. Expression visitors return dtype strings.
 # Statement visitors return None. Non-fatal errors are collected.
 #
-# KEY FIXES from original:
-#   - Added global-scope check for LOCKE constants
-#   - Compound assignment now checks target is initialized
-#   - Improved COURSE duplicate label detection using value comparison
-#   - Assignment marks arrays/structs as initialized at base level
-#   - HoistInitNode now visits and type-checks the init value expression
-#     (supports variables, elements, members, func calls, and arithmetic)
 # =============================================================================
 
 import re
-from semantic.symbol_table import (
-    Symbol, ArraySymbol, FunctionSymbol,
-    StructTypeSymbol, StructVarSymbol, SymbolTable,
-)
+from semantic.symbol_table import ( Symbol, ArraySymbol, FunctionSymbol, StructTypeSymbol, StructVarSymbol, SymbolTable, )
 from semantic.ast_nodes import NamedInitNode, PositionalInitNode
 from backend.semantic.sem_error_msg import SemanticErrorHandler
-
 
 class SemanticAnalyzer:
     def __init__(self, ast, source_code):
@@ -56,20 +45,20 @@ class SemanticAnalyzer:
 
     # ── Error Helper ─────────────────────────────────────────────────────
 
+    # Append a pre-built error dict from SemanticErrorHandler.
     def _e(self, error_dict):
-        """Append a pre-built error dict from SemanticErrorHandler."""
         self.errors.append(error_dict)
 
     # ── Type Helpers ─────────────────────────────────────────────────────
 
+    # Assignment compatibility: exact match or COIN → DIME promotion.
     def _compatible(self, expected, actual):
-        """Assignment compatibility: exact match or COIN→DIME promotion."""
         if expected == actual: return True
         if expected == 'DIME' and actual == 'COIN': return True
         return False
 
+    # Expression compatibility: COIN ↔ DIME are compatible.
     def _compatible_expr(self, left, right):
-        """Expression compatibility: COIN↔DIME are compatible."""
         if left == right: return True
         if left in ('COIN', 'DIME') and right in ('COIN', 'DIME'): return True
         return False
@@ -80,13 +69,12 @@ class SemanticAnalyzer:
 
     # ── Bounds Checking ──────────────────────────────────────────────────
 
+    # Get compile-time COIN int value, or None for runtime values.
     def _literal_int(self, node):
-        """Get compile-time COIN int value, or None for runtime values."""
         if type(node).__name__ == 'LiteralNode':
             if getattr(node, 'dtype', None) != 'COIN': return None
             try: return int(getattr(node, 'value', None))
             except (TypeError, ValueError): return None
-        # Also resolve identifiers with known compile-time values
         if type(node).__name__ == 'IdentNode':
             name = getattr(node, 'name', None)
             if name and name in self.known_values:
@@ -96,8 +84,8 @@ class SemanticAnalyzer:
                     except (TypeError, ValueError): return None
         return None
 
+    # Get compile-time SCROLL string length, or None for runtime values.
     def _known_scroll_length(self, node):
-        """Get compile-time SCROLL string length, or None for runtime values."""
         if type(node).__name__ == 'LiteralNode' and getattr(node, 'dtype', None) == 'SCROLL':
             raw = getattr(node, 'value', None)
             if raw is not None: return len(str(raw))
@@ -156,7 +144,7 @@ class SemanticAnalyzer:
     # =====================================================================
 
     def visit_ConstDeclNode(self, node):
-        # LOCKE can only be declared globally (rule p.11)
+        # LOCKE can only be declared globally
         if not self.sym.is_global_scope():
             self._e(self.err.locke_not_global(node.token, node.name))
             return
@@ -299,8 +287,6 @@ class SemanticAnalyzer:
     # =====================================================================
 
     def _target_label(self, var_name, target_kind, index1, index2, member):
-        """Build a human-readable label for the assignment target.
-        e.g. 'b1$crew', 'arr{2}', 'grid{1}{0}', or just 'x'."""
         if target_kind == 'member' and member:
             return f"{var_name}${member}"
         elif target_kind == 'array2d' and index1 is not None and index2 is not None:
@@ -335,8 +321,6 @@ class SemanticAnalyzer:
         target_dtype = self._resolve_target(
             node.var_name, node.target_kind, node.index1, node.index2, node.member, node.token)
         if target_dtype is not None:
-            # NOTE: the LHS of a compound assignment does not need to be initialized
-            # beforehand — as long as it is declared, it may be assigned to.
             label = self._target_label(
                 node.var_name, node.target_kind, node.index1, node.index2, node.member)
             if not self._is_numeric(target_dtype):
@@ -349,8 +333,8 @@ class SemanticAnalyzer:
             # Value is now runtime-determined; remove from known values
             self.known_values.pop(node.var_name, None)
 
+    # Resolve assignment target dtype. Returns None on error.
     def _resolve_target(self, var_name, target_kind, index1, index2, member, token):
-        """Resolve assignment target dtype. Returns None on error."""
         sym = self.sym.lookup(var_name)
         if sym is None:
             self._e(self.err.undeclared_variable(token, var_name)); return None
@@ -470,7 +454,7 @@ class SemanticAnalyzer:
         if expr_type and expr_type not in ('COIN', 'PARCH', 'SCROLL'):
             self._e(self.err.chart_invalid_expr_type(node.token, self._type_name(expr_type)))
         outer_chart = self.in_chart; self.in_chart = True
-        # Improved duplicate COURSE label check using value+dtype
+        # duplicate COURSE label check using value+dtype
         seen = {}
         for course in node.courses:
             case_type = self.visit(course.value)
@@ -495,8 +479,8 @@ class SemanticAnalyzer:
             self.in_adrift = outer_adrift
         self.in_chart = outer_chart
 
+    # Generate a reliable key for COURSE label duplicate detection.
     def _course_label_key(self, node):
-        """Generate a reliable key for COURSE label duplicate detection."""
         cn = type(node).__name__
         if cn == 'LiteralNode': return (node.dtype, node.value)
         if cn == 'ScrollCharAccessNode':
@@ -523,8 +507,7 @@ class SemanticAnalyzer:
 
     def visit_HoistInitNode(self, node):
         # Visit the init value expression and type-check it.
-        # The value can now be a literal, variable, element, member,
-        # function call, or arithmetic expression — but must resolve to COIN.
+        # The value can now be a literal, variable, element, member, function call, or arithmetic expression — but must resolve to COIN.
         val_type = None
         if node.value is not None:
             val_type = self.visit(node.value)
@@ -626,10 +609,8 @@ class SemanticAnalyzer:
         # Value is now runtime-determined; remove from known values
         self.known_values.pop(node.var_name, None)
 
+    # Validate the call directly so that ABYSS-returning functions are allowed.
     def visit_FuncCallStmtNode(self, node):
-        # Validate the call directly so that ABYSS-returning functions are allowed.
-        # visit_FuncCallNode rejects ABYSS in expression context — but a standalone
-        # call statement (greet()!!) is the ONLY legal way to invoke an ABYSS function.
         call = node.call_expr
         sym = self.sym.lookup(call.name)
         if sym is None:

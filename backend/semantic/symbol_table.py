@@ -24,9 +24,8 @@ class Symbol:
         return (f"Symbol(name={self.name!r}, dtype={self.dtype!r}, "
                 f"kind={self.kind!r}, init={self.is_initialized})")
 
-
+# Array declaration symbol.
 class ArraySymbol(Symbol):
-    """Array declaration symbol."""
     def __init__(self, name, dtype, dimensions, is_2d, token):
         super().__init__(name, dtype, 'array', token, is_initialized=True)
         self.dimensions = dimensions   # list[int]
@@ -37,9 +36,8 @@ class ArraySymbol(Symbol):
         return (f"ArraySymbol(name={self.name!r}, dtype={self.dtype!r}, "
                 f"dims={dims}, is_2d={self.is_2d})")
 
-
+# Function definition symbol.
 class FunctionSymbol(Symbol):
-    """Function definition symbol."""
     def __init__(self, name, return_type, params, token):
         super().__init__(name, return_type, 'func', token, is_initialized=True)
         self.return_type = return_type
@@ -50,9 +48,8 @@ class FunctionSymbol(Symbol):
         return (f"FunctionSymbol(name={self.name!r}, "
                 f"return={self.return_type!r}, params=[{param_types}])")
 
-
+# Struct TYPE definition (MAST Ship [...]).
 class StructTypeSymbol(Symbol):
-    """Struct TYPE definition (MAST Ship [...])."""
     def __init__(self, name, members, member_order, token):
         super().__init__(name, 'struct_type', 'struct', token, is_initialized=True)
         self.members = members           # dict[name → dtype]
@@ -62,9 +59,8 @@ class StructTypeSymbol(Symbol):
         mem_str = ', '.join(f'{k}:{v}' for k, v in self.members.items())
         return f"StructTypeSymbol(name={self.name!r}, members={{{mem_str}}})"
 
-
+# Struct VARIABLE instance (MAST Ship s1).
 class StructVarSymbol(Symbol):
-    """Struct VARIABLE instance (MAST Ship s1)."""
     def __init__(self, name, struct_type_name, token):
         super().__init__(name, struct_type_name, 'struct_var', token,
                          is_initialized=True)
@@ -79,8 +75,8 @@ class StructVarSymbol(Symbol):
 # SYMBOL TABLE
 # =============================================================================
 
+# Scope-stack symbol table
 class SymbolTable:
-    """Scope-stack symbol table."""
 
     def __init__(self):
         self._scopes: list = [{}]   # index 0 = global, index -1 = current
@@ -103,8 +99,8 @@ class SymbolTable:
 
     # --- Declaration ---
 
+    # Insert into current scope. Returns False if duplicate.
     def declare(self, symbol: Symbol) -> bool:
-        """Insert into current scope. Returns False if duplicate."""
         current = self._scopes[-1]
         if symbol.name in current:
             return False
@@ -113,25 +109,25 @@ class SymbolTable:
 
     # --- Lookup ---
 
+    # Search from innermost to outermost scope.
     def lookup(self, name: str):
-        """Search from innermost to outermost scope."""
         for scope in reversed(self._scopes):
             if name in scope:
                 return scope[name]
         return None
 
+    # Search only the current (innermost) scope.
     def lookup_current_scope(self, name: str):
-        """Search only the current (innermost) scope."""
         return self._scopes[-1].get(name)
 
+    # Search only the global (outermost) scope.
     def lookup_global_scope(self, name: str):
-        """Search only the global (outermost) scope."""
         return self._scopes[0].get(name)
 
     # --- Mutation ---
 
+    # Mark a variable as initialized (after assignment).
     def update_initialized(self, name: str):
-        """Mark a variable as initialized (after assignment)."""
         for scope in reversed(self._scopes):
             if name in scope:
                 scope[name].is_initialized = True

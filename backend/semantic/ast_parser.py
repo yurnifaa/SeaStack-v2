@@ -4,36 +4,18 @@
 # Runs AFTER syn_parser validates the token stream. Builds AST from tokens.
 # Uses the same PREDICT table as syn_parser.py.
 #
-# KEY FIXES from original:
-#   - Removed double sub_func call in return_func for SCROLL (prod 482)
-#   - Added missing boolean continuations in multiple expression tails:
-#     _parch_tail_as, _scroll_tail_as, _parch_tail_str, _scroll_tail_str,
-#     _releq_str, _releq_as, _releqvar_grp
-#   - hoist_init/init1_mult/init2_mult now use coin_val() instead of
-#     eating COIN-lit directly, to support variable/element/member/arith
-#     expressions in HOIST initialization
 # =============================================================================
 
 from syntax.Predict_Set import PREDICT
 from semantic.ast_nodes import (
-    ProgramNode, AhoyNode,
-    ConstDeclNode,
-    VarDeclNode, ArrayDeclNode,
-    StructDefNode, MemberDeclNode,
-    StructVarDeclNode, PositionalInitNode, NamedInitNode,
-    FuncDefNode, ParamNode,
-    AssignNode, CompoundAssignNode,
-    AskNode, AddressNode, EchoNode,
-    LookNode, ChartNode, CourseNode,
-    HoistNode, HoistInitNode, HoistUpdateNode,
-    HeaveNode, HaulHeaveNode,
-    SailNode, LandNode,
-    ReturnNode, BackNode,
-    UnaryStmtNode, FuncCallStmtNode,
-    LiteralNode, IdentNode,
-    ArrayAccessNode, MemberAccessNode,
-    ScrollCharAccessNode, StringConcatNode,
-    FuncCallNode, BinaryOpNode, UnaryOpNode,
+    ProgramNode, AhoyNode, ConstDeclNode, VarDeclNode, ArrayDeclNode,
+    StructDefNode, MemberDeclNode, StructVarDeclNode, PositionalInitNode, 
+    NamedInitNode, FuncDefNode, ParamNode, AssignNode, CompoundAssignNode,
+    AskNode, AddressNode, EchoNode, LookNode, ChartNode, CourseNode,
+    HoistNode, HoistInitNode, HoistUpdateNode, HeaveNode, HaulHeaveNode,
+    SailNode, LandNode, ReturnNode, BackNode, UnaryStmtNode, FuncCallStmtNode,
+    LiteralNode, IdentNode, ArrayAccessNode, MemberAccessNode, ScrollCharAccessNode, 
+    StringConcatNode, FuncCallNode, BinaryOpNode, UnaryOpNode,
 )
 
 
@@ -46,6 +28,22 @@ class ASTParser:
                 t.type = 'id'
         self.pos = 0
         self.current_token = self.tokens[0] if self.tokens else None
+
+    # ── Array Helpers ────────────────────────────────────────────
+
+    def _arr1_values(self, val_method):
+        values = [val_method()]
+        while self.current_token and self.current_token.type == ',':
+            self.eat(','); values.append(val_method())
+        return values
+
+    def _arr2_rows(self, val_method):
+        rows = []
+        while self.current_token and self.current_token.type == '[':
+            self.eat('['); rows.append(self._arr1_values(val_method)); self.eat(']')
+            if self.current_token and self.current_token.type == ',':
+                self.eat(',')
+        return rows
 
     # ── Utility ──────────────────────────────────────────────────────────
 
@@ -69,11 +67,10 @@ class ASTParser:
 
     # ── Entry Point ──────────────────────────────────────────────────────
 
-    def build(self):
-        return self.program()
+    def build(self): return self.program()
 
     # =====================================================================
-    # PROGRAM STRUCTURE  (prod 1)
+    # PROGRAM STRUCTURE
     # =====================================================================
 
     def program(self):
@@ -85,7 +82,7 @@ class ASTParser:
         self.eat(']')
         return ProgramNode(global_decls, AhoyNode(local_decls, statements, tok), tok)
 
-    # ── Global Declarations (prods 2-6) ──────────────────────────────────
+    # ── Global Declarations ──────────────────────────────────
 
     def global_dec(self):
         nodes = []
@@ -104,7 +101,7 @@ class ASTParser:
             pass  # λ
         return nodes
 
-    # ── Var/Arr/Func dispatch (prods 7-11) ───────────────────────────────
+    # ── Var/Arr/Func dispatch ───────────────────────────────
 
     def var_arr_func(self):
         prod = self.get_production('<var-arr-func>')
@@ -158,7 +155,6 @@ class ASTParser:
         return nodes
 
     def scroll_var_arr_func(self, dtype, nt):
-        # NOTE: prod 123 has an extra sub_func per the grammar
         prod = self.get_production('<scroll-var-arr-func>')
         nodes = []
         if prod == 122:
@@ -166,7 +162,7 @@ class ASTParser:
             self.eat('!!'); nodes.extend(self.global_dec())
         elif prod == 123:
             nodes.append(self.scroll_func(dtype, nt))
-            nodes.extend(self.sub_func())   # extra sub_func per grammar
+            nodes.extend(self.sub_func()) 
         return nodes
 
     def bool_var_arr_func(self, dtype, nt):
@@ -180,7 +176,7 @@ class ASTParser:
         return nodes
 
     # =====================================================================
-    # COIN VAR/ARR  (prods 14-53)
+    # COIN VAR/ARR
     # =====================================================================
 
     def coin_var_arr(self, dtype, nt):
@@ -235,7 +231,7 @@ class ASTParser:
         return [val] + self.cav_tail()
 
     def coin_arr_val(self):
-        return self.coin_val()  # coin_val includes arith_fold
+        return self.coin_val()
 
     def cav_tail(self):
         prod = self.get_production('<cav-tail>')
@@ -252,7 +248,7 @@ class ASTParser:
         return []
 
     # =====================================================================
-    # DIME VAR/ARR  (prods 60-93)
+    # DIME VAR/ARR
     # =====================================================================
 
     def dime_var_arr(self, dtype, nt):
@@ -302,7 +298,7 @@ class ASTParser:
             return ArrayDeclNode(dtype, nt.value, [d1, d2], True, None, nt)
 
     # =====================================================================
-    # PARCH VAR/ARR  (prods 100-120)
+    # PARCH VAR/ARR
     # =====================================================================
 
     def parch_var_arr(self, dtype, nt):
@@ -352,7 +348,7 @@ class ASTParser:
             return ArrayDeclNode(dtype, nt.value, [d1, d2], True, None, nt)
 
     # =====================================================================
-    # SCROLL VAR/ARR  (prods 124-159)
+    # SCROLL VAR/ARR
     # =====================================================================
 
     def scroll_var_arr(self, dtype, nt):
@@ -402,7 +398,7 @@ class ASTParser:
             return ArrayDeclNode(dtype, nt.value, [d1, d2], True, None, nt)
 
     # =====================================================================
-    # BOOL VAR/ARR  (prods 166-172, 260-300)
+    # BOOL VAR/ARR
     # =====================================================================
 
     def bool_var_arr(self, dtype, nt):
@@ -451,24 +447,8 @@ class ASTParser:
         else:
             return ArrayDeclNode(dtype, nt.value, [d1, d2], True, None, nt)
 
-    # ── Generic array helpers ────────────────────────────────────────────
-
-    def _arr1_values(self, val_method):
-        values = [val_method()]
-        while self.current_token and self.current_token.type == ',':
-            self.eat(','); values.append(val_method())
-        return values
-
-    def _arr2_rows(self, val_method):
-        rows = []
-        while self.current_token and self.current_token.type == '[':
-            self.eat('['); rows.append(self._arr1_values(val_method)); self.eat(']')
-            if self.current_token and self.current_token.type == ',':
-                self.eat(',')
-        return rows
-
     # =====================================================================
-    # CONSTANTS (LOCKE)  (prod 442-468)
+    # CONSTANTS (LOCKE)
     # =====================================================================
 
     def const(self):
@@ -562,7 +542,7 @@ class ASTParser:
         return nodes
 
     # =====================================================================
-    # STRUCT DEFINITIONS  (prod 469-475)
+    # STRUCT DEFINITIONS
     # =====================================================================
 
     def struct(self):
@@ -604,23 +584,22 @@ class ASTParser:
         return []  # prod 478: λ
 
     def return_func(self):
-        # FIX: No extra sub_func for any type — _build_return_func handles it
         prod = self.get_production('<return-func>')
         dtype_map = {479: 'COIN', 480: 'DIME', 481: 'PARCH', 482: 'SCROLL', 483: 'BOOL'}
         dtype = dtype_map[prod]
         self.eat(dtype); nt = self.current_token; self.eat('id')
         return self._build_return_func(dtype, nt)
 
+    # Shared body for all returning function definitions.
     def _build_return_func(self, dtype, nt):
-        """Shared body for all returning function definitions."""
         self.eat('('); params = self.params(); self.eat(')'); self.eat('[')
         local_decls = self.local_dec()
         body = self.ret_stmnts()
         self.eat('BACK'); return_expr = self._return_val_for(dtype)
         self.eat('!!'); self.eat(']')
-        more = self.sub_func()  # chained function definitions
+        more = self.sub_func()
         node = FuncDefNode(dtype, nt.value, params, local_decls, body, return_expr, nt)
-        return node  # caller (sub_func) wraps in list; more functions are siblings
+        return node 
 
     def coin_func(self, dtype, nt): return self._build_return_func(dtype, nt)
     def dime_func(self, dtype, nt): return self._build_return_func(dtype, nt)
@@ -776,8 +755,8 @@ class ASTParser:
         else:
             return PositionalInitNode(self.value_str(), self.current_token)
 
+    # Expression in struct initializer context.
     def value_str(self):
-        """Expression in struct initializer context."""
         prod = self.get_production('<value-str>')
         if prod == 521:
             tok = self.current_token; self.eat('id')
@@ -817,7 +796,6 @@ class ASTParser:
             node = BinaryOpNode(left, op, right, op_tok)
             return self._logeq_str(node)
         elif prod == 532:
-            # FIX: added bool_exp_fold continuation (syn_parser calls bool_exp_arr)
             op_tok = self.current_token; op = self.eq_op()
             right = self.arith_fold(self.dime_ope())
             node = BinaryOpNode(left, op, right, op_tok)
@@ -830,7 +808,7 @@ class ASTParser:
             op_tok = self.current_token; op = self._logeq_op()
             right = self.bool_ope()
             node = BinaryOpNode(left, op, right, op_tok)
-            return self.bool_exp_fold(node)  # FIX: added continuation
+            return self.bool_exp_fold(node)
         return left
 
     def _parch_tail_str(self, left):
@@ -839,7 +817,7 @@ class ASTParser:
             op_tok = self.current_token; op = self.eq_op()
             rt = self.current_token; self.eat('PARCH-lit')
             node = BinaryOpNode(left, op, LiteralNode('PARCH', rt.value, rt), op_tok)
-            return self.bool_exp_fold(node)  # FIX: added continuation
+            return self.bool_exp_fold(node)
         return left
 
     def _scroll_tail_str(self, left):
@@ -849,7 +827,7 @@ class ASTParser:
             op_tok = self.current_token; op = self.eq_op()
             right = self.scroll_val()
             node = BinaryOpNode(left, op, right, op_tok)
-            return self.bool_exp_fold(node)  # FIX: added continuation
+            return self.bool_exp_fold(node)
         return left
 
     # =====================================================================
@@ -960,8 +938,8 @@ class ASTParser:
             val = self.dime_val()
             return CompoundAssignNode(nt.value, tk, i1, i2, m, op, val, ot)
 
+    # RHS of assignment — mirrors value() with as-context tails.
     def value_as(self):
-        """RHS of assignment — mirrors value() with as-context tails."""
         prod = self.get_production('<value-as>')
         if prod == 572:
             tok = self.current_token; self.eat('id')
@@ -1000,7 +978,6 @@ class ASTParser:
             node = BinaryOpNode(left, op, right, op_tok)
             return self._logeq_as(node)
         elif prod == 583:
-            # FIX: added bool_exp_fold continuation (syn_parser calls bool_exp_ret)
             op_tok = self.current_token; op = self.eq_op()
             right = self.arith_fold(self.dime_ope())
             node = BinaryOpNode(left, op, right, op_tok)
@@ -1022,7 +999,7 @@ class ASTParser:
             op_tok = self.current_token; op = self.eq_op()
             rt = self.current_token; self.eat('PARCH-lit')
             node = BinaryOpNode(left, op, LiteralNode('PARCH', rt.value, rt), op_tok)
-            return self.bool_exp_fold(node)  # FIX: added continuation
+            return self.bool_exp_fold(node)
         return left
 
     def _scroll_tail_as(self, left):
@@ -1032,7 +1009,7 @@ class ASTParser:
             op_tok = self.current_token; op = self.eq_op()
             right = self.scroll_val()
             node = BinaryOpNode(left, op, right, op_tok)
-            return self.bool_exp_fold(node)  # FIX: added continuation
+            return self.bool_exp_fold(node)
         return left
 
     def arith_assign_op(self):
@@ -1249,23 +1226,14 @@ class ASTParser:
         return HoistNode(inits, cond, updates, body, None, tok)
 
     def hoist_init(self):
-        """Parse HOIST initializer(s).
-
-        Now uses coin_val() instead of eating a bare COIN-lit, so the
-        init value can be a variable, array element, struct member,
-        function call, or arithmetic expression — as long as the
-        overall type is COIN.
-        """
         prod = self.get_production('<hoist-init>')
         inits = []
         if prod == 644:
-            # COIN id = <coin-val> ...
             self.eat('COIN'); nt = self.current_token; self.eat('id')
             self.eat('='); val = self.coin_val()
             inits.append(HoistInitNode(True, nt.value, val, nt))
             inits.extend(self.init1_mult())
         elif prod == 645:
-            # id [arr_str] = <coin-val> ...
             nt = self.current_token; self.eat('id')
             if self.current_token and self.current_token.type in ('{', '$'):
                 self.arr_str()
@@ -1274,8 +1242,8 @@ class ASTParser:
             inits.extend(self.init2_mult())
         return inits  # prod 646: λ
 
+    # Multiple new-variable HOIST inits: , id = <coin-val> ...
     def init1_mult(self):
-        """Multiple new-variable HOIST inits: , id = <coin-val> ..."""
         inits = []
         while self.get_production('<init1-mult>') == 647:
             self.eat(','); nt = self.current_token; self.eat('id')
@@ -1283,8 +1251,8 @@ class ASTParser:
             inits.append(HoistInitNode(True, nt.value, val, nt))
         return inits
 
+    # Multiple existing-variable HOIST inits: , id [arr_str] = <coin-val> ...
     def init2_mult(self):
-        """Multiple existing-variable HOIST inits: , id [arr_str] = <coin-val> ..."""
         inits = []
         while self.get_production('<init2-mult>') == 649:
             self.eat(','); nt = self.current_token; self.eat('id')
@@ -1447,7 +1415,6 @@ class ASTParser:
         return left
 
     def _exp_shared(self, left):
-        """Shared exp handler for id/grouped expressions in var/as/str contexts."""
         prod = self.get_production('<exp>')
         if prod == 382:
             left = self.arith_fold(left); return self._releq_var(left)
@@ -1549,7 +1516,6 @@ class ASTParser:
             right = self.arith_fold(self.dime_ope())
             return self._logeq_grp(BinaryOpNode(left, op, right, op_tok))
         elif prod == 421:
-            # FIX: added _bool_exp_grp continuation (syn_parser calls bool_exp_grp)
             op_tok = self.current_token; op = self.eq_op()
             right = self.arith_fold(self.dime_ope())
             node = BinaryOpNode(left, op, right, op_tok)
@@ -1710,10 +1676,6 @@ class ASTParser:
         return self.dime_val()
 
     def _dime_atom(self):
-        """Parse a single atomic term without arith continuation.
-        Used by arith_fold so that a - b - c stays left-associative:
-        arith_fold consumes one atom at a time instead of letting
-        dime_val() greedily consume the entire right-hand chain."""
         prod = self.get_production('<dime-val>')
         tok = self.current_token
         if prod == 68:
@@ -1773,7 +1735,6 @@ class ASTParser:
         return base
 
     def scroll_concat_fold(self, left):
-        """& concat fold — produces StringConcatNode."""
         if self.current_token and self.current_token.type == '&':
             tok = self.current_token; operands = [left]
             while self.current_token and self.current_token.type == '&':
@@ -1806,12 +1767,10 @@ class ASTParser:
     # ── Boolean expressions ──────────────────────────────────────────────
 
     def bool_val(self):
-        """Bool value entry — used in init/general contexts."""
         left = self.bool_ope()
         return self.bool_exp_fold(left)
 
     def bool_grp_val(self):
-        """Bool value in condition context — uses grp PREDICT entries."""
         left = self.bool_grp_ope()
         return self._bool_exp_grp(left)
 
@@ -1878,7 +1837,6 @@ class ASTParser:
         return left
 
     def bool_ope(self):
-        """Same as bool_grp_ope — AST structure is identical."""
         return self.bool_grp_ope()
 
     def _bool_literal(self):
@@ -1907,7 +1865,6 @@ class ASTParser:
             return UnaryOpNode(op, operand, op_tok)
 
     def bool_exp_fold(self, left):
-        """Fold && || bool_val chains."""
         prod = self.get_production('<bool-exp>')
         if prod == 227:
             op_tok = self.current_token; op = self.log_op()

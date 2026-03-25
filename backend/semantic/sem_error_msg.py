@@ -1,18 +1,5 @@
 # =============================================================================
 # sem_error_msg.py — SeaStack Semantic Error Handler
-#
-# Centralizes all semantic error message construction.
-# Each method corresponds to one semantic error category and returns a
-# fully-formed error dict ready to append to SemanticAnalyzer.errors.
-#
-# Error dict schema:
-#   {
-#     'line':       int | '?',
-#     'col':        int | '?',
-#     'error_type': str,          ← category label shown in the UI header
-#     'message':    str,          ← full human-readable description
-#     'actual_line': str,         ← trimmed source line for context
-#   }
 # =============================================================================
 
 
@@ -23,13 +10,11 @@ class SemanticErrorHandler:
         self._lines = source_code.split('\n') if source_code else []
 
     # =========================================================================
-    # INTERNAL HELPERS
+    # HELPERS
     # =========================================================================
 
+    # Return the raw source line at line_num
     def _get_line_content(self, line_num) -> str:
-        """Return the raw source line at line_num (1-indexed), or ''.
-        The frontend strips leading spaces and uses the raw length to compute
-        the caret offset, so we must not pre-strip here."""
         try:
             ln = int(line_num) - 1
             if 0 <= ln < len(self._lines):
@@ -38,8 +23,8 @@ class SemanticErrorHandler:
             pass
         return ""
 
+    # Construct the standard error dict from a token + category + message.
     def _build(self, token, error_type: str, message: str) -> dict:
-        """Construct the standard error dict from a token + category + message."""
         line = getattr(token, 'line', '?')
         col  = getattr(token, 'col',  '?')
         actual_line = ""
@@ -64,9 +49,8 @@ class SemanticErrorHandler:
             f"Variable '{name}' has not been declared."
         )
 
+    # For undeclared variables found in a specific context (ASK target, HOIST init/update).
     def undeclared_variable_in_context(self, token, name: str, context: str) -> dict:
-        """For undeclared variables found in a specific context (ASK target,
-        HOIST init/update).  context e.g. 'ASK target', 'HOIST init'."""
         return self._build(
             token,
             'Undeclared Variable',
@@ -148,9 +132,8 @@ class SemanticErrorHandler:
             f"LOCKE constant '{name}' is already declared in this scope."
         )
 
+    # Generic duplicate for identifiers that conflict across kinds (e.g. a struct name clashing with a variable)
     def duplicate_identifier(self, token, name: str) -> dict:
-        """Generic duplicate for identifiers that conflict across kinds
-        (e.g. a struct name clashing with a variable)."""
         return self._build(
             token,
             'Duplicate Declaration',
@@ -257,8 +240,7 @@ class SemanticErrorHandler:
     # CATEGORY 6 — TYPE MISMATCH
     # =========================================================================
 
-    def type_mismatch_init(self, token, var_name: str,
-                           declared_type: str, actual_type: str) -> dict:
+    def type_mismatch_init(self, token, var_name: str, declared_type: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Type Mismatch',
@@ -267,8 +249,7 @@ class SemanticErrorHandler:
             f"Expected '{declared_type}', got '{actual_type}'."
         )
 
-    def type_mismatch_assign(self, token, target_label: str,
-                             target_type: str, value_type: str) -> dict:
+    def type_mismatch_assign(self, token, target_label: str, target_type: str, value_type: str) -> dict:
         return self._build(
             token,
             'Type Mismatch',
@@ -276,9 +257,7 @@ class SemanticErrorHandler:
             f"(declared as '{target_type}')."
         )
 
-    def type_mismatch_array_element(self, token, arr_name: str,
-                                    index_str: str,
-                                    expected_type: str, actual_type: str) -> dict:
+    def type_mismatch_array_element(self, token, arr_name: str, index_str: str, expected_type: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Type Mismatch',
@@ -286,9 +265,7 @@ class SemanticErrorHandler:
             f"but the array is declared as '{expected_type}'."
         )
 
-    def type_mismatch_struct_member(self, token, member_name: str,
-                                    struct_name: str,
-                                    expected_type: str, actual_type: str) -> dict:
+    def type_mismatch_struct_member(self, token, member_name: str, struct_name: str, expected_type: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Type Mismatch',
@@ -296,8 +273,7 @@ class SemanticErrorHandler:
             f"'{expected_type}', but got '{actual_type}'."
         )
 
-    def type_mismatch_return(self, token, func_name: str,
-                             declared_type: str, actual_type: str) -> dict:
+    def type_mismatch_return(self, token, func_name: str, declared_type: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Type Mismatch',
@@ -305,8 +281,7 @@ class SemanticErrorHandler:
             f"but the BACK expression has type '{actual_type}'."
         )
 
-    def type_mismatch_hoist_init(self, token, var_name: str,
-                                  actual_type: str) -> dict:
+    def type_mismatch_hoist_init(self, token, var_name: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Type Mismatch',
@@ -314,8 +289,7 @@ class SemanticErrorHandler:
             f"but got '{actual_type}'."
         )
 
-    def type_mismatch_hoist_var(self, token, var_name: str,
-                                 actual_type: str) -> dict:
+    def type_mismatch_hoist_var(self, token, var_name: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Type Mismatch',
@@ -327,9 +301,7 @@ class SemanticErrorHandler:
     # CATEGORY 7 — INVALID OPERAND TYPE
     # =========================================================================
 
-    def invalid_operand_binary(self, token, operator: str,
-                               side: str, actual_type: str) -> dict:
-        """side: 'left' or 'right'"""
+    def invalid_operand_binary(self, token, operator: str, side: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -337,8 +309,7 @@ class SemanticErrorHandler:
             f"but the {side} operand is '{actual_type}'."
         )
 
-    def invalid_operand_relational(self, token, operator: str,
-                                   side: str, actual_type: str) -> dict:
+    def invalid_operand_relational(self, token, operator: str, side: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -346,8 +317,7 @@ class SemanticErrorHandler:
             f"but the {side} operand is '{actual_type}'."
         )
 
-    def invalid_operand_logical(self, token, operator: str,
-                                side: str, actual_type: str) -> dict:
+    def invalid_operand_logical(self, token, operator: str, side: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -369,8 +339,7 @@ class SemanticErrorHandler:
             f"Operator '{operator}' requires a BOOL operand, but got '{actual_type}'."
         )
 
-    def invalid_operand_unary_stmt(self, token, operator: str,
-                                   var_name: str, actual_type: str) -> dict:
+    def invalid_operand_unary_stmt(self, token, operator: str, var_name: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -378,8 +347,7 @@ class SemanticErrorHandler:
             f"but '{var_name}' is '{actual_type}'."
         )
 
-    def incompatible_comparison(self, token, operator: str,
-                                left_type: str, right_type: str) -> dict:
+    def incompatible_comparison(self, token, operator: str, left_type: str, right_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -387,8 +355,7 @@ class SemanticErrorHandler:
             f"using '{operator}'. Both operands must be the same type."
         )
 
-    def compound_assign_not_numeric(self, token, operator: str,
-                                    label: str, actual_type: str) -> dict:
+    def compound_assign_not_numeric(self, token, operator: str, label: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -396,8 +363,7 @@ class SemanticErrorHandler:
             f"numeric types, but '{label}' is '{actual_type}'."
         )
 
-    def compound_assign_rhs_not_numeric(self, token, operator: str,
-                                         actual_type: str) -> dict:
+    def compound_assign_rhs_not_numeric(self, token, operator: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -405,8 +371,7 @@ class SemanticErrorHandler:
             f"but got '{actual_type}'."
         )
 
-    def hoist_update_unary_not_coin(self, token, operator: str,
-                                     var_name: str, actual_type: str) -> dict:
+    def hoist_update_unary_not_coin(self, token, operator: str, var_name: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -414,8 +379,7 @@ class SemanticErrorHandler:
             f"but '{var_name}' is '{actual_type}'."
         )
 
-    def hoist_update_compound_not_numeric(self, token,
-                                           var_name: str, actual_type: str) -> dict:
+    def hoist_update_compound_not_numeric(self, token, var_name: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Invalid Operand Type',
@@ -434,8 +398,7 @@ class SemanticErrorHandler:
     # CATEGORY 8 — ARRAY INDEX
     # =========================================================================
 
-    def array_index_not_coin(self, token, arr_name: str,
-                              idx_pos: int, actual_type: str) -> dict:
+    def array_index_not_coin(self, token, arr_name: str, idx_pos: int, actual_type: str) -> dict:
         pos_label = {0: 'first', 1: 'second'}.get(idx_pos, f'index {idx_pos}')
         return self._build(
             token,
@@ -444,8 +407,7 @@ class SemanticErrorHandler:
             f"but the {pos_label} index is '{actual_type}'."
         )
 
-    def array_index_out_of_bounds(self, token, arr_name: str,
-                                   dim_label: str, index: int, size: int) -> dict:
+    def array_index_out_of_bounds(self, token, arr_name: str, dim_label: str, index: int, size: int) -> dict:
         return self._build(
             token,
             'Array Index Out of Bounds',
@@ -453,8 +415,7 @@ class SemanticErrorHandler:
             f"Declared size is {size} (valid range: 0–{size - 1})."
         )
 
-    def array_init_too_many_rows(self, token, arr_name: str,
-                                  given: int, declared: int) -> dict:
+    def array_init_too_many_rows(self, token, arr_name: str, given: int, declared: int) -> dict:
         return self._build(
             token,
             'Array Bounds Exceeded',
@@ -462,8 +423,7 @@ class SemanticErrorHandler:
             f"but the array was declared with {declared} row(s)."
         )
 
-    def array_init_row_too_long(self, token, arr_name: str,
-                                 row: int, given: int, declared: int) -> dict:
+    def array_init_row_too_long(self, token, arr_name: str, row: int, given: int, declared: int) -> dict:
         return self._build(
             token,
             'Array Bounds Exceeded',
@@ -471,8 +431,7 @@ class SemanticErrorHandler:
             f"but the declared column size is {declared}."
         )
 
-    def array_init_too_many_elements(self, token, arr_name: str,
-                                      given: int, declared: int) -> dict:
+    def array_init_too_many_elements(self, token, arr_name: str, given: int, declared: int) -> dict:
         return self._build(
             token,
             'Array Bounds Exceeded',
@@ -480,8 +439,7 @@ class SemanticErrorHandler:
             f"but the array was declared with size {declared}."
         )
 
-    def ask_array_index_not_coin(self, token, var_name: str,
-                                  idx_pos: int, actual_type: str) -> dict:
+    def ask_array_index_not_coin(self, token, var_name: str, idx_pos: int, actual_type: str) -> dict:
         pos_label = {0: 'first', 1: 'second'}.get(idx_pos, f'index {idx_pos}')
         return self._build(
             token,
@@ -497,8 +455,7 @@ class SemanticErrorHandler:
             f"SCROLL character index must be COIN, but got '{actual_type}'."
         )
 
-    def scroll_char_index_out_of_bounds(self, token, index: int,
-                                         length: int) -> dict:
+    def scroll_char_index_out_of_bounds(self, token, index: int, length: int) -> dict:
         return self._build(
             token,
             'Array Index Out of Bounds',
@@ -532,8 +489,7 @@ class SemanticErrorHandler:
             f"Struct '{struct_type}' has no member '{member_name}'."
         )
 
-    def struct_too_many_inits(self, token, struct_type: str,
-                               n_members: int, n_given: int) -> dict:
+    def struct_too_many_inits(self, token, struct_type: str, n_members: int, n_given: int) -> dict:
         return self._build(
             token,
             'Struct Init Error',
@@ -552,8 +508,7 @@ class SemanticErrorHandler:
     # CATEGORY 10 — FUNCTION CALLS
     # =========================================================================
 
-    def arg_count_mismatch(self, token, func_name: str,
-                            expected: int, actual: int) -> dict:
+    def arg_count_mismatch(self, token, func_name: str, expected: int, actual: int) -> dict:
         return self._build(
             token,
             'Argument Count Mismatch',
@@ -561,8 +516,7 @@ class SemanticErrorHandler:
             f"but {actual} were given."
         )
 
-    def arg_type_mismatch(self, token, func_name: str, arg_pos: int,
-                           expected_type: str, actual_type: str) -> dict:
+    def arg_type_mismatch(self, token, func_name: str, arg_pos: int, expected_type: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Argument Type Mismatch',
@@ -635,7 +589,6 @@ class SemanticErrorHandler:
     # =========================================================================
 
     def condition_not_bool(self, token, construct: str, actual_type: str) -> dict:
-        """construct: e.g. 'LOOK', 'DROPLOOK', 'HEAVE', 'HAUL-HEAVE', 'HOIST'"""
         return self._build(
             token,
             'Invalid Condition Type',
@@ -675,8 +628,7 @@ class SemanticErrorHandler:
     # CATEGORY 15 — FORMAT SPECIFIERS (ASK / ECHO)
     # =========================================================================
 
-    def ask_specifier_count_mismatch(self, token, n_specs: int,
-                                      n_targets: int) -> dict:
+    def ask_specifier_count_mismatch(self, token, n_specs: int, n_targets: int) -> dict:
         return self._build(
             token,
             'Format Specifier Mismatch',
@@ -684,9 +636,7 @@ class SemanticErrorHandler:
             f"but {n_targets} target variable(s) were given."
         )
 
-    def ask_specifier_type_mismatch(self, token, specifier: str,
-                                     expected_type: str,
-                                     var_name: str, actual_type: str) -> dict:
+    def ask_specifier_type_mismatch(self, token, specifier: str, expected_type: str, var_name: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Format Specifier Mismatch',
@@ -694,8 +644,7 @@ class SemanticErrorHandler:
             f"but target '{var_name}' is '{actual_type}'."
         )
 
-    def echo_specifier_count_mismatch(self, token, n_specs: int,
-                                       n_args: int) -> dict:
+    def echo_specifier_count_mismatch(self, token, n_specs: int, n_args: int) -> dict:
         return self._build(
             token,
             'Format Specifier Mismatch',
@@ -703,9 +652,7 @@ class SemanticErrorHandler:
             f"but {n_args} argument(s) were given."
         )
 
-    def echo_specifier_type_mismatch(self, token, specifier: str,
-                                      expected_type: str,
-                                      actual_type: str) -> dict:
+    def echo_specifier_type_mismatch(self, token, specifier: str, expected_type: str, actual_type: str) -> dict:
         return self._build(
             token,
             'Format Specifier Mismatch',
@@ -717,8 +664,8 @@ class SemanticErrorHandler:
     # CATEGORY 16 — INTERNAL / FALLBACK
     # =========================================================================
 
+    # Used by _visit_unknown — should never appear in normal operation.
     def internal_no_visitor(self, node_class_name: str) -> dict:
-        """Used by _visit_unknown — should never appear in normal operation."""
         return {
             'line':        '?',
             'col':         '?',
