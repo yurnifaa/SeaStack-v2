@@ -27,7 +27,7 @@ class Identifiers:
                 self.identifier_table[result] = f"id{len(self.identifier_table) + 1}"
 
             token_type = self.identifier_table[result]
-            return Token(token_type, result, line, col - 1)
+            return Token(token_type, result, self.token_start_line, self.token_start_col)
 
         return self.error()
     

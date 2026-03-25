@@ -29,7 +29,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs121(self): return Token("+", self.current_token_text(), self.line, self.col - 1)
+    def rs121(self): return Token("+", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # INCREMENT '+#'
     def rs122(self):
@@ -38,7 +38,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs123(self): return Token("+#", self.current_token_text(), self.line, self.col - 1)
+    def rs123(self): return Token("+#", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # ADD ASSIGN '+='
     def rs124(self):
@@ -47,7 +47,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs125(self): return Token("+=", self.current_token_text(), self.line, self.col - 1)
+    def rs125(self): return Token("+=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # SUBTRACT '-'
     def rs126(self):
@@ -61,7 +61,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs127(self): return Token("-", self.current_token_text(), self.line, self.col - 1)
+    def rs127(self): return Token("-", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # DECREMENT '-#'
     def rs128(self):
@@ -70,7 +70,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs129(self): return Token("-#", self.current_token_text(), self.line, self.col - 1)
+    def rs129(self): return Token("-#", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # SUBTRACT ASSIGN '-='
     def rs130(self):
@@ -79,7 +79,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs131(self): return Token("-=", self.current_token_text(), self.line, self.col - 1)
+    def rs131(self): return Token("-=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # NEGATIVE DECIMAL '-0.'
     def rs132(self):
@@ -96,7 +96,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs134(self): return Token("*", self.current_token_text(), self.line, self.col - 1)
+    def rs134(self): return Token("*", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # MULTIPLY ASSIGN '*='
     def rs135(self):
@@ -105,7 +105,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs136(self): return Token("*=", self.current_token_text(), self.line, self.col - 1)
+    def rs136(self): return Token("*=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # DIVIDE '/'
     def rs137(self):
@@ -115,7 +115,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs138(self): return Token("/", self.current_token_text(), self.line, self.col - 1)
+    def rs138(self): return Token("/", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # DIVIDE ASSIGN '/='
     def rs139(self):
@@ -124,7 +124,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs140(self): return Token("/=", self.current_token_text(), self.line, self.col - 1)
+    def rs140(self): return Token("/=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # MODULO '%'
     def rs141(self):
@@ -134,7 +134,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs142(self): return Token("%", self.current_token_text(), self.line, self.col - 1)
+    def rs142(self): return Token("%", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # MODULO ASSIGN '%='
     def rs143(self):
@@ -143,7 +143,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs144(self): return Token("%=", self.current_token_text(), self.line, self.col - 1)
+    def rs144(self): return Token("%=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # EXPONENT '^'
     def rs145(self):
@@ -153,7 +153,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs146(self): return Token("^", self.current_token_text(), self.line, self.col - 1)
+    def rs146(self): return Token("^", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # EXPONENT ASSIGN '^'
     def rs147(self):
@@ -162,7 +162,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs148(self): return Token("^=", self.current_token_text(), self.line, self.col - 1)
+    def rs148(self): return Token("^=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # ASSIGN '='
     def rs149(self):
@@ -172,7 +172,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs150(self): return Token("=", self.current_token_text(), self.line, self.col - 1)
+    def rs150(self): return Token("=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # EQUAL '=='
     def rs151(self):
@@ -181,7 +181,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs152(self): return Token("==", self.current_token_text(), self.line, self.col - 1)
+    def rs152(self): return Token("==", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # NOT '!'
     def rs153(self):
@@ -193,7 +193,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs154(self): return Token("!", self.current_token_text(), self.line, self.col - 1)
+    def rs154(self): return Token("!", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # TERMINATOR '!!'
     def rs155(self):
@@ -202,7 +202,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs156(self): return Token("!!", self.current_token_text(), self.line, self.col - 1)
+    def rs156(self): return Token("!!", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # DOUBLE NOT '!#'
     def rs157(self):
@@ -211,7 +211,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs158(self): return Token("!#", self.current_token_text(), self.line, self.col - 1)
+    def rs158(self): return Token("!#", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # NOT EQUAL '!='
     def rs159(self):
@@ -220,7 +220,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs160(self): return Token("!=", self.current_token_text(), self.line, self.col - 1)
+    def rs160(self): return Token("!=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # LESS THAN '<'
     def rs161(self):
@@ -230,7 +230,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs162(self): return Token("<", self.current_token_text(), self.line, self.col - 1)
+    def rs162(self): return Token("<", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # LESS or EQUAL '<='
     def rs163(self):
@@ -239,7 +239,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs164(self): return Token("<=", self.current_token_text(), self.line, self.col - 1)
+    def rs164(self): return Token("<=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # GREATER THAN '>'
     def rs165(self):
@@ -249,7 +249,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs166(self): return Token(">", self.current_token_text(), self.line, self.col - 1)
+    def rs166(self): return Token(">", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # GREATER or EQUAL '>='
     def rs167(self):
@@ -258,7 +258,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs168(self): return Token(">=", self.current_token_text(), self.line, self.col - 1)
+    def rs168(self): return Token(">=", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # CONCATENATE '&'
     def rs169(self):
@@ -268,7 +268,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs170(self): return Token("&", self.current_token_text(), self.line, self.col - 1)
+    def rs170(self): return Token("&", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # AND '&&'
     def rs171(self):
@@ -277,7 +277,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs172(self): return Token("&&", self.current_token_text(), self.line, self.col - 1)
+    def rs172(self): return Token("&&", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # OR '|'
     def rs173(self):
@@ -291,7 +291,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs175(self): return Token("||", self.current_token_text(), self.line, self.col - 1)
+    def rs175(self): return Token("||", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # COLON ':'
     def rs176(self):
@@ -300,7 +300,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs177(self): return Token(":", self.current_token_text(), self.line, self.col - 1)
+    def rs177(self): return Token(":", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # ADDRESS '@'
     def rs178(self):
@@ -309,7 +309,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs179(self): return Token("@", self.current_token_text(), self.line, self.col - 1)
+    def rs179(self): return Token("@", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # MEMBER '$'
     def rs180(self):
@@ -318,7 +318,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs181(self): return Token("$", self.current_token_text(), self.line, self.col - 1)
+    def rs181(self): return Token("$", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # COMMA ','
     def rs182(self):
@@ -327,7 +327,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs183(self): return Token(",", self.current_token_text(), self.line, self.col - 1)
+    def rs183(self): return Token(",", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # OPEN CURLY BRACKET '{'
     def rs184(self):
@@ -336,7 +336,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs185(self): return Token("{", self.current_token_text(), self.line, self.col - 1)
+    def rs185(self): return Token("{", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # CLOSED CURLY BRACKET '}'
     def rs186(self):
@@ -345,7 +345,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs187(self): return Token("}", self.current_token_text(), self.line, self.col - 1)
+    def rs187(self): return Token("}", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # OPEN PARENTHESIS '('
     def rs188(self):
@@ -354,7 +354,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs189(self): return Token("(", self.current_token_text(), self.line, self.col - 1)
+    def rs189(self): return Token("(", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # CLOSED PARENTHESIS ')'
     def rs190(self):
@@ -363,7 +363,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs191(self): return Token(")", self.current_token_text(), self.line, self.col - 1)
+    def rs191(self): return Token(")", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # OPEN SQUARE BRACKET '['
     def rs192(self):
@@ -372,7 +372,7 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs193(self): return Token("[", self.current_token_text(), self.line, self.col - 1)
+    def rs193(self): return Token("[", self.current_token_text(), self.token_start_line, self.token_start_col)
 
     # CLOSED SQUARE BRACKET ']'
     def rs194(self):
@@ -381,4 +381,4 @@ class Symbols(LexerErrors):
 
         return self.error()
 
-    def rs195(self): return Token("]", self.current_token_text(), self.line, self.col - 1)
+    def rs195(self): return Token("]", self.current_token_text(), self.token_start_line, self.token_start_col)

@@ -67,24 +67,19 @@ class Lexer(
         while self.current_char is not None: 
             self.mark_token_start()          
             tok = self.state0()              
-            if tok:                       
+            if tok:
                 self.tokens.append(tok)
         return self.tokens, self.errors
 
 
-    # =======================
-    # DELIMETER HELPERS
-    # =======================
-
+    # validate delimeter
     def _is_valid_delimiter(self, delim_set_name):  
         char = self.current_char
 
-        if char is None or char.isspace():
-            return True
+        if char is None: return True
 
         delims = Delimiters.delims()
-        if delim_set_name in delims:
-            return char in delims[delim_set_name]
+        if delim_set_name in delims: return char in delims[delim_set_name]
 
         return False
 

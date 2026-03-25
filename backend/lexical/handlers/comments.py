@@ -22,7 +22,7 @@ class Comments(LexerErrors):
 
     # tokenize single-line comment
     def cm298(self):
-        self.advance()  
+        if self.current_char is not None: self.advance()  
         return Token(
             "single-comment",
             self.current_token_text(),

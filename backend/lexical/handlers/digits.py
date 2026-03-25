@@ -20,12 +20,12 @@ class Digits(LexerErrors):
     # finalize COIN-lit or DIME-lit token
     def finalize_coin(self):
         if self._is_valid_delimiter("DIGIT_DELIM"):
-            return Token("COIN-lit", self.current_token_text(), self.line, self.col - 1)
+            return Token("COIN-lit", self.current_token_text(), self.token_start_line, self.token_start_col)
         return self.error()
 
     def finalize_dime(self):
         if self._is_valid_delimiter("DIGIT_DELIM"):
-            return Token("DIME-lit", self.current_token_text(), self.line, self.col - 1)
+            return Token("DIME-lit", self.current_token_text(), self.token_start_line, self.token_start_col)
         return self.error()
 
 

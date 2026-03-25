@@ -182,7 +182,7 @@ class ReservedWords:
         if char == 'L': return self.rw56()
 
         valid = Delimiters.delims()["WHITESPACE"] | set('[')
-        return self.check_rwdelim(valid, self.rw55)
+        if char in valid or char is None: return self.rw55()
     
     def rw55(self): return self.finalize_rw("DROP")
 
