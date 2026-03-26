@@ -381,7 +381,7 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
             message = ("Invalid input: a decimal number (DIME) was expected but what you "
                        "entered cannot be converted. Make sure you type a valid number.")
         else:
-            message = f"Invalid value encountered: {exc_msg}"
+            message = f"{exc_msg}"
     elif isinstance(exc, OverflowError):
         error_type = "Overflow Error"
         message    = "Numeric result is too large. Check for very large exponents or multiplication values."
