@@ -536,7 +536,10 @@ class IRGenerator:
 
     def visit_ArrayAccessNode(self, node):
         t = self._new_temp_typed(getattr(node, 'resolved_type', None))
-        if len(node.indices) == 1:
+        if getattr(node, 'resolved_type', None) == 'SCROLL':
+            idx = self._emit_expr(node.indices[0])
+            self.ir.emit(SCROLL_CHAR, node.name, idx, t)
+        elif len(node.indices) == 1:
             idx = self._emit_expr(node.indices[0])
             self.ir.emit(LOAD_ARR, node.name, idx, t)
         else:

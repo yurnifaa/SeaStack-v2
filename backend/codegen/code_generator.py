@@ -234,7 +234,7 @@ class CodeGenerator:
         # the last character of a SCROLL string is always '\x00'.
         self._emit("def _ss_scroll_char(s, idx):")
         self._indent_inc()
-        self._emit("if idx == len(s): return '\\x00'")
+        self._emit("if idx < 0 or idx >= len(s): return '\\x00'")
         self._emit("return s[idx]")
         self._indent_dec()
         self._emit_blank()
@@ -750,8 +750,11 @@ class CodeGenerator:
                 spec = specs[i] if i < len(specs) else None
                 # Overflow guard: reject values that exceed display limits before output
                 if spec in ('COIN', 'DIME'):
-                    self._emit(f"_ss_check_overflow({v}, {repr(spec)}, 'output')")
-                if i < len(specs) and specs[i] == 'BOOL':
+                    if i < len(specs) and specs[i] == 'BOOL':
+                        val_strs.append(f"_ss_display({v})")
+                    else:
+                        val_strs.append(f"_ss_check_overflow({v}, {repr(spec)}, 'output')")
+                elif i < len(specs) and specs[i] == 'BOOL':
                     val_strs.append(f"_ss_display({v})")
                 else:
                     val_strs.append(f"{v}")
@@ -994,9 +997,6 @@ class StructuralCodeGenerator:
         self._emit("# ═══ SeaStack → Python (Generated Code) ═══")
         self._emit("import sys, math")
         self._emit_blank()
-        # Runtime line/column tracking: updated before every potentially-failing statement.
-        # The execution host (server) reads _ss_line / _ss_col when catching exceptions
-        # to report the correct SeaStack source location.
         self._emit("_ss_line = 0")
         self._emit("_ss_col  = 0")
         self._emit_blank()
@@ -1051,12 +1051,9 @@ class StructuralCodeGenerator:
         self._emit("return str(val)")
         self._dec()
         self._emit_blank()
-        # SCROLL character access: index at len(s) returns the SeaStack null
-        # terminator '\x00', satisfying the rule that the char immediately after
-        # the last character of a SCROLL string must equal '\x00'.
         self._emit("def _ss_scroll_char(s, idx):")
         self._inc()
-        self._emit("if idx == len(s): return '\\x00'")
+        self._emit("if idx < 0 or idx >= len(s): return '\\x00'")
         self._emit("return s[idx]")
         self._dec()
         self._emit_blank()
@@ -1064,8 +1061,6 @@ class StructuralCodeGenerator:
         # Enforces SeaStack numeric limits at runtime:
         #   COIN : integer part must not exceed 16 digits
         #   DIME : integer part ≤ 16 digits AND decimal part ≤ 8 digits
-        # Uses Python's Decimal(repr(val)) so that e.g. 0.1 is seen as 1 decimal
-        # digit (not the full 17-digit IEEE-754 expansion).
         self._emit("def _ss_check_overflow(val, dtype, context='value'):")
         self._inc()
         self._emit("from decimal import Decimal as _D")
@@ -1090,9 +1085,10 @@ class StructuralCodeGenerator:
         self._emit("_sign, _digits, _exp = _D(repr(abs(float(val)))).as_tuple()")
         self._emit("if _exp < -8:")
         self._inc()
-        self._emit("raise OverflowError(f'DIME {context} decimal part exceeds the 8-digit limit.')")
+        self._emit("val = round(val, 8)")
         self._dec()
         self._dec()
+        self._emit("return val")
         self._dec()
         self._emit_blank()
         self._emit("def _ss_check_range(val, lo, hi, var_name='value'):")
@@ -1454,7 +1450,7 @@ class StructuralCodeGenerator:
                 self._emit(f"{q.result} = {expr}")
                 rtype = self._resolve_operand_type(q.result)
                 if rtype in ('COIN', 'DIME'):
-                    self._emit(f"_ss_check_overflow({q.result}, {repr(rtype)}, 'result')")
+                    self._emit(f"{q.result} = _ss_check_overflow({q.result}, {repr(rtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1502,7 +1498,7 @@ class StructuralCodeGenerator:
                 self._emit(f"{q.result} = {expr}")
                 rtype = self._resolve_operand_type(q.result)
                 if rtype in ('COIN', 'DIME'):
-                    self._emit(f"_ss_check_overflow({q.result}, {repr(rtype)}, 'result')")
+                    self._emit(f"{q.result} = _ss_check_overflow({q.result}, {repr(rtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1513,7 +1509,7 @@ class StructuralCodeGenerator:
                 self._emit(f"{vname} += 1")
                 vtype = self._var_types.get(q.arg1) or self.ir.temp_types.get(q.arg1)
                 if vtype in ('COIN', 'DIME'):
-                    self._emit(f"_ss_check_overflow({vname}, {repr(vtype)}, 'result')")
+                    self._emit(f"{vname} = _ss_check_overflow({vname}, {repr(vtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1524,7 +1520,7 @@ class StructuralCodeGenerator:
                 self._emit(f"{vname} -= 1")
                 vtype = self._var_types.get(q.arg1) or self.ir.temp_types.get(q.arg1)
                 if vtype in ('COIN', 'DIME'):
-                    self._emit(f"_ss_check_overflow({vname}, {repr(vtype)}, 'result')")
+                    self._emit(f"{vname} = _ss_check_overflow({vname}, {repr(vtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1539,7 +1535,7 @@ class StructuralCodeGenerator:
                 self._emit(f"{name} {op_str} {val}")
                 vtype = self._var_types.get(q.result) or self.ir.temp_types.get(q.result)
                 if vtype in ('COIN', 'DIME'):
-                    self._emit(f"_ss_check_overflow({name}, {repr(vtype)}, 'result')")
+                    self._emit(f"{name} = _ss_check_overflow({name}, {repr(vtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1662,6 +1658,7 @@ class StructuralCodeGenerator:
                     loop_body = []
                     j = i + 1
                     end_label = None
+                    is_do_while = False
                     while j < len(instrs):
                         if instrs[j].op == JUMP and instrs[j].arg1 == label_name:
                             # This is the back-edge — loop ends here
@@ -1690,6 +1687,7 @@ class StructuralCodeGenerator:
                             self._dec()
                             emitted_any = True
                             i = j
+                            is_do_while = True
                             break
                         loop_body.append(instrs[j])
                         j += 1
@@ -1698,7 +1696,7 @@ class StructuralCodeGenerator:
                         i += 1
                         continue
 
-                    if instrs[j - 1].op != JUMP_TRUE or instrs[j - 1].arg2 != label_name:
+                    if not is_do_while and (instrs[j - 1].op != JUMP_TRUE or instrs[j - 1].arg2 != label_name):
                         # while-loop pattern: first check for JUMP_FALSE in body
                         # Pattern: condition_calc → JUMP_FALSE end → body
                         cond_instrs = []
@@ -1957,8 +1955,11 @@ class StructuralCodeGenerator:
                 spec = specs[i] if i < len(specs) else None
                 # Overflow guard: reject values that exceed display limits before output
                 if spec in ('COIN', 'DIME'):
-                    self._emit(f"_ss_check_overflow({v}, {repr(spec)}, 'output')")
-                if i < len(specs) and specs[i] == 'BOOL':
+                    if i < len(specs) and specs[i] == 'BOOL':
+                        val_strs.append(f"_ss_display({v})")
+                    else:
+                        val_strs.append(f"_ss_check_overflow({v}, {repr(spec)}, 'output')")
+                elif i < len(specs) and specs[i] == 'BOOL':
                     val_strs.append(f"_ss_display({v})")
                 else:
                     val_strs.append(str(v))
