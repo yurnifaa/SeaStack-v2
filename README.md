@@ -2,10 +2,10 @@
 A C-inspired programming language with an oceanic twist — built from scratch for automata theory and formal languages. SeaStack is a high-level programming language designed to combine structured programming principles with a thematic and engaging syntax inspired by the Ocean Voyager theme. It takes its foundation from the C language, adapting familiar constructs such as functions, loops, conditionals, and data type.  This built as part of an academic project in automata theory and formal languages, SeaStack includes its own lexer, parser, and GUI-based IDE.
 
 ### 🌕 IDE - Light Mode
-![Light Mode](frontend/public/GitHub_shots/Light_Mode2.png)
+![Light Mode](frontend/public/GitHub_shots/Light_Mode3.png)
 
 ### 🌑 IDE - Dark Mode
-![Dark Mode](frontend/public/GitHub_shots/Dark_Mode2.png)
+![Dark Mode](frontend/public/GitHub_shots/Dark_Mode3.png)
 
 ## Language Rules (to be added in the future)
 
@@ -13,19 +13,30 @@ A C-inspired programming language with an oceanic twist — built from scratch f
 ```plaintext
 SEASTACK_PROJ/
 ├── backend/
-│   ├── lexical/
-│   │   ├── handlers/
-│   │   ├── lexer_token.py
-│   │   └── lexer.py
-│   ├── syntax/
-│   │   ├── __pycache__/
-│   │   ├── __init__.py
-│   │   ├── First_Set.py
-│   │   ├── Follow_Set.py
-│   │   ├── Predict_Set.py
-│   │   └── syn_parser.py
-│   ├── README.md
-│   └── server.py
+│ ├── codegen/
+│ │ ├── code_generator.py
+│ │ ├── ir_generator.py
+│ │ ├── optimizer.py
+│ │ └── ir_instructions.py
+│ ├── lexical/
+│ │ ├── handlers/
+│ │ ├── lexer_token.py
+│ │ ├── lexer_errors.py
+│ │ └── lexer.py
+│ ├── semantic/
+│ │ ├── ast_nodes.py
+│ │ ├── ast_parser.py
+│ │ ├── sem_error_msg.py
+│ │ ├── symbol_table.py
+│ │ └── semantic_analyzer.py
+│ ├── syntax/
+│ │ ├── generate/
+│ │ ├── syn_error_msg.py
+│ │ ├── Predict_Set.py
+│ │ └── syn_parser.py
+│ ├── run_error_msg.py
+│ ├── README.md
+│ └── server.py
 ├── frontend/
 │   ├── .next/
 │   ├── node_modules/
@@ -49,9 +60,7 @@ SEASTACK_PROJ/
 ├── node_modules/
 ├── package-lock.json
 ├── package.json
-├── README.md
-├── sample.sea
-└── test_compiler.py
+└── README.md
  ```
 
 ## 🖥️ How to Run
@@ -87,7 +96,6 @@ npm run dev
 
 ## 👥 Contributors
 - ALISWAG, K. V. J.
-- ALTEZA, J. R. D.
 - CAYACAP, F. A. S.
 - DEL ROSARIO, J. M. A.
 - MAGAAN, F. M. V.
