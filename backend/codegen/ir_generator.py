@@ -65,6 +65,12 @@ class IRGenerator:
             return getattr(tok, 'line', None)
         return None
 
+    def _col(self, node):
+        tok = getattr(node, 'token', None)
+        if tok:
+            return getattr(tok, 'col', None)
+        return None
+
     # ── Entry Point ──────────────────────────────────────────────────────
 
     def generate(self):
@@ -95,7 +101,7 @@ class IRGenerator:
         self.ir.emit(PROGRAM_END)
 
     def visit_AhoyNode(self, node):
-        self.ir.emit(AHOY_BEGIN, comment="main function", line=self._line(node))
+        self.ir.emit(AHOY_BEGIN, comment="main function", line=self._line(node), col=self._col(node))
         for d in node.local_decls:
             self.visit(d)
         for s in node.statements:
@@ -109,29 +115,29 @@ class IRGenerator:
     def visit_ConstDeclNode(self, node):
         val_temp = self._emit_expr(node.value)
         self.ir.emit(DECL_CONST, node.name, node.dtype, val_temp,
-                     comment=f"LOCKE {node.dtype} {node.name}", line=self._line(node))
+                     comment=f"LOCKE {node.dtype} {node.name}", line=self._line(node), col=self._col(node))
 
     def visit_VarDeclNode(self, node):
         init_temp = None
         if node.init_value is not None:
             init_temp = self._emit_expr(node.init_value)
         self.ir.emit(DECL_VAR, node.name, node.dtype, init_temp,
-                     comment=f"{node.dtype} {node.name}", line=self._line(node))
+                     comment=f"{node.dtype} {node.name}", line=self._line(node), col=self._col(node))
 
     def visit_ArrayDeclNode(self, node):
         dims = tuple(node.dimensions)
         self.ir.emit(DECL_ARR, node.name, node.dtype, dims,
-                     comment=f"array {node.dtype} {node.name}{dims}", line=self._line(node))
+                     comment=f"array {node.dtype} {node.name}{dims}", line=self._line(node), col=self._col(node))
         if node.init_values is not None:
             if node.is_2d:
                 rows = []
                 for row in node.init_values:
                     row_temps = [self._emit_expr(elem) for elem in row]
                     rows.append(row_temps)
-                self.ir.emit(ARR_INIT_2D, node.name, rows, line=self._line(node))
+                self.ir.emit(ARR_INIT_2D, node.name, rows, line=self._line(node), col=self._col(node))
             else:
                 val_temps = [self._emit_expr(elem) for elem in node.init_values]
-                self.ir.emit(ARR_INIT_1D, node.name, val_temps, line=self._line(node))
+                self.ir.emit(ARR_INIT_1D, node.name, val_temps, line=self._line(node), col=self._col(node))
 
     def visit_StructDefNode(self, node):
         members = {}
@@ -142,14 +148,14 @@ class IRGenerator:
         self.ir.struct_types[node.name] = members
         self.ir.struct_orders[node.name] = order
         self.ir.emit(DECL_STRUCT_TYPE, node.name, members,
-                     comment=f"MAST {node.name}", line=self._line(node))
+                     comment=f"MAST {node.name}", line=self._line(node), col=self._col(node))
 
     def visit_MemberDeclNode(self, node):
         pass  # handled inside StructDefNode
 
     def visit_StructVarDeclNode(self, node):
         self.ir.emit(DECL_STRUCT_VAR, node.var_name, node.struct_type,
-                     comment=f"MAST {node.struct_type} {node.var_name}", line=self._line(node))
+                     comment=f"MAST {node.struct_type} {node.var_name}", line=self._line(node), col=self._col(node))
         if node.inits:
             init_dict = {}
             order = self.ir.struct_orders.get(node.struct_type, [])
@@ -166,7 +172,7 @@ class IRGenerator:
                         val_temp = self._emit_expr(init.value)
                         init_dict[order[pos]] = val_temp
                         pos += 1
-            self.ir.emit(STRUCT_INIT, node.var_name, init_dict, line=self._line(node))
+            self.ir.emit(STRUCT_INIT, node.var_name, init_dict, line=self._line(node), col=self._col(node))
 
     def visit_PositionalInitNode(self, node):
         return self._emit_expr(node.value)
@@ -185,7 +191,7 @@ class IRGenerator:
         )
         self.ir.emit(FUNC_BEGIN, node.name, node.return_type,
                      comment=f"{'ABYSS' if node.return_type == 'ABYSS' else node.return_type} {node.name}()",
-                     line=self._line(node))
+                     line=self._line(node), col=self._col(node))
         for p in node.params:
             self.ir.emit(PARAM_DECL, p.name, p.dtype)
         for d in node.local_decls:
@@ -208,19 +214,19 @@ class IRGenerator:
         val_temp = self._emit_expr(node.value)
         if node.target_kind == 'var':
             self.ir.emit(ASSIGN, val_temp, None, node.var_name,
-                         comment=f"{node.var_name} = ...", line=self._line(node))
+                         comment=f"{node.var_name} = ...", line=self._line(node), col=self._col(node))
         elif node.target_kind == 'array1d':
             idx = self._emit_expr(node.index1)
             self.ir.emit(ASSIGN_ARR, node.var_name, idx, val_temp,
-                         line=self._line(node))
+                         line=self._line(node), col=self._col(node))
         elif node.target_kind == 'array2d':
             idx1 = self._emit_expr(node.index1)
             idx2 = self._emit_expr(node.index2)
             self.ir.emit(ASSIGN_ARR2, node.var_name, (idx1, idx2), val_temp,
-                         line=self._line(node))
+                         line=self._line(node), col=self._col(node))
         elif node.target_kind == 'member':
             self.ir.emit(ASSIGN_MEMBER, node.var_name, node.member, val_temp,
-                         line=self._line(node))
+                         line=self._line(node), col=self._col(node))
 
     def visit_CompoundAssignNode(self, node):
         # Load current value of target
@@ -231,7 +237,7 @@ class IRGenerator:
         arith_op = COMPOUND_OP_MAP.get(node.operator, '+')
         ir_op = ARITH_OP_MAP.get(arith_op, ADD)
         result = self._new_temp()
-        self.ir.emit(ir_op, target_temp, val_temp, result, line=self._line(node))
+        self.ir.emit(ir_op, target_temp, val_temp, result, line=self._line(node), col=self._col(node))
         # Store back
         self._store_target(node.var_name, node.target_kind,
                            node.index1, node.index2, node.member, result)
@@ -283,7 +289,7 @@ class IRGenerator:
             }
             target_infos.append(info)
         self.ir.emit(INPUT, node.format_string, target_infos,
-                     comment="ASK", line=self._line(node))
+                     comment="ASK", line=self._line(node), col=self._col(node))
 
     def visit_AddressNode(self, node):
         pass  # handled within AskNode
@@ -291,7 +297,7 @@ class IRGenerator:
     def visit_EchoNode(self, node):
         arg_temps = [self._emit_expr(a) for a in node.args]
         self.ir.emit(OUTPUT, node.format_string, arg_temps,
-                     comment="ECHO", line=self._line(node))
+                     comment="ECHO", line=self._line(node), col=self._col(node))
 
     # ── Conditionals ─────────────────────────────────────────────────────
 
@@ -302,7 +308,7 @@ class IRGenerator:
 
         cond_temp = self._emit_expr(node.condition)
         self.ir.emit(JUMP_FALSE, cond_temp, next_label,
-                     comment="LOOK", line=self._line(node))
+                     comment="LOOK", line=self._line(node), col=self._col(node))
         for s in node.body:
             self.visit(s)
         self.ir.emit(JUMP, end_label)
@@ -487,10 +493,10 @@ class IRGenerator:
     def visit_UnaryStmtNode(self, node):
         if node.operator == '+#':
             self.ir.emit(UNARY_INC, node.var_name,
-                         comment=f"+#{node.var_name}", line=self._line(node))
+                         comment=f"+#{node.var_name}", line=self._line(node), col=self._col(node))
         elif node.operator == '-#':
             self.ir.emit(UNARY_DEC, node.var_name,
-                         comment=f"-#{node.var_name}", line=self._line(node))
+                         comment=f"-#{node.var_name}", line=self._line(node), col=self._col(node))
 
     def visit_FuncCallStmtNode(self, node):
         self._emit_expr(node.call_expr)
@@ -593,11 +599,14 @@ class IRGenerator:
         t = self._new_temp_typed(getattr(node, 'resolved_type', None))
         op = node.operator
         if op in ARITH_OP_MAP:
-            self.ir.emit(ARITH_OP_MAP[op], left_temp, right_temp, t)
+            self.ir.emit(ARITH_OP_MAP[op], left_temp, right_temp, t,
+                         line=self._line(node), col=self._col(node))
         elif op in REL_OP_MAP:
-            self.ir.emit(REL_OP_MAP[op], left_temp, right_temp, t)
+            self.ir.emit(REL_OP_MAP[op], left_temp, right_temp, t,
+                         line=self._line(node), col=self._col(node))
         elif op in LOG_OP_MAP:
-            self.ir.emit(LOG_OP_MAP[op], left_temp, right_temp, t)
+            self.ir.emit(LOG_OP_MAP[op], left_temp, right_temp, t,
+                         line=self._line(node), col=self._col(node))
         else:
             self.ir.emit(NOP, comment=f"unknown binary op: {op}")
             return left_temp
@@ -607,11 +616,14 @@ class IRGenerator:
         operand_temp = self._emit_expr(node.operand)
         t = self._new_temp_typed(getattr(node, 'resolved_type', None))
         if node.operator == '-':
-            self.ir.emit(UNARY_NEG, operand_temp, None, t)
+            self.ir.emit(UNARY_NEG, operand_temp, None, t,
+                         line=self._line(node), col=self._col(node))
         elif node.operator == '!':
-            self.ir.emit(LOG_NOT, operand_temp, None, t)
+            self.ir.emit(LOG_NOT, operand_temp, None, t,
+                         line=self._line(node), col=self._col(node))
         elif node.operator == '!#':
-            self.ir.emit(LOG_DNOT, operand_temp, None, t)
+            self.ir.emit(LOG_DNOT, operand_temp, None, t,
+                         line=self._line(node), col=self._col(node))
         else:
             return operand_temp
         return t

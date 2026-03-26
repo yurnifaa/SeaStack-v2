@@ -25,6 +25,7 @@ class Quad:
         result  – destination    (str | None)
         comment – optional human-readable note (not emitted in code)
         line    – source line number for traceability (optional)
+        col     – source column number for traceability (optional)
     """
     op: str
     arg1: Any = None
@@ -32,6 +33,7 @@ class Quad:
     result: Any = None
     comment: str = ""
     line: Optional[int] = None
+    col: Optional[int] = None
 
     def __repr__(self):
         parts = [f"{self.op:18s}"]
@@ -175,8 +177,8 @@ class IRProgram:
     func_signatures: dict = field(default_factory=dict) # name → (ret_type, [(p_dtype, p_name)])
     temp_types: dict = field(default_factory=dict)      # temp_name → dtype (e.g. '_t0' → 'COIN')
 
-    def emit(self, op, arg1=None, arg2=None, result=None, comment="", line=None):
-        q = Quad(op, arg1, arg2, result, comment, line)
+    def emit(self, op, arg1=None, arg2=None, result=None, comment="", line=None, col=None):
+        q = Quad(op, arg1, arg2, result, comment, line, col)
         self.instructions.append(q)
         return q
 

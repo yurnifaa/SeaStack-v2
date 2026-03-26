@@ -839,6 +839,33 @@ class StructuralCodeGenerator:
         if dtype == 'SCROLL': return repr(_convert_scroll_escapes(value))
         return repr(value)
 
+    def _resolve_operand_type(self, operand):
+        """Resolve the SeaStack type of an operand.
+
+        After the optimizer's constant propagation, an operand that was
+        originally a temp name (e.g. '_t5') may have been replaced with
+        a Python literal (e.g. the integer 10).  This helper checks:
+          1. Python int/bool → 'COIN'  (bool before int — bool is int subclass)
+          2. Python float    → 'DIME'
+          3. String key      → look up in _var_types, then ir.temp_types
+        """
+        if isinstance(operand, bool):
+            return 'BOOL'
+        if isinstance(operand, int):
+            return 'COIN'
+        if isinstance(operand, float):
+            return 'DIME'
+        if isinstance(operand, str):
+            # Check code-generator local type registry first
+            t = self._var_types.get(operand)
+            if t:
+                return t
+            # Fall back to the IR program's temp-type metadata
+            t = self.ir.temp_types.get(operand)
+            if t:
+                return t
+        return None
+
     # ── Preamble ─────────────────────────────────────────────────────────
 
     def _emit_preamble(self):
@@ -1014,8 +1041,7 @@ class StructuralCodeGenerator:
         col  = getattr(q, 'col',  None)
         if line is not None:
             self._emit(f"_ss_line = {line}")
-            if col is not None:
-                self._emit(f"_ss_col  = {col}")
+            self._emit(f"_ss_col  = {col if col is not None else 0}")
 
     # ── Globals ──────────────────────────────────────────────────────────
 
@@ -1116,6 +1142,7 @@ class StructuralCodeGenerator:
             # --- Simple assignment ---
             if q.op == ASSIGN:
                 if q.result:
+                    self._maybe_emit_line_tracker(q)
                     self._emit(f"{self._sanitize(q.result)} = {self._val(q.arg1)}")
                     emitted_any = True
                 i += 1
@@ -1123,6 +1150,7 @@ class StructuralCodeGenerator:
 
             # --- Declarations ---
             if q.op == DECL_VAR:
+                self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 self._var_types[q.arg1] = q.arg2
                 if q.result is not None:
@@ -1134,6 +1162,7 @@ class StructuralCodeGenerator:
                 continue
 
             if q.op == DECL_CONST:
+                self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 self._var_types[q.arg1] = q.arg2
                 self._const_names.add(q.arg1)
@@ -1143,11 +1172,11 @@ class StructuralCodeGenerator:
                 continue
 
             if q.op == DECL_ARR:
+                self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 self._var_types[q.arg1] = q.arg2
                 dims = q.result
                 default = _DEFAULT_VALUES.get(q.arg2, 'None')
-                # Validate each dimension at code-generation time (constant dims)
                 for _d in dims:
                     if isinstance(_d, int) and _d <= 0:
                         self._emit(f"raise ValueError('Invalid array size {_d} for {name!r}: dimensions must be positive integers.')")
@@ -1226,8 +1255,8 @@ class StructuralCodeGenerator:
                 py_ops = {ADD: '+', SUB: '-', MUL: '*', DIV: '/', MOD: '%', POW: '**'}
                 op = py_ops[q.op]
                 if q.op == DIV:
-                    t1 = self._var_types.get(q.arg1)
-                    t2 = self._var_types.get(q.arg2)
+                    t1 = self._resolve_operand_type(q.arg1)
+                    t2 = self._resolve_operand_type(q.arg2)
                     self._emit(f"_ss_check_div({b})")
                     if t1 == 'COIN' and t2 == 'COIN':
                         expr = f"int(({a}) / ({b}))"
@@ -1289,13 +1318,27 @@ class StructuralCodeGenerator:
                 continue
 
             if q.op == UNARY_INC:
+                self._maybe_emit_line_tracker(q)
                 self._emit(f"{self._sanitize(q.arg1)} += 1")
                 emitted_any = True
                 i += 1
                 continue
 
             if q.op == UNARY_DEC:
+                self._maybe_emit_line_tracker(q)
                 self._emit(f"{self._sanitize(q.arg1)} -= 1")
+                emitted_any = True
+                i += 1
+                continue
+
+            # --- Compound assignment (e.g. +=, -=, *=, /=, %=) ---
+            if q.op == COMPOUND_ASSIGN:
+                self._maybe_emit_line_tracker(q)
+                name = self._sanitize(q.result)
+                py_ops = {'+': '+=', '-': '-=', '*': '*=', '/': '/=', '%': '%=', '**': '**='}
+                op_str = py_ops.get(q.arg2, f'{q.arg2}=') if q.arg2 else '+='
+                val = self._val(q.arg1)
+                self._emit(f"{name} {op_str} {val}")
                 emitted_any = True
                 i += 1
                 continue
@@ -1356,6 +1399,7 @@ class StructuralCodeGenerator:
 
             # --- Stores ---
             if q.op == ASSIGN_ARR:
+                self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 idx  = self._val(q.arg2)
                 self._emit(f"_ss_check_arr_bounds({name}, {idx}, {name!r})")
@@ -1365,6 +1409,7 @@ class StructuralCodeGenerator:
                 continue
 
             if q.op == ASSIGN_ARR2:
+                self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 i1, i2 = q.arg2
                 r1, r2 = self._val(i1), self._val(i2)
@@ -1376,6 +1421,7 @@ class StructuralCodeGenerator:
                 continue
 
             if q.op == ASSIGN_MEMBER:
+                self._maybe_emit_line_tracker(q)
                 name = self._sanitize(q.arg1)
                 self._emit(f"{name}['{q.arg2}'] = {self._val(q.result)}")
                 emitted_any = True
@@ -1601,6 +1647,16 @@ class StructuralCodeGenerator:
             if q.op == RETURN_VOID:
                 self._emit("return")
                 emitted_any = True
+                i += 1
+                continue
+
+            # --- NOP / COMMENT ---
+            if q.op == NOP:
+                i += 1
+                continue
+
+            if q.op == COMMENT:
+                self._emit(f"# {q.arg1}")
                 i += 1
                 continue
 

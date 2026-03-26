@@ -95,17 +95,35 @@ class IROptimizer:
     # Evaluate expressions that have compile-time-known operands.
 
     def _pass_constant_folding(self):
-        # Pre-scan: find all variables that are modified by UNARY_INC/DEC.
-        # These are loop induction variables (e.g. i, j from HOIST +#i / -#j).
-        # Their initial ASSIGN values must NOT be treated as compile-time constants
-        # because the folding pass processes instructions linearly and would
-        # incorrectly fold expressions like `j + 1` to `1` using only j's
-        # initialisation value, ignoring subsequent increments inside the loop.
-        self._induction_vars = {
-            q.arg1
-            for q in self.ir.instructions
-            if q.op in (UNARY_INC, UNARY_DEC) and isinstance(q.arg1, str)
-        }
+        # Pre-scan: find ALL variables that are modified after their initial
+        # declaration.  This includes:
+        #   - UNARY_INC / UNARY_DEC  (loop counters: +#i / -#j)
+        #   - ASSIGN to a user variable (accumulator pattern: dec = dec + …)
+        #   - COMPOUND_ASSIGN        (e.g.  dec += expr)
+        #   - INPUT targets           (ASK writes to variables at runtime)
+        #   - ASSIGN_ARR / ASSIGN_ARR2 / ASSIGN_MEMBER (array/struct stores)
+        #
+        # Their values must NOT be treated as compile-time constants because
+        # the folding pass processes instructions linearly and would
+        # incorrectly freeze the initialisation value (e.g. dec=0) into every
+        # expression that reads the variable, ignoring subsequent assignments
+        # inside loop bodies.
+        self._mutable_vars = set()
+        for q in self.ir.instructions:
+            if q.op in (UNARY_INC, UNARY_DEC) and isinstance(q.arg1, str):
+                self._mutable_vars.add(q.arg1)
+            if q.op == ASSIGN and isinstance(q.result, str) and not q.result.startswith('_t'):
+                self._mutable_vars.add(q.result)
+            if q.op == COMPOUND_ASSIGN and isinstance(q.result, str):
+                self._mutable_vars.add(q.result)
+            if q.op == INPUT and q.arg2:
+                for tgt in q.arg2:
+                    if isinstance(tgt, dict) and 'var_name' in tgt:
+                        self._mutable_vars.add(tgt['var_name'])
+            if q.op in (ASSIGN_ARR, ASSIGN_ARR2, ASSIGN_MEMBER):
+                if isinstance(q.arg1, str):
+                    self._mutable_vars.add(q.arg1)
+        self._induction_vars = self._mutable_vars
 
         changed = True
         while changed:
@@ -143,7 +161,7 @@ class IROptimizer:
         # because the folding pass is linear and would incorrectly propagate
         # the initialisation value (e.g. j=0) into the loop body.
         if q.op == ASSIGN and q.arg1 is not None and q.result is not None:
-            if hasattr(self, '_induction_vars') and q.result in self._induction_vars:
+            if hasattr(self, '_mutable_vars') and q.result in self._mutable_vars:
                 self.temp_values.pop(q.result, None)
                 self.constants.pop(q.result, None)
             else:
@@ -152,6 +170,20 @@ class IROptimizer:
                     self.temp_values[q.result] = v
                 else:
                     self.temp_values.pop(q.result, None)
+            return q
+
+        # DECL_VAR: if the declared variable is later mutated, do NOT record
+        # its init value — it would be incorrectly frozen into loop expressions.
+        if q.op == DECL_VAR and q.arg1 is not None:
+            if hasattr(self, '_mutable_vars') and q.arg1 in self._mutable_vars:
+                self.temp_values.pop(q.arg1, None)
+                self.constants.pop(q.arg1, None)
+            return q
+
+        # COMPOUND_ASSIGN invalidates the target variable's cached value
+        if q.op == COMPOUND_ASSIGN and isinstance(q.result, str):
+            self.temp_values.pop(q.result, None)
+            self.constants.pop(q.result, None)
             return q
 
         # Fold arithmetic binary ops
@@ -337,20 +369,33 @@ class IROptimizer:
                     if isinstance(tgt, dict) and tgt.get('target_kind') == 'var':
                         self.temp_values.pop(tgt['var_name'], None)
 
+            # FIX: COMPOUND_ASSIGN modifies a variable in place.
+            if q.op == COMPOUND_ASSIGN and isinstance(q.result, str):
+                self.temp_values.pop(q.result, None)
+
+            # FIX: ASSIGN_ARR / ASSIGN_ARR2 / ASSIGN_MEMBER mutate the container.
+            if q.op in (ASSIGN_ARR, ASSIGN_ARR2, ASSIGN_MEMBER):
+                if isinstance(q.arg1, str):
+                    self.temp_values.pop(q.arg1, None)
+
             if q.op not in propagatable_ops:
                 continue
 
             if isinstance(q.arg1, str) and q.arg1 in self.temp_values:
-                v = self.temp_values[q.arg1]
-                if isinstance(v, (int, float, bool, str)):
-                    q.arg1 = v   # ← actually substitute the value
-                    count += 1
+                # Never propagate values for variables that are modified in
+                # the program (only propagate temp values like _t0, _t1, …)
+                if not (hasattr(self, '_mutable_vars') and q.arg1 in self._mutable_vars):
+                    v = self.temp_values[q.arg1]
+                    if isinstance(v, (int, float, bool, str)):
+                        q.arg1 = v
+                        count += 1
 
             if isinstance(q.arg2, str) and q.arg2 in self.temp_values:
-                v = self.temp_values[q.arg2]
-                if isinstance(v, (int, float, bool, str)):
-                    q.arg2 = v   # ← actually substitute the value
-                    count += 1
+                if not (hasattr(self, '_mutable_vars') and q.arg2 in self._mutable_vars):
+                    v = self.temp_values[q.arg2]
+                    if isinstance(v, (int, float, bool, str)):
+                        q.arg2 = v
+                        count += 1
 
         self._stats['const_propagated'] += count
 
@@ -422,6 +467,23 @@ class IROptimizer:
                          if k == q.arg1 or v == q.arg1]
                 for k in stale:
                     del copy_map[k]
+
+            # FIX: COMPOUND_ASSIGN modifies a variable in place — invalidate.
+            if q.op == COMPOUND_ASSIGN and isinstance(q.result, str):
+                stale = [k for k, v in copy_map.items()
+                         if k == q.result or v == q.result]
+                for k in stale:
+                    del copy_map[k]
+
+            # FIX: INPUT writes to target variables at runtime — invalidate.
+            if q.op == INPUT and q.arg2:
+                for tgt in q.arg2:
+                    if isinstance(tgt, dict) and 'var_name' in tgt:
+                        vname = tgt['var_name']
+                        stale = [k for k, v in copy_map.items()
+                                 if k == vname or v == vname]
+                        for k in stale:
+                            del copy_map[k]
 
             # --- Substitute copies in arg1/arg2 ---
             if isinstance(q.arg1, str) and q.arg1 in copy_map:
