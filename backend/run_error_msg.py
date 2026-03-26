@@ -105,13 +105,26 @@ def _sanitize_py_message(msg):
     return msg
 
 
-def _extract_identifiers(code_line):
-    return [m for m in re.findall(r'\b([a-z][a-z0-9_]*)\b', code_line)
-            if m not in {'print', 'input', 'int', 'float', 'str', 'bool',
+def _extract_tokens(code_line):
+    # Capture ALL alphanumeric identifiers (including Uppercase and CamelCase)
+    tokens = [m for m in re.findall(r'\b([A-Za-z_][A-Za-z0-9_]*)\b', code_line)
+            if m.lower() not in {'print', 'input', 'int', 'float', 'str', 'bool',
                          'true', 'false', 'none', 'not', 'and', 'or',
                          'if', 'else', 'while', 'for', 'return', 'def',
                          'pass', 'break', 'continue', 'math', 'sys',
-                         'end', 'format', 'self', 'flush'}]
+                         'end', 'format', 'self', 'flush', 'len', 'type',
+                         'list', 'dict', 'set', 'tuple', 'Exception'}]
+    
+    # Capture string literals
+    for match in re.finditer(r'["\'](.*?)["\']', code_line):
+        val = match.group(1).strip()
+        if val:
+            tokens.append(val)
+            
+    # Capture numbers
+    tokens.extend(re.findall(r'\b(\d+(?:\.\d+)?)\b', code_line))
+    
+    return tokens
 
 
 # =============================================================================
@@ -181,10 +194,16 @@ def map_runtime_error(exc, source_code, generated_code, exec_globals=None):
         if 0 < py_line <= len(gen_lines):
             py_code_line = gen_lines[py_line - 1].strip()
             src_lines    = source_code.split('\n') if source_code else []
+            
+            # Use our new robust token extractor
+            search_tokens = _extract_tokens(py_code_line)
+            
             for si, sl in enumerate(src_lines):
                 stripped = sl.strip()
+                # Ignore empty lines and SeaStack comments
                 if stripped and not stripped.startswith('~'):
-                    if any(w in stripped for w in _extract_identifiers(py_code_line)):
+                    # Check if ANY significant token from the python line is in the SeaStack line
+                    if search_tokens and any(w in stripped for w in search_tokens):
                         ss_line     = str(si + 1)
                         actual_line = sl
                         break

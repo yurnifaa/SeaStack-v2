@@ -1085,6 +1085,7 @@ class StructuralCodeGenerator:
         params_str = ', '.join(params)
         self._emit(f"def {safe_name}({params_str}):")
         self._inc()
+        self._emit("global _ss_line, _ss_col")
         if body_instrs:
             self._emit_block(body_instrs)
         else:
@@ -1097,6 +1098,7 @@ class StructuralCodeGenerator:
     def _emit_ahoy(self):
         self._emit("def _ss_ahoy():")
         self._inc()
+        self._emit("global _ss_line, _ss_col")
         if self._ahoy_body:
             self._emit_block(self._ahoy_body)
         else:
@@ -1114,9 +1116,8 @@ class StructuralCodeGenerator:
 
     # ── Block Emission (main recursive logic) ────────────────────────────
 
+    # Emit a sequence of IR instructions as Python statements. Reconstructs control flow from LABEL/JUMP patterns.
     def _emit_block(self, instrs):
-        """Emit a sequence of IR instructions as Python statements.
-        Reconstructs control flow from LABEL/JUMP patterns."""
         i = 0
         emitted_any = False
         while i < len(instrs):
@@ -1274,6 +1275,7 @@ class StructuralCodeGenerator:
                 continue
 
             if q.op in (LT, GT, LE, GE, EQ, NE):
+                self._maybe_emit_line_tracker(q)
                 a, b = self._val(q.arg1), self._val(q.arg2)
                 py_ops = {LT: '<', GT: '>', LE: '<=', GE: '>=', EQ: '==', NE: '!='}
                 expr = f"({a} {py_ops[q.op]} {b})"
