@@ -651,6 +651,13 @@ class CodeGenerator:
                 self._indent_inc()
                 self._emit(f"raise ValueError(f'Input Error: Expected a numeric value (DIME), got {{{raw_var}!r}}. Please enter a number.')")
                 self._indent_dec()
+                self._emit(f"_dime_int_p = {raw_var}.lstrip('-+').split('.')[0]")
+                self._emit(f"if len(_dime_int_p) > 16: raise RuntimeError('Overflow Error: DIME input integer part exceeds 16 digits.')")
+                self._emit(f"if '.' in {raw_var}:")
+                self._indent_inc()
+                self._emit(f"_dime_dec_p = {raw_var}.split('.')[1]")
+                self._emit(f"if len(_dime_dec_p) > 8: raise RuntimeError('Overflow Error: DIME input decimal part exceeds 8 digits.')")
+                self._indent_dec()
                 assign_expr = f"{var}_conv"
             elif dtype == 'PARCH':
                 raw_var = f"_ss_raw_{var}"
@@ -688,6 +695,10 @@ class CodeGenerator:
             val_strs = []
             for i, at in enumerate(arg_temps):
                 v = self._val(at)
+                spec = specs[i] if i < len(specs) else None
+                # Overflow guard: reject values that exceed display limits before output
+                if spec in ('COIN', 'DIME'):
+                    self._emit(f"_ss_check_overflow({v}, {repr(spec)}, 'output')")
                 if i < len(specs) and specs[i] == 'BOOL':
                     val_strs.append(f"_ss_display({v})")
                 else:
@@ -936,6 +947,41 @@ class StructuralCodeGenerator:
         self._inc()
         self._emit("if idx == len(s): return '\\x00'")
         self._emit("return s[idx]")
+        self._dec()
+        self._emit_blank()
+        # ── Overflow checker ─────────────────────────────────────────────────
+        # Enforces SeaStack numeric limits at runtime:
+        #   COIN : integer part must not exceed 16 digits
+        #   DIME : integer part ≤ 16 digits AND decimal part ≤ 8 digits
+        # Uses Python's Decimal(repr(val)) so that e.g. 0.1 is seen as 1 decimal
+        # digit (not the full 17-digit IEEE-754 expansion).
+        self._emit("def _ss_check_overflow(val, dtype, context='value'):")
+        self._inc()
+        self._emit("from decimal import Decimal as _D")
+        self._emit("if dtype == 'COIN':")
+        self._inc()
+        self._emit("if abs(int(val)) > 9_999_999_999_999_999:")
+        self._inc()
+        self._emit("raise OverflowError(f'Overflow Error: COIN {context} exceeds the 16-digit limit.')")
+        self._dec()
+        self._dec()
+        self._emit("elif dtype == 'DIME':")
+        self._inc()
+        self._emit("import math as _m")
+        self._emit("if _m.isinf(val) or _m.isnan(val):")
+        self._inc()
+        self._emit("raise OverflowError(f'Overflow Error: DIME {context} is not a finite number.')")
+        self._dec()
+        self._emit("if abs(int(val)) > 9_999_999_999_999_999:")
+        self._inc()
+        self._emit("raise OverflowError(f'Overflow Error: DIME {context} integer part exceeds the 16-digit limit.')")
+        self._dec()
+        self._emit("_sign, _digits, _exp = _D(repr(abs(float(val)))).as_tuple()")
+        self._emit("if _exp < -8:")
+        self._inc()
+        self._emit("raise OverflowError(f'Overflow Error: DIME {context} decimal part exceeds the 8-digit limit.')")
+        self._dec()
+        self._dec()
         self._dec()
         self._emit_blank()
         self._emit("def _ss_parse_input(raw_line, types):")
@@ -1270,6 +1316,9 @@ class StructuralCodeGenerator:
                     expr = f"({a} {op} {b})"
                 self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
+                rtype = self._resolve_operand_type(q.result)
+                if rtype in ('COIN', 'DIME'):
+                    self._emit(f"_ss_check_overflow({q.result}, {repr(rtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1315,20 +1364,31 @@ class StructuralCodeGenerator:
                 expr = f"(-{self._val(q.arg1)})"
                 self._temps[q.result] = expr
                 self._emit(f"{q.result} = {expr}")
+                rtype = self._resolve_operand_type(q.result)
+                if rtype in ('COIN', 'DIME'):
+                    self._emit(f"_ss_check_overflow({q.result}, {repr(rtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
 
             if q.op == UNARY_INC:
                 self._maybe_emit_line_tracker(q)
-                self._emit(f"{self._sanitize(q.arg1)} += 1")
+                vname = self._sanitize(q.arg1)
+                self._emit(f"{vname} += 1")
+                vtype = self._var_types.get(q.arg1) or self.ir.temp_types.get(q.arg1)
+                if vtype in ('COIN', 'DIME'):
+                    self._emit(f"_ss_check_overflow({vname}, {repr(vtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
 
             if q.op == UNARY_DEC:
                 self._maybe_emit_line_tracker(q)
-                self._emit(f"{self._sanitize(q.arg1)} -= 1")
+                vname = self._sanitize(q.arg1)
+                self._emit(f"{vname} -= 1")
+                vtype = self._var_types.get(q.arg1) or self.ir.temp_types.get(q.arg1)
+                if vtype in ('COIN', 'DIME'):
+                    self._emit(f"_ss_check_overflow({vname}, {repr(vtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1341,6 +1401,9 @@ class StructuralCodeGenerator:
                 op_str = py_ops.get(q.arg2, f'{q.arg2}=') if q.arg2 else '+='
                 val = self._val(q.arg1)
                 self._emit(f"{name} {op_str} {val}")
+                vtype = self._var_types.get(q.result) or self.ir.temp_types.get(q.result)
+                if vtype in ('COIN', 'DIME'):
+                    self._emit(f"_ss_check_overflow({name}, {repr(vtype)}, 'result')")
                 emitted_any = True
                 i += 1
                 continue
@@ -1715,6 +1778,10 @@ class StructuralCodeGenerator:
             val_strs = []
             for i, at in enumerate(arg_temps):
                 v = self._val(at)
+                spec = specs[i] if i < len(specs) else None
+                # Overflow guard: reject values that exceed display limits before output
+                if spec in ('COIN', 'DIME'):
+                    self._emit(f"_ss_check_overflow({v}, {repr(spec)}, 'output')")
                 if i < len(specs) and specs[i] == 'BOOL':
                     val_strs.append(f"_ss_display({v})")
                 else:
