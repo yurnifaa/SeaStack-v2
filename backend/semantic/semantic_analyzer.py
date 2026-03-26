@@ -651,6 +651,35 @@ class SemanticAnalyzer:
         sym = self.sym.lookup(node.name)
         if sym is None:
             self._e(self.err.undeclared_variable(node.token, node.name)); return None
+
+        # SCROLL character indexing: scroll{n} yields a single PARCH character.
+        # The parser emits ArrayAccessNode for all {}-indexing, so we redirect
+        # here instead of raising "not an array" for SCROLL variables.
+        if sym.kind == 'var' and sym.dtype == 'SCROLL':
+            if not sym.is_initialized:
+                self._e(self.err.uninitialized_variable(node.token, node.name))
+            if len(node.indices) != 1:
+                self._e(self.err.scroll_char_requires_scroll(node.token, node.name))
+                return None
+            it = self.visit(node.indices[0])
+            if it and it != 'COIN':
+                self._e(self.err.scroll_char_index_not_coin(node.token, self._type_name(it)))
+            # Compile-time bounds check using known SCROLL length
+            # Look up the variable name directly, since _known_scroll_length
+            # expects a LiteralNode or IdentNode, not an ArrayAccessNode.
+            str_len = None
+            if node.name in self.known_values:
+                kv_dtype, kv_val = self.known_values[node.name]
+                if kv_dtype == 'SCROLL' and kv_val is not None:
+                    str_len = len(str(kv_val))
+            if str_len is not None:
+                idx_val = self._literal_int(node.indices[0])
+                if idx_val is not None and (idx_val < 0 or idx_val >= str_len):
+                    self._e(self.err.scroll_char_index_out_of_bounds(node.token, idx_val, str_len))
+            # Stamp resolved type on the node for the IR generator
+            node.resolved_type = 'SCROLL'
+            return 'SCROLL'
+
         if sym.kind != 'array':
             self._e(self.err.not_an_array(node.token, node.name)); return None
         for i, idx in enumerate(node.indices):
@@ -689,7 +718,7 @@ class SemanticAnalyzer:
             if idx_val is not None:
                 if idx_val < 0 or idx_val >= str_len:
                     self._e(self.err.scroll_char_index_out_of_bounds(node.token, idx_val, str_len))
-        return 'SCROLL'  # SCROLL char access returns single-char SCROLL (rule p.16)
+        return 'SCROLL'  # SCROLL char access returns a single-char SCROLL
 
     def visit_StringConcatNode(self, node):
         for op in node.operands:
