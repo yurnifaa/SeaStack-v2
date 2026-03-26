@@ -1,11 +1,3 @@
-# =============================================================================
-# ir_generator.py — SeaStack IR Generator (AST → TAC Quadruples)
-#
-# Walks every AST node using the visitor pattern and emits a flat list
-# of IR quadruples into an IRProgram.  Temporaries (_t0, _t1, …) hold
-# intermediate expression results.  Labels (_L0, _L1, …) mark jump targets.
-# =============================================================================
-
 from codegen.ir_instructions import (
     IRProgram, Quad,
     PROGRAM_START, PROGRAM_END, FUNC_BEGIN, FUNC_END, PARAM_DECL,
@@ -25,6 +17,10 @@ from codegen.ir_instructions import (
     ARITH_OP_MAP, REL_OP_MAP, LOG_OP_MAP, COMPOUND_OP_MAP,
 )
 
+
+# =================================================================================================
+# IR GENERATOR CLASS: walks every AST node and emits a flat list of IR quadruples
+# =================================================================================================
 
 class IRGenerator:
     """Walks the semantic-checked AST and emits TAC quadruples."""
