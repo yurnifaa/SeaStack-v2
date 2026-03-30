@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Waves } from "lucide-react";
 import SeaStackEditor from "../components/CodeEditor";
 import { simplifyRuntimeMessage } from "../utils/runtimeErrorMsg";
 
@@ -24,17 +25,24 @@ const GooeyButton = ({ onClick, children, disabled, style }) => {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
 
 export default function Home() {
-  const [code, setCode] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(true);
 
-  // File Management State
-  const [fileName, setFileName] = useState("file.sea");
-  const [fileCount, setFileCount] = useState(1);
+  // Multi-tab State
+  const [tabs, setTabs] = useState([{ id: 1, fileName: 'file.sea', code: '' }]);
+  const [activeTabId, setActiveTabId] = useState(1);
+  const [tabIdCounter, setTabIdCounter] = useState(2);
+  const [renamingTabId, setRenamingTabId] = useState(null);
+  const [tempName, setTempName] = useState('');
+  const [dragTabId, setDragTabId] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Rename State
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [tempName, setTempName] = useState("");
+  // Derived from active tab
+  const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0];
+  const code = activeTab?.code ?? '';
+  const fileName = activeTab?.fileName ?? 'file.sea';
+  const setCode = useCallback((val) => {
+    setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, code: val } : t));
+  }, [activeTabId]);
 
   // Errors — unified
   const [errors, setErrors] = useState([]);
@@ -55,6 +63,10 @@ export default function Home() {
 
   // Keep a ref to the active fetch reader so Stop can abort it
   const readerRef = useRef(null);
+
+  // Resize handle state
+  const mainContentRef = useRef(null);
+  const [leftWidth, setLeftWidth] = useState(60);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -101,16 +113,21 @@ export default function Home() {
   const handleFileSelection = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     if (!file.name.endsWith('.sea')) {
       alert("Please select a valid .sea file.");
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (e) => {
-      setCode(e.target.result);
-      setFileName(file.name);
+      const content = e.target.result;
+      if (!activeTab?.code.trim()) {
+        setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, fileName: file.name, code: content } : t));
+      } else {
+        const newId = tabIdCounter;
+        setTabIdCounter(prev => prev + 1);
+        setTabs(prev => [...prev, { id: newId, fileName: file.name, code: content }]);
+        setActiveTabId(newId);
+      }
     };
     reader.readAsText(file);
     event.target.value = '';
@@ -122,15 +139,12 @@ export default function Home() {
       try {
         const handle = await window.showSaveFilePicker({
           suggestedName: fileName,
-          types: [{
-            description: 'SeaStack Source File',
-            accept: { 'text/plain': ['.sea'] },
-          }],
+          types: [{ description: 'SeaStack Source File', accept: { 'text/plain': ['.sea'] } }],
         });
         const writable = await handle.createWritable();
         await writable.write(code);
         await writable.close();
-        setFileName(handle.name);
+        setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, fileName: handle.name } : t));
       } catch (err) {
         if (err.name !== 'AbortError') {
           console.error('Save failed:', err);
@@ -149,41 +163,77 @@ export default function Home() {
   };
 
   // --- Close Tab Logic ---
-  const handleCloseTab = () => {
-    const nextCount = fileCount + 1;
-    setFileCount(nextCount);
-    setFileName(`file${nextCount}.sea`);
-    setCode("");
-    setErrors([]);
-    setErrorPhase(null);
-    setConsoleOutput("");
-    setNeedsInput(false);
-    setInputValue("");
+  const handleCloseTab = (id) => {
+    if (tabs.length === 1) {
+      setTabs([{ id: tabs[0].id, fileName: 'file.sea', code: '' }]);
+      setErrors([]);
+      setErrorPhase(null);
+      setConsoleOutput('');
+      setNeedsInput(false);
+      setInputValue('');
+      return;
+    }
+    const idx = tabs.findIndex(t => t.id === id);
+    const newTabs = tabs.filter(t => t.id !== id);
+    setTabs(newTabs);
+    if (activeTabId === id) {
+      setActiveTabId(newTabs[Math.max(0, idx - 1)].id);
+    }
+  };
+
+  // --- New Tab Logic ---
+  const handleNewTab = () => {
+    const newId = tabIdCounter;
+    setTabIdCounter(prev => prev + 1);
+    setTabs(prev => [...prev, { id: newId, fileName: `file${newId}.sea`, code: '' }]);
+    setActiveTabId(newId);
   };
 
   // --- Rename Logic ---
-  const handleTabDoubleClick = () => {
-    setTempName(fileName);
-    setIsRenaming(true);
+  const handleTabDoubleClick = (id) => {
+    setTempName(tabs.find(t => t.id === id)?.fileName ?? '');
+    setRenamingTabId(id);
   };
 
   const handleRenameSubmit = () => {
     let finalName = tempName.trim();
-    if (!finalName) {
-      setIsRenaming(false);
-      return;
-    }
-    if (!finalName.endsWith(".sea")) {
-      finalName += ".sea";
-    }
-    setFileName(finalName);
-    setIsRenaming(false);
+    if (!finalName) { setRenamingTabId(null); return; }
+    if (!finalName.endsWith('.sea')) finalName += '.sea';
+    setTabs(prev => prev.map(t => t.id === renamingTabId ? { ...t, fileName: finalName } : t));
+    setRenamingTabId(null);
   };
 
   const handleRenameKeyDown = (e) => {
     if (e.key === 'Enter') handleRenameSubmit();
-    if (e.key === 'Escape') setIsRenaming(false);
+    if (e.key === 'Escape') setRenamingTabId(null);
   };
+
+  // --- Tab Drag Logic ---
+  const handleTabDragStart = (e, id) => {
+    setDragTabId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleTabDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleTabDrop = (e, targetId) => {
+    e.preventDefault();
+    if (dragTabId === null || dragTabId === targetId) return;
+    setTabs(prev => {
+      const from = prev.findIndex(t => t.id === dragTabId);
+      const to = prev.findIndex(t => t.id === targetId);
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    setDragTabId(null);
+  };
+
+  const handleTabDragEnd = () => setDragTabId(null);
 
   // ==========================================
   // --- ERROR FORMATTERS ---
@@ -445,6 +495,30 @@ export default function Home() {
   };
 
   // ==========================================
+  // --- RESIZE HANDLE LOGIC ---
+  // ==========================================
+  const handleResizeMouseDown = (e) => {
+    e.preventDefault();
+    const onMouseMove = (moveEvent) => {
+      const container = mainContentRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const newPct = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+      setLeftWidth(Math.min(Math.max(newPct, 25), 75));
+    };
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  // ==========================================
   // --- INPUT SUBMIT LOGIC ---
   // ==========================================
 const handleInputKeyDown = (e) => {
@@ -602,44 +676,111 @@ const handleInputKeyDown = (e) => {
         </div>
       </header>
 
-      <main className="main-content">
-        {/* Left Panel — Code Editor */}
-        <div className="panel panel-left">
+      <main className="main-content" ref={mainContentRef}>
+        {/* Left Panel — Code Editor + Error Logs */}
+        <div className="panel-left" style={{ width: `${leftWidth}%` }}>
+          <div className="editor-card">
           <div className="panel-tab-bar">
-            <div className="tab active">
-              {isRenaming ? (
-                <input
-                  autoFocus
-                  type="text"
-                  value={tempName}
-                  onChange={(e) => setTempName(e.target.value)}
-                  onBlur={handleRenameSubmit}
-                  onKeyDown={handleRenameKeyDown}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'inherit',
-                    font: 'inherit',
-                    outline: 'none',
-                    minWidth: '50px',
-                    width: `${tempName.length + 1}ch`
-                  }}
-                />
-              ) : (
-                <span onDoubleClick={handleTabDoubleClick} title="Double-click to rename">
-                  {fileName}
-                </span>
-              )}
-
-              <button className="close-tab" onClick={handleCloseTab}>×</button>
-            </div>
+            {tabs.map(tab => (
+              <div
+                key={tab.id}
+                className={`tab${tab.id === activeTabId ? ' active' : ''}${dragTabId === tab.id ? ' dragging' : ''}`}
+                draggable
+                onDragStart={(e) => handleTabDragStart(e, tab.id)}
+                onDragOver={handleTabDragOver}
+                onDrop={(e) => handleTabDrop(e, tab.id)}
+                onDragEnd={handleTabDragEnd}
+                onClick={() => { if (renamingTabId !== tab.id) setActiveTabId(tab.id); }}
+              >
+                <Waves size={13} className="tab-icon" />
+                {renamingTabId === tab.id ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    onBlur={handleRenameSubmit}
+                    onKeyDown={handleRenameKeyDown}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'inherit',
+                      font: 'inherit',
+                      outline: 'none',
+                      minWidth: '50px',
+                      width: `${Math.max(tempName.length + 1, 8)}ch`,
+                    }}
+                  />
+                ) : (
+                  <span
+                    className="tab-name"
+                    onDoubleClick={(e) => { e.stopPropagation(); handleTabDoubleClick(tab.id); }}
+                    title="Double-click to rename"
+                  >
+                    {tab.fileName}
+                  </span>
+                )}
+                <button
+                  className="close-tab"
+                  onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }}
+                  title="Close tab"
+                >×</button>
+              </div>
+            ))}
+            <button className="new-tab-btn" onClick={handleNewTab} title="New tab">+</button>
           </div>
           <SeaStackEditor code={code} setCode={setCode} isDarkMode={isDarkMode} />
+          </div>{/* end editor-card */}
+
+          {/* Error Panel */}
+          <div className="error-panel">
+            <nav className="error-panel-nav">
+              <ul>
+                <li>
+                  <a className="active">
+                    Error Logs
+                    {errors.length > 0 && (
+                      <span style={{
+                        marginLeft: '8px',
+                        backgroundColor: '#ef4444',
+                        color: '#fff',
+                        borderRadius: '999px',
+                        padding: '1px 7px',
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                      }}>
+                        {errors.length}
+                      </span>
+                    )}
+                  </a>
+                </li>
+              </ul>
+            </nav>
+            <div className="error-panel-content">
+              {errors.length === 0 && !isRunning ? (
+                <div style={{
+                  fontFamily: '"Fira Code", monospace',
+                  fontVariantLigatures: 'none',
+                  fontSize: '0.85rem',
+                  color: '#6b7280',
+                  fontStyle: 'italic',
+                }}>
+                  Press Run to compile and execute your SeaStack program.
+                </div>
+              ) : errors.length === 0 && !errorPhase ? (
+                <ErrorList errors={[]} phaseName="" />
+              ) : (
+                <ErrorList errors={errors} phaseName={errorPhase || "Unknown"} />
+              )}
+            </div>
+          </div>
         </div>
 
+        {/* Draggable Resize Handle */}
+        <div className="resize-handle" onMouseDown={handleResizeMouseDown} />
+
         {/* Right Panel — Output Console */}
-        <div className="panel panel-right">
-          {/* Right Panel — Output Console */}
         <div className="panel panel-right">
           <div className="console-panel" style={{
             display: 'flex',
@@ -688,7 +829,6 @@ const handleInputKeyDown = (e) => {
               }}
               onClick={() => needsInput && inputFieldRef.current?.focus()}
             >
-              {/* Output text + inline cursor-positioned input rendered as one flow */}
               <span style={{ whiteSpace: 'pre-wrap' }}>
                 {consoleOutput}
                 {needsInput && (
@@ -722,52 +862,7 @@ const handleInputKeyDown = (e) => {
             </div>
           </div>
         </div>
-        </div>
       </main>
-
-      {/* Footer — Error Logs */}
-      <footer className="footer">
-        <nav className="footer-nav">
-          <ul>
-            <li>
-              <a className="active">
-                Error Logs
-                {errors.length > 0 && (
-                  <span style={{
-                    marginLeft: '8px',
-                    backgroundColor: '#ef4444',
-                    color: '#fff',
-                    borderRadius: '999px',
-                    padding: '1px 7px',
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                  }}>
-                    {errors.length}
-                  </span>
-                )}
-              </a>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="footer-content" style={{ padding: '10px', overflowY: 'auto' }}>
-          {errors.length === 0 && !isRunning ? (
-            <div style={{
-              fontFamily: '"Fira Code", monospace',
-              fontVariantLigatures: 'none',
-              fontSize: '0.85rem',
-              color: '#6b7280',
-              fontStyle: 'italic',
-            }}>
-              Press Run to compile and execute your SeaStack program.
-            </div>
-          ) : errors.length === 0 && !errorPhase ? (
-            <ErrorList errors={[]} phaseName="" />
-          ) : (
-            <ErrorList errors={errors} phaseName={errorPhase || "Unknown"} />
-          )}
-        </div>
-      </footer>
 
       {/* SVG filter for gooey button effect */}
       <svg
