@@ -1,10 +1,25 @@
 import { StreamLanguage } from "@codemirror/language";
 
-const seaStackGrammar = {
+interface SeaRule {
+  regex: RegExp;
+  token: string;
+  next?: string;
+}
+
+interface SeaState {
+  rules: SeaRule[];
+  curState: string;
+}
+
+interface SeaGrammar {
+  [key: string]: SeaRule[];
+}
+
+const seaStackGrammar: SeaGrammar = {
   start: [
-    //Comments (Grey)
-    { regex: /~\(/, token: "comment", next: "multiLineComment" }, 
-    { regex: /~.*/, token: "comment" }, 
+    // Comments (Grey)
+    { regex: /~\(/, token: "comment", next: "multiLineComment" },
+    { regex: /~.*/, token: "comment" },
 
     // Strings "..." and Chars '...' (Green)
     { regex: /"(?:[^\\]|\\.)*?(?:"|$)/, token: "string" },
@@ -19,14 +34,14 @@ const seaStackGrammar = {
     { regex: /!!/, token: "punctuation" },
 
     // Reserved Words (Red)
-    { 
-      regex: /\b(?:ABYSS|BOOL|COIN|DIME|PARCH|SCROLL)\b/, 
-      token: "type" 
+    {
+      regex: /\b(?:ABYSS|BOOL|COIN|DIME|PARCH|SCROLL)\b/,
+      token: "type"
     },
     // Keywords (Yellow)
-    { 
-      regex: /\b(?:ADRIFT|AHOY|ASK|AYE|BACK|CHART|COURSE|DROP|DROPLOOK|ECHO|HAUL-HEAVE|HEAVE|HOIST|LAND|LOCKE|LOOK|MAST|NAY|SAIL)\b/, 
-      token: "keyword" 
+    {
+      regex: /\b(?:ADRIFT|AHOY|ASK|AYE|BACK|CHART|COURSE|DROP|DROPLOOK|ECHO|HAUL-HEAVE|HEAVE|HOIST|LAND|LOCKE|LOOK|MAST|NAY|SAIL)\b/,
+      token: "keyword"
     },
 
     // Identifiers (Purple)
@@ -41,19 +56,16 @@ const seaStackGrammar = {
 };
 
 // Export the Language Support
-export const seaStackLanguage = StreamLanguage.define({
+export const seaStackLanguage = StreamLanguage.define<SeaState>({
   token: (stream, state) => {
-    // Basic tokenizer loop
-    for (let rule of state.rules) {
+    for (const rule of state.rules) {
       const match = stream.match(rule.regex);
       if (match) {
-        
         if (rule.next) {
-            state.curState = rule.next;
-            state.rules = seaStackGrammar[rule.next];
+          state.curState = rule.next;
+          state.rules = seaStackGrammar[rule.next];
         }
-
-        return rule.token; 
+        return rule.token;
       }
     }
     stream.next();

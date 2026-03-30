@@ -1,10 +1,19 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Waves } from "lucide-react";
+import Image from "next/image";
+import { Waves, Play, Square, FolderOpen, Download, SquareTerminal } from "lucide-react";
 import SeaStackEditor from "../components/CodeEditor";
 import { simplifyRuntimeMessage } from "../utils/runtimeErrorMsg";
+import type { Tab, FormattedError, RawError } from "../types";
 
-const GooeyButton = ({ onClick, children, disabled, style }) => {
+interface GooeyButtonProps {
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+}
+
+const GooeyButton = ({ onClick, children, disabled, style }: GooeyButtonProps) => {
   return (
     <button
       className="c-button c-button--gooey"
@@ -28,44 +37,42 @@ export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Multi-tab State
-  const [tabs, setTabs] = useState([{ id: 1, fileName: 'file.sea', code: '' }]);
+  const [tabs, setTabs] = useState<Tab[]>([{ id: 1, fileName: 'file.sea', code: '' }]);
   const [activeTabId, setActiveTabId] = useState(1);
   const [tabIdCounter, setTabIdCounter] = useState(2);
-  const [renamingTabId, setRenamingTabId] = useState(null);
+  const [renamingTabId, setRenamingTabId] = useState<number | null>(null);
   const [tempName, setTempName] = useState('');
-  const [dragTabId, setDragTabId] = useState(null);
-  const fileInputRef = useRef(null);
+  const [dragTabId, setDragTabId] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Derived from active tab
   const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0];
   const code = activeTab?.code ?? '';
   const fileName = activeTab?.fileName ?? 'file.sea';
-  const setCode = useCallback((val) => {
+  const setCode = useCallback((val: string) => {
     setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, code: val } : t));
   }, [activeTabId]);
 
   // Errors — unified
-  const [errors, setErrors] = useState([]);
-  const [errorPhase, setErrorPhase] = useState(null);
+  const [errors, setErrors] = useState<FormattedError[]>([]);
+  const [errorPhase, setErrorPhase] = useState<string | null>(null);
 
   // Execution state
   const [isRunning, setIsRunning] = useState(false);
   const [consoleOutput, setConsoleOutput] = useState("");
   const [sessionId] = useState(() => `session_${Date.now()}`);
-  const consoleEndRef = useRef(null);
+  const consoleEndRef = useRef<HTMLDivElement>(null);
 
   // Interactive input state
-  const [needsInput, setNeedsInput]     = useState(false);
-  const [inputValue, setInputValue]     = useState("");
-  const [inputDtype, setInputDtype]     = useState("SCROLL");  // expected dtype for current input
-  const inputFieldRef                   = useRef(null);
-  const inputBufferRef                  = useRef([]);           // queued space-delimited tokens
+  const [needsInput, setNeedsInput] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const inputFieldRef = useRef<HTMLInputElement>(null);
 
   // Keep a ref to the active fetch reader so Stop can abort it
-  const readerRef = useRef(null);
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
 
   // Resize handle state
-  const mainContentRef = useRef(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
   const [leftWidth, setLeftWidth] = useState(60);
 
   useEffect(() => {
@@ -93,7 +100,7 @@ export default function Home() {
     }
   }, [needsInput]);
 
-  const toggleTheme = (e) => {
+  const toggleTheme = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setIsDarkMode(checked);
     if (checked) {
@@ -107,11 +114,11 @@ export default function Home() {
 
   // --- File Open Logic ---
   const handleFileBtnClick = () => {
-    fileInputRef.current.click();
+    fileInputRef.current?.click();
   };
 
-  const handleFileSelection = (event) => {
-    const file = event.target.files[0];
+  const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
     if (!file.name.endsWith('.sea')) {
       alert("Please select a valid .sea file.");
@@ -119,7 +126,7 @@ export default function Home() {
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      const content = e.target.result;
+      const content = e.target?.result as string;
       if (!activeTab?.code.trim()) {
         setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, fileName: file.name, code: content } : t));
       } else {
@@ -137,7 +144,7 @@ export default function Home() {
   const handleSaveFile = async () => {
     if ('showSaveFilePicker' in window) {
       try {
-        const handle = await window.showSaveFilePicker({
+        const handle = await (window as Window & { showSaveFilePicker: (opts: object) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
           suggestedName: fileName,
           types: [{ description: 'SeaStack Source File', accept: { 'text/plain': ['.sea'] } }],
         });
@@ -146,7 +153,7 @@ export default function Home() {
         await writable.close();
         setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, fileName: handle.name } : t));
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if ((err as Error).name !== 'AbortError') {
           console.error('Save failed:', err);
           alert('Failed to save file.');
         }
@@ -163,7 +170,7 @@ export default function Home() {
   };
 
   // --- Close Tab Logic ---
-  const handleCloseTab = (id) => {
+  const handleCloseTab = (id: number) => {
     if (tabs.length === 1) {
       setTabs([{ id: tabs[0].id, fileName: 'file.sea', code: '' }]);
       setErrors([]);
@@ -190,7 +197,7 @@ export default function Home() {
   };
 
   // --- Rename Logic ---
-  const handleTabDoubleClick = (id) => {
+  const handleTabDoubleClick = (id: number) => {
     setTempName(tabs.find(t => t.id === id)?.fileName ?? '');
     setRenamingTabId(id);
   };
@@ -203,23 +210,23 @@ export default function Home() {
     setRenamingTabId(null);
   };
 
-  const handleRenameKeyDown = (e) => {
+  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleRenameSubmit();
     if (e.key === 'Escape') setRenamingTabId(null);
   };
 
   // --- Tab Drag Logic ---
-  const handleTabDragStart = (e, id) => {
+  const handleTabDragStart = (e: React.DragEvent, id: number) => {
     setDragTabId(id);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleTabDragOver = (e) => {
+  const handleTabDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleTabDrop = (e, targetId) => {
+  const handleTabDrop = (e: React.DragEvent, targetId: number) => {
     e.preventDefault();
     if (dragTabId === null || dragTabId === targetId) return;
     setTabs(prev => {
@@ -239,18 +246,15 @@ export default function Home() {
   // --- ERROR FORMATTERS ---
   // ==========================================
 
-  const formatLexicalError = (errObj) => {
+  const formatLexicalError = (errObj: RawError): FormattedError => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
       return { ...errObj, isStructured: false };
     }
-
     const message = errObj.message || "";
     const foundStr = errObj.found || "";
     const isUnknown = message.includes("Unknown Character");
-
     let headerStr = foundStr;
     let expectedStr = "";
-
     if (isUnknown) {
       headerStr = message;
       expectedStr = "";
@@ -260,37 +264,33 @@ export default function Home() {
         expectedStr = `Expected: ${errObj.expected.join(", ")}`;
       }
     }
-
     return {
       line: errObj.line,
-      col: errObj.col,
+      col: errObj.col ?? "-",
       errorType: "Lexical Error",
-      headerStr: headerStr,
+      headerStr,
       sourceCode: null,
-      expectedStr: expectedStr,
+      expectedStr,
       isStructured: true
     };
   };
 
-  const formatSyntaxError = (errObj, sourceCode) => {
+  const formatSyntaxError = (errObj: RawError, sourceCode: string): FormattedError => {
     if (!errObj.line || errObj.line === "?" || errObj.line === "-") {
       return { ...errObj, isStructured: false };
     }
-
-    const lineNum = parseInt(errObj.line, 10);
+    const lineNum = parseInt(String(errObj.line), 10);
     const lines = sourceCode.split('\n');
     const rawLine = lines[lineNum - 1] || "";
     const leadingSpaces = rawLine.length - rawLine.trimStart().length;
     const actualLine = rawLine.trim();
-
     const found = errObj.found || "unknown";
     const expected = errObj.expected && errObj.expected.length > 0
       ? `Expected: ${errObj.expected.join(", ")}`
       : "";
-
     return {
       line: errObj.line,
-      col: errObj.col,
+      col: errObj.col ?? "-",
       errorType: errObj.error_header || "Syntax Error",
       headerStr: `${errObj.error_header || "Syntax Error"}: '${found}'`,
       sourceCode: actualLine,
@@ -300,40 +300,35 @@ export default function Home() {
     };
   };
 
-  const formatSemanticError = (errObj) => {
-    // Backend (sem_error_msg.py) guarantees all fields are populated.
-    // Guard only against the internal-error case where line is '?'.
+  const formatSemanticError = (errObj: RawError): FormattedError => {
     if (errObj.line === '?') return { ...errObj, isStructured: false };
     const rawLine = errObj.actual_line || "";
     const leadingSpaces = rawLine.length - rawLine.trimStart().length;
     return {
-      line:         errObj.line,
-      col:          errObj.col,
-      errorType:    errObj.error_type,
-      headerStr:    errObj.error_type,
-      sourceCode:   rawLine.trim() || null,
+      line: errObj.line ?? "-",
+      col: errObj.col ?? "-",
+      errorType: errObj.error_type ?? "Semantic Error",
+      headerStr: errObj.error_type ?? "Semantic Error",
+      sourceCode: rawLine.trim() || null,
       leadingSpaces,
-      expectedStr:  errObj.message,
+      expectedStr: errObj.message ?? "",
       isStructured: true,
     };
   };
 
-  const formatRuntimeError = (errObj) => {
+  const formatRuntimeError = (errObj: RawError): FormattedError => {
     const line = errObj.line || "-";
-    // Strict check so col=0 is displayed correctly (0 is falsy in JS but valid)
     const col = (errObj.col !== undefined && errObj.col !== null && errObj.col !== "")
       ? errObj.col
       : "-";
-
-    // Prefer actual_line from backend; fall back to looking it up from source
-    let sourceCode = null;
+    let sourceCode: string | null = null;
     let leadingSpaces = 0;
     if (errObj.actual_line) {
       const rawLine = errObj.actual_line;
       leadingSpaces = rawLine.length - rawLine.trimStart().length;
       sourceCode = rawLine.trim();
     } else if (line !== "-") {
-      const lineNum = parseInt(line, 10);
+      const lineNum = parseInt(String(line), 10);
       if (!isNaN(lineNum) && lineNum > 0) {
         const srcLines = code.split('\n');
         const candidate = srcLines[lineNum - 1];
@@ -343,7 +338,6 @@ export default function Home() {
         }
       }
     }
-
     return {
       line,
       col,
@@ -360,8 +354,6 @@ export default function Home() {
   // --- RUN LOGIC  (SSE streaming)         ---
   // ==========================================
   const handleRun = async () => {
-    console.log("Attempting to connect to:", API_URL);
-    // Clear previous state
     setErrors([]);
     setErrorPhase(null);
     setConsoleOutput("");
@@ -377,30 +369,26 @@ export default function Home() {
       });
 
       if (!response.ok) throw new Error(`Server status: ${response.status}`);
-      if (!response.body)  throw new Error("No response body — streaming not supported.");
+      if (!response.body) throw new Error("No response body — streaming not supported.");
 
       const reader = response.body.getReader();
       readerRef.current = reader;
       const decoder = new TextDecoder();
       let buffer = '';
 
-      // Read the SSE stream chunk by chunk
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
 
-        // SSE frames are separated by \n\n
         const frames = buffer.split('\n\n');
-        buffer = frames.pop(); // keep incomplete trailing frame
+        buffer = frames.pop() ?? '';
 
         for (const frame of frames) {
-          // Each frame may contain multiple lines; we want the `data:` line
           for (const line of frame.split('\n')) {
             if (!line.startsWith('data: ')) continue;
-
-            let event;
+            let event: { type: string; text?: string; error?: RawError; errors?: RawError[]; phase?: string; success?: boolean };
             try {
               event = JSON.parse(line.slice(6));
             } catch {
@@ -408,37 +396,33 @@ export default function Home() {
             }
 
             if (event.type === 'output') {
-              setConsoleOutput(prev => prev + event.text);
-
+              setConsoleOutput(prev => prev + (event.text ?? ''));
             } else if (event.type === 'input_needed') {
-                setNeedsInput(true);
-
+              setNeedsInput(true);
             } else if (event.type === 'error') {
-              setErrors([formatRuntimeError(event.error)]);
+              setErrors([formatRuntimeError(event.error ?? {})]);
               setErrorPhase("Runtime");
-
             } else if (event.type === 'compile_error') {
               const phase = event.phase || "Unknown";
-              let formatted = [];
+              let formatted: FormattedError[] = [];
               if (phase === "Lexical") {
-                formatted = event.errors.map(e => formatLexicalError(e));
+                formatted = (event.errors ?? []).map(e => formatLexicalError(e));
               } else if (phase === "Syntax") {
-                formatted = event.errors.map(e => formatSyntaxError(e, code));
+                formatted = (event.errors ?? []).map(e => formatSyntaxError(e, code));
               } else if (phase === "Semantic") {
-                formatted = event.errors.map(e => formatSemanticError(e));
+                formatted = (event.errors ?? []).map(e => formatSemanticError(e));
               } else {
-                formatted = event.errors.map(e => ({
+                formatted = (event.errors ?? []).map(e => ({
                   line: e.line || "-", col: e.col || "-",
                   errorType: phase + " Error",
                   headerStr: e.message || "Unknown error",
                   sourceCode: null,
                   expectedStr: e.message || "",
-                  isStructured: true,
+                  isStructured: true as const,
                 }));
               }
               setErrors(formatted);
               setErrorPhase(phase);
-
             } else if (event.type === 'done') {
               setNeedsInput(false);
               setIsRunning(false);
@@ -451,8 +435,7 @@ export default function Home() {
         }
       }
     } catch (err) {
-      // Ignore AbortError — that's from the user clicking Stop
-      if (err.name !== 'AbortError') {
+      if ((err as Error).name !== 'AbortError') {
         console.error("Connection Error:", err);
         setErrors([{
           line: "-", col: "-",
@@ -475,11 +458,9 @@ export default function Home() {
   // --- STOP LOGIC ---
   // ==========================================
   const handleStop = async () => {
-    // Cancel the SSE reader
     if (readerRef.current) {
       try { readerRef.current.cancel(); } catch {}
     }
-    // Tell the server to stop the execution thread
     try {
       await fetch(`${API_URL}/api/stop`, {
         method: 'POST',
@@ -497,9 +478,9 @@ export default function Home() {
   // ==========================================
   // --- RESIZE HANDLE LOGIC ---
   // ==========================================
-  const handleResizeMouseDown = (e) => {
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    const onMouseMove = (moveEvent) => {
+    const onMouseMove = (moveEvent: MouseEvent) => {
       const container = mainContentRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
@@ -521,17 +502,13 @@ export default function Home() {
   // ==========================================
   // --- INPUT SUBMIT LOGIC ---
   // ==========================================
-const handleInputKeyDown = (e) => {
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       const value = inputValue;
       setInputValue("");
       setNeedsInput(false);
-      
-      // Echo the typed line securely and inline
       setConsoleOutput(prev => prev + value + '\n');
-
-      // Send the entire line unmodified to backend
       fetch(`${API_URL}/api/input`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -543,74 +520,80 @@ const handleInputKeyDown = (e) => {
   // ==========================================
   // --- ERROR LIST COMPONENT ---
   // ==========================================
-  const ErrorList = ({ errors, phaseName }) => {
-    if (errors.length === 0) {
+  const c = isDarkMode ? {
+    success:     '#4ade80',
+    errorCount:  '#f87171',
+    location:    '#9ca3af',
+    divider:     '#475569',
+    errorHeader: '#f87171',
+    sourceLine:  '#94a3b8',
+    caret:       '#94a3b8',
+    description: '#cbd5e1',
+    rowBorder:   'rgba(255,255,255,0.08)',
+    plainText:   '#e5e7eb',
+    placeholder: '#6b7280',
+  } : {
+    success:     '#16a34a',
+    errorCount:  '#dc2626',
+    location:    '#64748b',
+    divider:     '#94a3b8',
+    errorHeader: '#dc2626',
+    sourceLine:  '#475569',
+    caret:       '#64748b',
+    description: '#374151',
+    rowBorder:   'rgba(0,0,0,0.08)',
+    plainText:   '#1e293b',
+    placeholder: '#64748b',
+  };
+
+  const ErrorList = ({ errors: errs, phaseName }: { errors: FormattedError[]; phaseName: string }) => {
+    if (errs.length === 0) {
       return (
-        <div style={{
-          fontFamily: '"Fira Code", monospace',
-          fontVariantLigatures: 'none',
-          fontSize: '0.85rem',
-          color: '#4ade80',
-          fontWeight: 'bold'
-        }}>
+        <div style={{ fontSize: '0.85rem', color: c.success, fontWeight: 'bold', fontVariantLigatures: 'none' }}>
           ✓ No errors found. Program compiled and executed successfully.
         </div>
       );
     }
-
     return (
-      <div style={{ fontFamily: '"Fira Code", monospace', fontVariantLigatures: 'none', fontSize: '0.85rem' }}>
-        {/* Line 1: Error count and type */}
-        <div style={{ fontWeight: 'bold', color: '#f87171', marginBottom: '10px', fontSize: '0.9rem' }}>
-          ✗ Found {errors.length} {phaseName} Error{errors.length !== 1 ? 's' : ''}
+      <div style={{ fontSize: '0.85rem', fontVariantLigatures: 'none' }}>
+        <div style={{ fontWeight: 'bold', color: c.errorCount, marginBottom: '10px', fontSize: '0.9rem' }}>
+          ✗ Found {errs.length} {phaseName} Error{errs.length !== 1 ? 's' : ''}
         </div>
-
-        {errors.map((err, i) => (
-          <div key={i} style={{
-            marginBottom: '14px',
-            paddingBottom: '10px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-          }}>
+        {errs.map((err, i) => (
+          <div key={i} style={{ marginBottom: '14px', paddingBottom: '10px', borderBottom: `1px solid ${c.rowBorder}` }}>
             {err.isStructured ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                {/* Line 2: Location + Error Type */}
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'baseline' }}>
-                  <span style={{ color: '#9ca3af', minWidth: '110px', flexShrink: 0, fontSize: '0.8rem' }}>
+                  <span style={{ color: c.location, minWidth: '110px', flexShrink: 0, fontSize: '0.8rem' }}>
                     Line {err.line}, Col {err.col}
                   </span>
-                  <span style={{ color: '#475569', fontSize: '0.8rem' }}>│</span>
-                  <span style={{ color: '#f87171', fontWeight: 'bold' }}>
-                    {err.headerStr}
-                  </span>
+                  <span style={{ color: c.divider, fontSize: '0.8rem' }}>│</span>
+                  <span style={{ color: c.errorHeader, fontWeight: 'bold' }}>{err.headerStr}</span>
                 </div>
-
-                {/* Line 3: Source code line + column caret */}
                 {err.sourceCode && (
                   <>
-                    <div style={{ marginLeft: '130px', color: '#94a3b8', fontStyle: 'italic', fontSize: '0.82rem', whiteSpace: 'pre' }}>
+                    <div style={{ marginLeft: '130px', color: c.sourceLine, fontStyle: 'italic', fontSize: '0.82rem', whiteSpace: 'pre' }}>
                       {'→ '}{err.sourceCode}
                     </div>
                     {err.col !== "-" && err.col !== undefined && !isNaN(Number(err.col)) && (
-                      <div style={{ marginLeft: '130px', color: '#94a3b8', fontSize: '0.82rem', whiteSpace: 'pre' }}>
+                      <div style={{ marginLeft: '130px', color: c.caret, fontSize: '0.82rem', whiteSpace: 'pre' }}>
                         {'  ' + ' '.repeat(Math.max(0, Number(err.col) - 1 - (err.leadingSpaces || 0))) + '^'}
                       </div>
                     )}
                   </>
                 )}
-
-                {/* Line 4: Expected / Description */}
                 {err.expectedStr && (
-                  <div style={{ marginLeft: '130px', color: '#cbd5e1', fontSize: '0.82rem' }}>
+                  <div style={{ marginLeft: '130px', color: c.description, fontSize: '0.82rem' }}>
                     {err.expectedStr}
                   </div>
                 )}
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: '10px', color: '#e5e7eb' }}>
-                <span style={{ color: '#9ca3af', minWidth: '110px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '10px', color: c.plainText }}>
+                <span style={{ color: c.location, minWidth: '110px', flexShrink: 0 }}>
                   Line {err.line || '-'}, Col {err.col || '-'}
                 </span>
-                <span style={{ color: '#475569' }}>│</span>
+                <span style={{ color: c.divider }}>│</span>
                 <span style={{ whiteSpace: 'pre-wrap' }}>{err.message || "Unknown error"}</span>
               </div>
             )}
@@ -621,13 +604,13 @@ const handleInputKeyDown = (e) => {
   };
 
   // ==========================================
-  // --- CONSOLE OUTPUT COMPONENT ---
+  // --- RENDER ---
   // ==========================================
   return (
     <div className="container">
       <header className="header">
         <div className="header-left">
-          <img src="./SeaStack_Logo.png" alt="Logo" className="logo" />
+          <Image src="/SeaStack_Logo.png" alt="Logo" width={30} height={30} className="logo" />
           <span className="title">SeaStack</span>
           <nav className="main-nav">
             <ul>
@@ -635,18 +618,14 @@ const handleInputKeyDown = (e) => {
                 {isRunning ? (
                   <GooeyButton onClick={handleStop} style={{ borderColor: '#e74c3c' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-                        <rect width="10" height="10" rx="1" />
-                      </svg>
+                      <Square size={10} fill="currentColor" />
                       Stop
                     </span>
                   </GooeyButton>
                 ) : (
                   <GooeyButton onClick={handleRun} disabled={!code.trim()}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor">
-                        <polygon points="0,0 10,6 0,12" />
-                      </svg>
+                      <Play size={10} fill="currentColor" />
                       Run
                     </span>
                   </GooeyButton>
@@ -664,8 +643,12 @@ const handleInputKeyDown = (e) => {
             accept=".sea"
             style={{ display: "none" }}
           />
-          <button className="btn-header" onClick={handleFileBtnClick}>File</button>
-          <button className="btn-header" onClick={handleSaveFile}>Save</button>
+          <button className="btn-header" onClick={handleFileBtnClick} title="Open file">
+            <FolderOpen size={16} />
+          </button>
+          <button className="btn-header" onClick={handleSaveFile} title="Save file">
+            <Download size={16} />
+          </button>
 
           <label className="switch">
             <input type="checkbox" onChange={toggleTheme} checked={isDarkMode} />
@@ -680,58 +663,58 @@ const handleInputKeyDown = (e) => {
         {/* Left Panel — Code Editor + Error Logs */}
         <div className="panel-left" style={{ width: `${leftWidth}%` }}>
           <div className="editor-card">
-          <div className="panel-tab-bar">
-            {tabs.map(tab => (
-              <div
-                key={tab.id}
-                className={`tab${tab.id === activeTabId ? ' active' : ''}${dragTabId === tab.id ? ' dragging' : ''}`}
-                draggable
-                onDragStart={(e) => handleTabDragStart(e, tab.id)}
-                onDragOver={handleTabDragOver}
-                onDrop={(e) => handleTabDrop(e, tab.id)}
-                onDragEnd={handleTabDragEnd}
-                onClick={() => { if (renamingTabId !== tab.id) setActiveTabId(tab.id); }}
-              >
-                <Waves size={13} className="tab-icon" />
-                {renamingTabId === tab.id ? (
-                  <input
-                    autoFocus
-                    type="text"
-                    value={tempName}
-                    onChange={(e) => setTempName(e.target.value)}
-                    onBlur={handleRenameSubmit}
-                    onKeyDown={handleRenameKeyDown}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'inherit',
-                      font: 'inherit',
-                      outline: 'none',
-                      minWidth: '50px',
-                      width: `${Math.max(tempName.length + 1, 8)}ch`,
-                    }}
-                  />
-                ) : (
-                  <span
-                    className="tab-name"
-                    onDoubleClick={(e) => { e.stopPropagation(); handleTabDoubleClick(tab.id); }}
-                    title="Double-click to rename"
-                  >
-                    {tab.fileName}
-                  </span>
-                )}
-                <button
-                  className="close-tab"
-                  onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }}
-                  title="Close tab"
-                >×</button>
-              </div>
-            ))}
-            <button className="new-tab-btn" onClick={handleNewTab} title="New tab">+</button>
+            <div className="panel-tab-bar">
+              {tabs.map(tab => (
+                <div
+                  key={tab.id}
+                  className={`tab${tab.id === activeTabId ? ' active' : ''}${dragTabId === tab.id ? ' dragging' : ''}`}
+                  draggable
+                  onDragStart={(e) => handleTabDragStart(e, tab.id)}
+                  onDragOver={handleTabDragOver}
+                  onDrop={(e) => handleTabDrop(e, tab.id)}
+                  onDragEnd={handleTabDragEnd}
+                  onClick={() => { if (renamingTabId !== tab.id) setActiveTabId(tab.id); }}
+                >
+                  <Waves size={13} className="tab-icon" />
+                  {renamingTabId === tab.id ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={tempName}
+                      onChange={(e) => setTempName(e.target.value)}
+                      onBlur={handleRenameSubmit}
+                      onKeyDown={handleRenameKeyDown}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'inherit',
+                        font: 'inherit',
+                        outline: 'none',
+                        minWidth: '50px',
+                        width: `${Math.max(tempName.length + 1, 8)}ch`,
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className="tab-name"
+                      onDoubleClick={(e) => { e.stopPropagation(); handleTabDoubleClick(tab.id); }}
+                      title="Double-click to rename"
+                    >
+                      {tab.fileName}
+                    </span>
+                  )}
+                  <button
+                    className="close-tab"
+                    onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }}
+                    title="Close tab"
+                  >×</button>
+                </div>
+              ))}
+              <button className="new-tab-btn" onClick={handleNewTab} title="New tab">+</button>
+            </div>
+            <SeaStackEditor code={code} setCode={setCode} isDarkMode={isDarkMode} />
           </div>
-          <SeaStackEditor code={code} setCode={setCode} isDarkMode={isDarkMode} />
-          </div>{/* end editor-card */}
 
           {/* Error Panel */}
           <div className="error-panel">
@@ -758,17 +741,11 @@ const handleInputKeyDown = (e) => {
               </ul>
             </nav>
             <div className="error-panel-content">
-              {errors.length === 0 && !isRunning ? (
-                <div style={{
-                  fontFamily: '"Fira Code", monospace',
-                  fontVariantLigatures: 'none',
-                  fontSize: '0.85rem',
-                  color: '#6b7280',
-                  fontStyle: 'italic',
-                }}>
+              {errors.length === 0 && !isRunning && !errorPhase ? (
+                <div style={{ fontSize: '0.85rem', color: c.placeholder, fontStyle: 'italic', fontVariantLigatures: 'none' }}>
                   Press Run to compile and execute your SeaStack program.
                 </div>
-              ) : errors.length === 0 && !errorPhase ? (
+              ) : errors.length === 0 ? (
                 <ErrorList errors={[]} phaseName="" />
               ) : (
                 <ErrorList errors={errors} phaseName={errorPhase || "Unknown"} />
@@ -782,33 +759,25 @@ const handleInputKeyDown = (e) => {
 
         {/* Right Panel — Output Console */}
         <div className="panel panel-right">
-          <div className="console-panel" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            width: '100%',
-          }}>
-            {/* Console Header */}
+          <div className="console-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+            {/* Console Header — same height as tab bar (42px) */}
             <div style={{
               backgroundColor: '#0C2B4E',
               color: '#ffffff',
-              padding: '8px 15px',
-              fontWeight: 'bold',
+              padding: '0 15px',
+              height: '42px',
+              fontWeight: '500',
               fontSize: '0.9rem',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               flexShrink: 0,
             }}>
-              <span style={{ fontSize: '1rem' }}>▶</span>
+              <SquareTerminal size={16} />
               Output Console
             </div>
 
             {/* Console Body */}
-            <style>{`
-              @keyframes _ss_blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-              ._ss_cursor { animation: _ss_blink 1s step-end infinite; }
-            `}</style>
             <div
               style={{
                 flex: 1,
@@ -821,7 +790,7 @@ const handleInputKeyDown = (e) => {
                 lineHeight: '1.6',
                 wordBreak: 'break-word',
                 color: isDarkMode ? '#e2e8f0' : '#1e293b',
-                backgroundColor: isDarkMode ? 'rgba(17, 25, 40, 0.59)' : 'rgba(255, 255, 255, 0.45)',
+                backgroundColor: isDarkMode ? 'rgba(17, 25, 40, 0.59)' : 'rgba(255, 255, 255, 0.78)',
                 backdropFilter: 'blur(16px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(16px) saturate(180%)',
                 cursor: needsInput ? 'text' : 'default',
@@ -854,7 +823,10 @@ const handleInputKeyDown = (e) => {
                 onBlur={() => {
                   if (needsInput) setTimeout(() => inputFieldRef.current?.focus(), 10);
                 }}
-                autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', border: 'none', padding: 0, margin: 0, pointerEvents: 'none' }}
               />
 

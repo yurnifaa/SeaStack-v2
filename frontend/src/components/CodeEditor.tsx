@@ -3,7 +3,14 @@ import React from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { createTheme } from '@uiw/codemirror-themes';
 import { tags as t } from '@lezer/highlight';
-import { seaStackLanguage } from './seaStackLang'; 
+import { seaStackLanguage } from './seaStackLang';
+import { EditorView } from '@codemirror/view';
+
+interface SeaStackEditorProps {
+  code: string;
+  setCode: (val: string) => void;
+  isDarkMode: boolean;
+}
 
 // --- Light Mode Palette ---
 const seaLight = createTheme({
@@ -18,28 +25,28 @@ const seaLight = createTheme({
     gutterForeground: '#64748b',
   },
   styles: [
-    { tag: t.typeName, color: '#0019ff' },      // Datatypes: Light Red
-    { tag: t.keyword, color: '#d16619' },       // Keywords: Soft Orange
-    { tag: t.comment, color: '#9CA3AF' },       // Comments: Grey
-    { tag: t.string, color: '#119141' },        // Strings: Soft Green
-    { tag: t.number, color: '#2563EB' },        // Numbers: Soft Blue
-    { tag: t.variableName, color: '#000000' },  // Identifiers: Black
-    { tag: t.operator, color: '#7518c9' },      // Operators: Purple
-    { tag: t.punctuation, color: '#000000' },   
+    { tag: t.typeName, color: '#1d4ed8' },      // Datatypes: Deep Blue
+    { tag: t.keyword, color: '#c2410c' },       // Keywords: Deep Orange
+    { tag: t.comment, color: '#6b7280' },       // Comments: Medium Grey
+    { tag: t.string, color: '#15803d' },        // Strings: Deep Green
+    { tag: t.number, color: '#1d4ed8' },        // Numbers: Deep Blue
+    { tag: t.variableName, color: '#111827' },  // Identifiers: Near Black
+    { tag: t.operator, color: '#6d28d9' },      // Operators: Deep Purple
+    { tag: t.punctuation, color: '#374151' },
   ],
 });
 
 // --- Dark Mode Palette ---
 const seaDark = createTheme({
   theme: 'dark',
-  settings: {   
+  settings: {
     background: 'transparent',
-    foreground: '#e2e8f0',       
+    foreground: '#e2e8f0',
     caret: '#fbca1f',
     selection: 'rgba(41, 128, 185, 0.3)',
     selectionMatch: 'rgba(41, 128, 185, 0.5)',
     gutterBackground: 'transparent',
-    gutterForeground: '#5c7c9c', 
+    gutterForeground: '#5c7c9c',
   },
   styles: [
     { tag: t.typeName, color: '#6675ff' },      // Datatypes: Blue
@@ -54,13 +61,11 @@ const seaDark = createTheme({
 });
 
 // --- Highlighting Styles ---
-import { EditorView } from '@codemirror/view'; 
-
 const lightHighlightStyle = EditorView.theme({
   "&": { backgroundColor: "transparent !important" },
-  ".cm-activeLine": { backgroundColor: "rgba(255, 255, 255, 0.4) !important" },
-  ".cm-activeLineGutter": { backgroundColor: "transparent !important" },
-  ".cm-gutters": { backgroundColor: "transparent !important", borderRight: "none" }
+  ".cm-activeLine": { backgroundColor: "rgba(59, 130, 246, 0.08) !important" },
+  ".cm-activeLineGutter": { backgroundColor: "rgba(59, 130, 246, 0.06) !important" },
+  ".cm-gutters": { backgroundColor: "transparent !important", borderRight: "1px solid rgba(0,0,0,0.07)" }
 });
 
 const darkHighlightStyle = EditorView.theme({
@@ -70,30 +75,30 @@ const darkHighlightStyle = EditorView.theme({
   ".cm-gutters": { backgroundColor: "transparent !important", borderRight: "none" }
 });
 
-export default function SeaStackEditor({ code, setCode, isDarkMode }) {
-  
-  const onChange = React.useCallback((val) => {
+export default function SeaStackEditor({ code, setCode, isDarkMode }: SeaStackEditorProps) {
+
+  const onChange = React.useCallback((val: string) => {
     setCode(val);
   }, [setCode]);
 
   return (
     <div className="code-editor-area" style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
       <CodeMirror
-        key={isDarkMode ? "dark-editor" : "light-editor"} 
+        key={isDarkMode ? "dark-editor" : "light-editor"}
         value={code}
         height="100%"
-        theme={isDarkMode ? seaDark : seaLight} 
+        theme={isDarkMode ? seaDark : seaLight}
         extensions={[
-            isDarkMode ? darkHighlightStyle : lightHighlightStyle,
-            seaStackLanguage
-        ]} 
+          isDarkMode ? darkHighlightStyle : lightHighlightStyle,
+          seaStackLanguage
+        ]}
         onChange={onChange}
         basicSetup={{
           lineNumbers: true,
           foldGutter: true,
-          highlightActiveLine: true, 
+          highlightActiveLine: true,
         }}
-        style={{ height: '100%', fontSize: '15px', backgroundColor: 'transparent' }} 
+        style={{ height: '100%', fontSize: '15px', backgroundColor: 'transparent' }}
       />
     </div>
   );
