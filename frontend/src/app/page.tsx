@@ -257,12 +257,8 @@ export default function Home() {
     let expectedStr = "";
     if (isUnknown) {
       headerStr = message;
-      expectedStr = "";
     } else {
       headerStr = foundStr;
-      if (errObj.expected && errObj.expected.length > 0) {
-        expectedStr = `Expected: ${errObj.expected.join(", ")}`;
-      }
     }
     return {
       line: errObj.line,
