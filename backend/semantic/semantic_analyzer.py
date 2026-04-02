@@ -655,7 +655,7 @@ class SemanticAnalyzer:
         # SCROLL character indexing: scroll{n} yields a single PARCH character.
         # The parser emits ArrayAccessNode for all {}-indexing, so we redirect
         # here instead of raising "not an array" for SCROLL variables.
-        if sym.kind == 'var' and sym.dtype == 'SCROLL':
+        if sym.kind in ('var', 'param') and sym.dtype == 'SCROLL':
             if not sym.is_initialized:
                 self._e(self.err.uninitialized_variable(node.token, node.name))
             if len(node.indices) != 1:
