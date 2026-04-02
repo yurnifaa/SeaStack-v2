@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Waves, Play, Square, FolderOpen, Download, SquareTerminal } from "lucide-react";
+import { Fish, Play, Square, FolderOpen, Download, SquareTerminal } from "lucide-react";
 import SeaStackEditor from "../components/CodeEditor";
 import { simplifyRuntimeMessage } from "../utils/runtimeErrorMsg";
 import type { Tab, FormattedError, RawError } from "../types";
@@ -639,12 +639,14 @@ export default function Home() {
             accept=".sea"
             style={{ display: "none" }}
           />
-          <button className="btn-header" onClick={handleFileBtnClick} title="Open file">
-            <FolderOpen size={16} />
-          </button>
-          <button className="btn-header" onClick={handleSaveFile} title="Save file">
-            <Download size={16} />
-          </button>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <GooeyButton onClick={handleFileBtnClick}>
+              <FolderOpen size={15} />
+            </GooeyButton>
+            <GooeyButton onClick={handleSaveFile}>
+              <Download size={15} />
+            </GooeyButton>
+          </div>
 
           <label className="switch">
             <input type="checkbox" onChange={toggleTheme} checked={isDarkMode} />
@@ -671,7 +673,7 @@ export default function Home() {
                   onDragEnd={handleTabDragEnd}
                   onClick={() => { if (renamingTabId !== tab.id) setActiveTabId(tab.id); }}
                 >
-                  <Waves size={13} className="tab-icon" />
+                  <Fish size={15} className="tab-icon" />
                   {renamingTabId === tab.id ? (
                     <input
                       autoFocus
