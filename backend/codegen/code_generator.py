@@ -122,6 +122,7 @@ class CodeGenerator:
         self._temps = {}          # temp_name → Python expression string
         self._arg_stack = []      # pushed ARG values for upcoming CALL
         self._var_types = {}      # var_name → dtype
+        self._temp_types = {}     # IR temp_name → dtype (propagated from operands)
         self._const_names = set() # names declared as LOCKE
 
     # ── Entry ────────────────────────────────────────────────────────────
@@ -177,6 +178,28 @@ class CodeGenerator:
         if name in py_reserved:
             return f'_ss_{name}'
         return name
+
+    def _resolve_type(self, operand):
+        """Return the SeaStack dtype of an IR operand.
+
+        Checks (in order):
+          1. Raw Python literals embedded in the IR (int → COIN, float → DIME, bool → BOOL).
+          2. Named variables declared via DECL_VAR / DECL_CONST / PARAM_DECL (_var_types).
+          3. IR temporaries whose type was propagated by a previous arithmetic quad (_temp_types).
+        Returns None when the type cannot be determined.
+        """
+        if isinstance(operand, bool):
+            return 'BOOL'
+        if isinstance(operand, int):
+            return 'COIN'
+        if isinstance(operand, float):
+            return 'DIME'
+        if isinstance(operand, str):
+            if operand in self._var_types:
+                return self._var_types[operand]
+            if operand in self._temp_types:
+                return self._temp_types[operand]
+        return None
 
     def _python_literal(self, dtype, value):
         """Convert a SeaStack literal to its Python representation."""
@@ -439,6 +462,14 @@ class CodeGenerator:
         expr = f"({a} {py_op} {b})"
         self._temps[result] = expr
         self._emit(f"{result} = {expr}")
+        # Propagate type so downstream ops (MOD, DIV) can resolve temp types correctly.
+        # COIN op COIN → COIN; anything involving DIME → DIME.
+        t1 = self._resolve_type(q.arg1)
+        t2 = self._resolve_type(q.arg2)
+        if t1 == 'COIN' and t2 == 'COIN':
+            self._temp_types[result] = 'COIN'
+        elif t1 in ('COIN', 'DIME') or t2 in ('COIN', 'DIME'):
+            self._temp_types[result] = 'DIME'
 
     def _gen_ADD(self, q):     self._gen_arith(q, '+')
     def _gen_SUB(self, q):     self._gen_arith(q, '-')
@@ -449,14 +480,17 @@ class CodeGenerator:
         a = self._val(q.arg1)
         b = self._val(q.arg2)
         result = q.result
-        # Check if both operands are COIN for integer division
-        t1 = self._var_types.get(q.arg1)
-        t2 = self._var_types.get(q.arg2)
+        # Use _resolve_type so IR temporaries (e.g. results of SUB/ADD) are
+        # recognised as COIN, not just directly-declared variables.
+        t1 = self._resolve_type(q.arg1)
+        t2 = self._resolve_type(q.arg2)
         self._emit(f"if ({b}) == 0: raise ZeroDivisionError('Division by zero is not allowed.')")
         if t1 == 'COIN' and t2 == 'COIN':
             expr = f"int(({a}) / ({b}))"
+            self._temp_types[result] = 'COIN'
         else:
             expr = f"({a} / {b})"
+            self._temp_types[result] = 'DIME'
         self._temps[result] = expr
         self._emit(f"{result} = {expr}")
 
@@ -464,9 +498,19 @@ class CodeGenerator:
         a = self._val(q.arg1)
         b = self._val(q.arg2)
         result = q.result
+        # Use _resolve_type so IR temporaries (e.g. the result of `move - 1`)
+        # are correctly identified as COIN instead of returning None from
+        # _var_types, which only holds directly-declared variable names.
+        t1 = self._resolve_type(q.arg1)
+        t2 = self._resolve_type(q.arg2)
         # SeaStack modulo preserves the sign of the dividend (like C's %)
         self._emit(f"if ({b}) == 0: raise ZeroDivisionError('Modulo by zero is not allowed.')")
-        expr = f"int(__import__('math').fmod({a}, {b}))" if self._var_types.get(q.arg1) == 'COIN' else f"__import__('math').fmod({a}, {b})"
+        if t1 == 'COIN' and t2 == 'COIN':
+            expr = f"int(__import__('math').fmod({a}, {b}))"
+            self._temp_types[result] = 'COIN'
+        else:
+            expr = f"__import__('math').fmod({a}, {b})"
+            self._temp_types[result] = 'DIME'
         self._temps[result] = expr
         self._emit(f"{result} = {expr}")
 
@@ -1263,7 +1307,15 @@ class StructuralCodeGenerator:
         params_str = ', '.join(params)
         self._emit(f"def {safe_name}({params_str}):")
         self._inc()
-        self._emit("global _ss_line, _ss_col")
+        # Include all module-level variable names in the global declaration so
+        # that assignments inside the function don't shadow them as locals.
+        global_var_names = [
+            self._sanitize(q.arg1)
+            for q in self._global_decls
+            if q.op in (DECL_VAR, DECL_CONST, DECL_ARR, DECL_STRUCT_VAR)
+        ]
+        all_globals = ['_ss_line', '_ss_col'] + global_var_names
+        self._emit(f"global {', '.join(all_globals)}")
         if body_instrs:
             self._emit_block(body_instrs)
         else:
@@ -1276,7 +1328,19 @@ class StructuralCodeGenerator:
     def _emit_ahoy(self):
         self._emit("def _ss_ahoy():")
         self._inc()
-        self._emit("global _ss_line, _ss_col")
+        # Collect names of all module-level (global) variables so that
+        # assignments inside _ss_ahoy() are not mistakenly treated by
+        # Python as locals.  Without this, any global that is both read
+        # AND written inside the function body causes an UnboundLocalError
+        # on the read — because Python classifies the name as local for the
+        # entire function as soon as it sees any assignment to it anywhere.
+        global_var_names = [
+            self._sanitize(q.arg1)
+            for q in self._global_decls
+            if q.op in (DECL_VAR, DECL_CONST, DECL_ARR, DECL_STRUCT_VAR)
+        ]
+        all_globals = ['_ss_line', '_ss_col'] + global_var_names
+        self._emit(f"global {', '.join(all_globals)}")
         if self._ahoy_body:
             self._emit_block(self._ahoy_body)
         else:

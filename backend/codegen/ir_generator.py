@@ -50,6 +50,40 @@ class IRGenerator:
             self.ir.temp_types[t] = dtype
         return t
 
+    def _infer_type_from_operands(self, operator, left_temp, right_temp):
+        """Infer the result dtype of a binary op when the semantic analyzer did
+        not stamp resolved_type on the AST node.
+
+        Rules (matching SeaStack spec):
+          - Relational / logical ops  → always BOOL
+          - Concatenation (&)         → always SCROLL
+          - Arithmetic ops            → DIME if either operand is DIME,
+                                        COIN if at least one is COIN (and none
+                                        is DIME), otherwise None (unknown).
+        Operand types are resolved from ir.temp_types (populated for literal
+        and previously-visited sub-expression temps).
+        """
+        if operator in REL_OP_MAP or operator in LOG_OP_MAP:
+            return 'BOOL'
+        if operator in ('!', '!#'):
+            return 'BOOL'
+        if operator == '&':
+            return 'SCROLL'
+        if operator in ARITH_OP_MAP:
+            def _t(operand):
+                if isinstance(operand, bool):  return 'BOOL'
+                if isinstance(operand, int):   return 'COIN'
+                if isinstance(operand, float): return 'DIME'
+                if isinstance(operand, str):
+                    return self.ir.temp_types.get(operand)
+                return None
+            t1, t2 = _t(left_temp), _t(right_temp)
+            if t1 == 'DIME' or t2 == 'DIME':
+                return 'DIME'
+            if t1 == 'COIN' or t2 == 'COIN':
+                return 'COIN'
+        return None
+
     def _new_label(self):
         lbl = f"_L{self._label_counter}"
         self._label_counter += 1
@@ -595,7 +629,13 @@ class IRGenerator:
     def visit_BinaryOpNode(self, node):
         left_temp = self._emit_expr(node.left)
         right_temp = self._emit_expr(node.right)
-        t = self._new_temp_typed(getattr(node, 'resolved_type', None))
+        # Use the type the semantic analyzer stamped on the node; when it is
+        # absent (None) fall back to operand-type inference so that ir.temp_types
+        # is always populated even if the front-end omits resolved_type.
+        resolved = getattr(node, 'resolved_type', None)
+        if resolved is None:
+            resolved = self._infer_type_from_operands(node.operator, left_temp, right_temp)
+        t = self._new_temp_typed(resolved)
         op = node.operator
         if op in ARITH_OP_MAP:
             self.ir.emit(ARITH_OP_MAP[op], left_temp, right_temp, t,
@@ -613,7 +653,11 @@ class IRGenerator:
 
     def visit_UnaryOpNode(self, node):
         operand_temp = self._emit_expr(node.operand)
-        t = self._new_temp_typed(getattr(node, 'resolved_type', None))
+        # Same fallback: relational/logical unary ops always produce BOOL
+        resolved = getattr(node, 'resolved_type', None)
+        if resolved is None and node.operator in ('!', '!#'):
+            resolved = 'BOOL'
+        t = self._new_temp_typed(resolved)
         if node.operator == '-':
             self.ir.emit(UNARY_NEG, operand_temp, None, t,
                          line=self._line(node), col=self._col(node))

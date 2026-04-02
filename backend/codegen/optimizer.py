@@ -83,6 +83,14 @@ class IROptimizer:
 
         # Remove NOP instructions produced by other passes
         self.ir.instructions = [q for q in self.ir.instructions if q.op != NOP]
+
+        # Final sync: write every type the optimizer discovered locally
+        # (constants, folded results) back into ir.temp_types so the code
+        # generator always has the full, accurate type table to consult.
+        for temp, dtype in self.temp_types.items():
+            if temp not in self.ir.temp_types and dtype:
+                self.ir.temp_types[temp] = dtype
+
         return self.ir
 
     @property
@@ -198,9 +206,18 @@ class IROptimizer:
                         self.constants[q.result] = (dtype, result)
                         self.temp_values[q.result] = result
                         self.temp_types[q.result] = dtype
+                        self.ir.temp_types[q.result] = dtype   # sync to IR
                         return Quad(LITERAL, dtype, result, q.result, f"folded: {a} {q.op} {b}")
                 except (ZeroDivisionError, OverflowError, ValueError):
                     pass
+            # Cannot fold at compile time — still record the inferred result type
+            # so that StructuralCodeGenerator._resolve_operand_type can determine
+            # whether to emit integer or float division/modulo at code-gen time.
+            if q.result is not None and q.result not in self.ir.temp_types:
+                dtype = self._result_dtype(q.arg1, q.arg2)
+                if dtype:
+                    self.temp_types[q.result] = dtype
+                    self.ir.temp_types[q.result] = dtype       # sync to IR
             return q
 
         # Fold relational ops
@@ -281,10 +298,19 @@ class IROptimizer:
         return None
 
     def _get_type(self, operand):
-        if operand in self.temp_types:
-            return self.temp_types[operand]
-        if operand in self.constants:
-            return self.constants[operand][0]
+        # Raw Python literals embedded by constant propagation
+        if isinstance(operand, bool):  return 'BOOL'
+        if isinstance(operand, int):   return 'COIN'
+        if isinstance(operand, float): return 'DIME'
+        if isinstance(operand, str):
+            if operand in self.temp_types:
+                return self.temp_types[operand]
+            if operand in self.constants:
+                return self.constants[operand][0]
+            # Fallback: types written into ir.temp_types by the IR generator
+            # (or by a prior optimizer pass that already synced back)
+            if operand in self.ir.temp_types:
+                return self.ir.temp_types[operand]
         return None
 
     def _result_dtype(self, arg1, arg2):
