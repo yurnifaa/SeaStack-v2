@@ -107,7 +107,7 @@ class ErrorHandler:
             line=line, col=col, found=found, source_line=actual_line, expected=expected_str
         )
         
-        return self._create_error("Unexpected Beginning Token:", msg, line, col, found, expected_tokens)
+        return self._create_error("Unexpected Beginning Token", msg, line, col, found, expected_tokens)
 
     def get_expected_eof_error(self, token):
         # Handled at the end of parse() if tokens remain.
@@ -180,7 +180,7 @@ class ErrorHandler:
         msg = self.ERROR_TEMPLATES["MISPLACED_TOKEN"].format(
             line=line, col=col, found=found, source_line=actual_line, expected=expected_token_type
         )
-        return self._create_error("Misplaced Token:", msg, line, col, found, [expected_token_type])
+        return self._create_error("Misplaced Token", msg, line, col, found, [expected_token_type])
 
     def get_unexpected_token_error(self, token, expected_tokens):
         return self.get_invalid_token_error(token, expected_tokens)
