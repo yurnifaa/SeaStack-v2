@@ -758,7 +758,7 @@ export default function Home() {
         {/* Right Panel — Output Console */}
         <div className="panel panel-right">
           <div className="console-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-            {/* Console Header — same height as tab bar (42px) */}
+            {/* Console Header */}
             <div style={{
               backgroundColor: '#0C2B4E',
               color: '#ffffff',

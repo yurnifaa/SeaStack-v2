@@ -139,7 +139,7 @@ class ErrorHandler:
             msg = self.ERROR_TEMPLATES["UNEXPECTED_TOKEN"].format(
                 line=line, col=col, found=found, source_line=actual_line, expected=expected_str
             )
-            return self._create_error("Unexpected token:", msg, line, col, found, expected_tokens)
+            return self._create_error("Unexpected token", msg, line, col, found, expected_tokens)
         
         else:
         # ==================================================================
