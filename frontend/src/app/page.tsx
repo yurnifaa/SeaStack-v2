@@ -546,14 +546,14 @@ export default function Home() {
     if (errs.length === 0) {
       return (
         <div style={{ fontSize: '0.85rem', color: c.success, fontWeight: 'bold', fontVariantLigatures: 'none' }}>
-          ✓ No errors found. Program compiled and executed successfully.
+          No errors found. Program compiled and executed successfully.
         </div>
       );
     }
     return (
       <div style={{ fontSize: '0.85rem', fontVariantLigatures: 'none' }}>
         <div style={{ fontWeight: 'bold', color: c.errorCount, marginBottom: '10px', fontSize: '0.9rem' }}>
-          ✗ Found {errs.length} {phaseName} Error{errs.length !== 1 ? 's' : ''}
+          Found {errs.length} {phaseName} Error{errs.length !== 1 ? 's' : ''}
         </div>
         {errs.map((err, i) => (
           <div key={i} style={{ marginBottom: '14px', paddingBottom: '10px', borderBottom: `1px solid ${c.rowBorder}` }}>
