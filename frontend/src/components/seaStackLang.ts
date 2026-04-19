@@ -29,7 +29,7 @@ const seaStackGrammar: SeaGrammar = {
     { regex: /\d+(\.\d+)?/, token: "number" },
 
     // Operators & Symbols
-    { regex: /[+\-*\/%^=<>!&|]+/, token: "operator" },
+    { regex: /[+#\-*\/%^=<>!&|]+/, token: "operator" },
     { regex: /[(){}\[\]]/, token: "punctuation" },
     { regex: /!!/, token: "punctuation" },
 
@@ -40,7 +40,7 @@ const seaStackGrammar: SeaGrammar = {
     },
     // Keywords (Yellow)
     {
-      regex: /\b(?:ADRIFT|AHOY|ASK|AYE|BACK|CHART|COURSE|DROP|DROPLOOK|ECHO|HAUL-HEAVE|HEAVE|HOIST|LAND|LOCKE|LOOK|MAST|NAY|SAIL)\b/,
+      regex: /\b(?:ADRIFT|AHOY|ASK|AYE|BACK|CHART|COURSE|DROP|DROPLOOK|ECHO|HAUL|HEAVE|HOIST|LAND|LOCKE|LOOK|MAST|NAY|SAIL)\b/,
       token: "keyword"
     },
 
