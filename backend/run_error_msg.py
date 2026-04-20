@@ -79,7 +79,7 @@ class RuntimeErrorMessages:
 
     @staticmethod
     def timeout():
-        return "Timeout Error", "Program ran for over 5 minutes and was stopped. Check for infinite loops."
+        return "Timeout Error", "Program ran for over 20 minutes and was stopped. Check for infinite loops."
 
     @staticmethod
     def unknown(exc_msg: str, sanitize_fn):

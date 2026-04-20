@@ -242,7 +242,7 @@ def run_code():
 
         # Watchdog: hard ceiling of 5 minutes so the server never leaks threads
         def _watchdog():
-            if not done_event.wait(timeout=300):
+            if not done_event.wait(timeout=1200):
                 stop_event.set()
                 output_q.put(('timeout', None))
         threading.Thread(target=_watchdog, daemon=True).start()
