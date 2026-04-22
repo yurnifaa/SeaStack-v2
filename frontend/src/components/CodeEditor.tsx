@@ -31,7 +31,7 @@ const seaLight = createTheme({
     { tag: t.string, color: '#15803d', fontWeight: 'bold' },        // Strings: Deep Green
     { tag: t.number, color: '#1d4ed8', fontWeight: 'bold' },        // Numbers: Deep Blue
     { tag: t.variableName, color: '#111827', fontWeight: 'semibold' },  // Identifiers: Near Black
-    { tag: t.operator, color: '#6d28d9', fontWeight: 'bold' },      // Operators: Deep Purple
+    { tag: t.operator, color: '#6d28d9', fontWeight: 'black' },      // Operators: Deep Purple
     { tag: t.punctuation, color: '#374151', fontWeight: 'bold' },     // Punctuation: Dark Grey
   ],
 });
