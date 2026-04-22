@@ -19,9 +19,9 @@
 from codegen.ir_instructions import IRProgram, Quad
 from codegen.ir_generator import IRGenerator
 from codegen.optimizer import IROptimizer
-from codegen.code_generator import StructuralCodeGenerator
+from codegen.code_generator import CodeGenerator
 
 __all__ = [
     'IRProgram', 'Quad',
-    'IRGenerator', 'IROptimizer', 'StructuralCodeGenerator',
+    'IRGenerator', 'IROptimizer', 'CodeGenerator',
 ]
