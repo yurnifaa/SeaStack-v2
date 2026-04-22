@@ -640,12 +640,12 @@ export default function Home() {
             style={{ display: "none" }}
           />
           <div style={{ display: 'flex', gap: '4px' }}>
-            <GooeyButton onClick={handleFileBtnClick}>
+            {/* <GooeyButton onClick={handleFileBtnClick}> HOY JANA BALIKAN MO TO AT I-UNCOMMENT MO OR ELSE
               <FolderOpen size={15} />
             </GooeyButton>
             <GooeyButton onClick={handleSaveFile}>
               <Download size={15} />
-            </GooeyButton>
+            </GooeyButton> */}
           </div>
 
           <label className="switch">
