@@ -261,31 +261,6 @@ class CodeGenerator:
         self._emit("return s[idx]")
         self._indent_dec()
         self._emit_blank()
-        self._emit("def _ss_check_range(val, lo, hi, var_name='value'):")
-        self._indent_inc()
-        self._emit("if lo is not None and hi is not None:")
-        self._indent_inc()
-        self._emit("if not (lo <= val <= hi):")
-        self._indent_inc()
-        self._emit("raise ValueError(f'{var_name} must be between {lo} and {hi}, but got {val}.')")
-        self._indent_dec()
-        self._indent_dec()
-        self._emit("elif lo is not None:")
-        self._indent_inc()
-        self._emit("if val < lo:")
-        self._indent_inc()
-        self._emit("raise ValueError(f'{var_name} must be at least {lo}, but got {val}.')")
-        self._indent_dec()
-        self._indent_dec()
-        self._emit("elif hi is not None:")
-        self._indent_inc()
-        self._emit("if val > hi:")
-        self._indent_inc()
-        self._emit("raise ValueError(f'{var_name} must be at most {hi}, but got {val}.')")
-        self._indent_dec()
-        self._indent_dec()
-        self._indent_dec()
-        self._emit_blank()
 
     # ── Instruction Walker ───────────────────────────────────────────────
 
@@ -752,33 +727,6 @@ class CodeGenerator:
                 member = tgt['member']
                 self._emit(f"{var}['{member}'] = {assign_expr}")
 
-            # ── Range check ──────────────────────────────────────────────
-            if dtype in ('COIN', 'DIME'):
-                rmin = tgt.get('range_min')
-                rmax = tgt.get('range_max')
-                if rmin is not None or rmax is not None:
-                    lo_expr = (
-                        str(rmin) if isinstance(rmin, int)
-                        else (self._val(rmin) if rmin is not None else 'None')
-                    )
-                    hi_expr = (
-                        str(rmax) if isinstance(rmax, int)
-                        else (self._val(rmax) if rmax is not None else 'None')
-                    )
-                    if tgt['target_kind'] == 'var':
-                        assigned_var = var
-                    elif tgt['target_kind'] == 'array1d':
-                        assigned_var = f"{var}[{self._val(tgt['index1'])}]"
-                    elif tgt['target_kind'] == 'array2d':
-                        assigned_var = f"{var}[{self._val(tgt['index1'])}][{self._val(tgt['index2'])}]"
-                    elif tgt['target_kind'] == 'member':
-                        assigned_var = f"{var}.{tgt['member']}"
-                    else:
-                        assigned_var = var
-                    self._emit(
-                        f"_ss_check_range({assigned_var}, {lo_expr}, {hi_expr}, {repr(tgt['var_name'])})"
-                    )
-
     def _gen_OUTPUT(self, q):
         fmt_str = q.arg1
         arg_temps = q.arg2  # list of temps
@@ -849,15 +797,10 @@ class StructuralCodeGenerator:
         self._func_bodies = {}  # func_name → list of Quad
         self._ahoy_body = []
         self._global_decls = []
-        # Maps var_name → minimum positive bound inferred from loop usage.
-        # Built by _scan_loop_bounds() before code emission starts.
-        # Used to auto-validate user input that feeds a loop counter/limit.
-        self._loop_bound_vars = {}   # var_name → 1  (always at least 1)
 
     def generate(self):
         """Generate executable Python code."""
         self._partition_instructions()
-        self._scan_loop_bounds()
         self._emit_preamble()
         self._emit_globals()
         self._emit_functions()
@@ -900,60 +843,6 @@ class StructuralCodeGenerator:
                 current_body.append(q)
             else:
                 self._global_decls.append(q)
-
-    # ── Loop-bound analysis ───────────────────────────────────────────────
-
-    def _scan_loop_bounds(self):
-        """Scan all instruction lists and record variables that appear as
-        upper or lower bounds in loop-condition comparisons.
-
-        When a COIN variable is used as a bound in a HOIST/HEAVE/HAUL-HEAVE
-        condition — e.g.  i < rows  or  i <= n — we record that variable
-        (here 'rows' / 'n') as requiring a minimum value of 1.  This lets
-        _gen_input automatically validate it even without an explicit range
-        declaration in the source.
-
-        Detection rule: scan for LT / LE / GT / GE quads that occur between
-        a loop LABEL and its matching JUMP_FALSE.  The non-loop-counter
-        operand (i.e. the one whose name was NOT declared in the HOIST init)
-        is the bound variable.  We also accept HEAVE / HAUL-HEAVE conditions
-        because their condition quad is emitted the same way.
-        """
-        all_instrs = (
-            self._global_decls
-            + self._ahoy_body
-            + [q for body in self._func_bodies.values() for q in body]
-        )
-
-        # Collect names declared as HOIST loop counters (i = 0 style inits).
-        # These are variables we do NOT flag as bound vars (they are the index).
-        loop_counter_names: set = set()
-        for q in all_instrs:
-            if q.op == DECL_VAR and getattr(q, 'comment', '') and 'HOIST init' in str(getattr(q, 'comment', '')):
-                loop_counter_names.add(q.arg1)
-
-        # Now find comparison quads inside loop condition windows.
-        # A loop condition window is: after LABEL → before first JUMP_FALSE.
-        in_loop_cond = False
-        for q in all_instrs:
-            if q.op == LABEL:
-                in_loop_cond = True
-                continue
-            if q.op == JUMP_FALSE:
-                in_loop_cond = False
-                continue
-            if in_loop_cond and q.op in (LT, LE, GT, GE):
-                # arg1 op arg2  →  identify which operand is the bound variable
-                for operand in (q.arg1, q.arg2):
-                    if (
-                        isinstance(operand, str)
-                        and not operand.startswith('_t')   # skip temp names
-                        and operand not in loop_counter_names
-                        and self._var_types.get(operand, self.ir.temp_types.get(operand)) in ('COIN', 'DIME', None)
-                    ):
-                        # Only record user-level variable names (no leading _)
-                        if not operand.startswith('_'):
-                            self._loop_bound_vars[operand] = 1
 
     # ── Emit helpers ─────────────────────────────────────────────────────
 
@@ -1133,31 +1022,6 @@ class StructuralCodeGenerator:
         self._dec()
         self._dec()
         self._emit("return val")
-        self._dec()
-        self._emit_blank()
-        self._emit("def _ss_check_range(val, lo, hi, var_name='value'):")
-        self._inc()
-        self._emit("if lo is not None and hi is not None:")
-        self._inc()
-        self._emit("if not (lo <= val <= hi):")
-        self._inc()
-        self._emit("raise ValueError(f'{var_name} must be between {lo} and {hi}, but got {val}.')")
-        self._dec()
-        self._dec()
-        self._emit("elif lo is not None:")
-        self._inc()
-        self._emit("if val < lo:")
-        self._inc()
-        self._emit("raise ValueError(f'{var_name} must be at least {lo}, but got {val}.')")
-        self._dec()
-        self._dec()
-        self._emit("elif hi is not None:")
-        self._inc()
-        self._emit("if val > hi:")
-        self._inc()
-        self._emit("raise ValueError(f'{var_name} must be at most {hi}, but got {val}.')")
-        self._dec()
-        self._dec()
         self._dec()
         self._emit_blank()
         self._emit("def _ss_parse_input(raw_line, types):")
@@ -1964,45 +1828,6 @@ class StructuralCodeGenerator:
             elif tgt['target_kind'] == 'member':
                 member = tgt['member']
                 self._emit(f"{var}['{member}'] = {val_expr}")
-
-            # ── Range check ──────────────────────────────────────────────
-            # Only numeric types can have a range constraint (COIN / DIME).
-            # range_min / range_max are IR temp names (or None) set by the
-            # IR generator when the AST target carries explicit bounds.
-            # As a fallback, if the variable was identified as a loop bound
-            # by _scan_loop_bounds(), enforce a minimum of 1 automatically.
-            if dtype in ('COIN', 'DIME'):
-                rmin = tgt.get('range_min')
-                rmax = tgt.get('range_max')
-                var_name_raw = tgt['var_name']
-
-                # Fallback: infer minimum-1 constraint from loop-bound analysis
-                if rmin is None and rmax is None and var_name_raw in self._loop_bound_vars:
-                    rmin = self._loop_bound_vars[var_name_raw]   # integer 1
-
-                if rmin is not None or rmax is not None:
-                    # rmin / rmax may be an IR temp name (str), a raw int, or None
-                    lo_expr = (
-                        str(rmin) if isinstance(rmin, int)
-                        else (self._val(rmin) if rmin is not None else 'None')
-                    )
-                    hi_expr = (
-                        str(rmax) if isinstance(rmax, int)
-                        else (self._val(rmax) if rmax is not None else 'None')
-                    )
-                    if tgt['target_kind'] == 'var':
-                        assigned_var = var
-                    elif tgt['target_kind'] == 'array1d':
-                        assigned_var = f"{var}[{self._val(tgt['index1'])}]"
-                    elif tgt['target_kind'] == 'array2d':
-                        assigned_var = f"{var}[{self._val(tgt['index1'])}][{self._val(tgt['index2'])}]"
-                    elif tgt['target_kind'] == 'member':
-                        assigned_var = f"{var}.{tgt['member']}"
-                    else:
-                        assigned_var = var
-                    self._emit(
-                        f"_ss_check_range({assigned_var}, {lo_expr}, {hi_expr}, {repr(var_name_raw)})"
-                    )
 
     def _gen_output(self, q):
         fmt_str = q.arg1
