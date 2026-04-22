@@ -21,7 +21,7 @@ try:
     from backend.semantic.semantic_analyzer import SemanticAnalyzer
     from backend.codegen.ir_generator import IRGenerator
     from backend.codegen.optimizer import IROptimizer
-    from backend.codegen.code_generator import StructuralCodeGenerator
+    from backend.codegen.code_generator import CodeGenerator
 except ImportError as e:
     print(f"\n[ERROR] Import Failed! Details: {e}")
     sys.exit(1)
@@ -154,7 +154,7 @@ def run_code():
 
         # Code Generation
         try:
-            return StructuralCodeGenerator(ir_program).generate()
+            return CodeGenerator(ir_program).generate()
         except Exception as e:
             raise _CompileError("Code Generation", [{"line": "-", "col": "-", "found": "CRASH",
                                                       "expected": [], "message": f"Code generation failed: {e}",
