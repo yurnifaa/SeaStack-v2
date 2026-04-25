@@ -48,7 +48,8 @@ SEASTACK_PROJ/
 │   │   │   ├── layout.js
 │   │   │   └── page.js
 │   │   └── components/
-│   │       └── CodeEditor.js
+│   │       ├── CodeEditor.js
+│   │       └── seaStackLang.ts
 │   ├── .gitignore
 │   ├── eslint.config.mjs
 │   ├── jsconfig.json
