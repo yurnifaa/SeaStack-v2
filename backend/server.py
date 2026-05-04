@@ -296,7 +296,6 @@ def run_code():
         headers={
             'Cache-Control':     'no-cache',
             'X-Accel-Buffering': 'no',
-            'Connection':        'keep-alive',
         }
     )
 
