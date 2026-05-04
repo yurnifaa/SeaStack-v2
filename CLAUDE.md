@@ -8,7 +8,7 @@ SeaStack is a custom programming language with a direct-execution interpreter. I
 - **Frontend** — the user-facing interface (web-based), powered by Node.js / npm
 
 ## Language Specification
-The full SeaStack language rules are documented in [`seastack-doc.pdf`](seastack-doc.pdf).
+The full SeaStack language rules are documented in [`seastack-rules.md`](seastack-rules.md).
 Claude Code can read this file directly — if you need to understand syntax rules,
 token definitions, or language behaviour, refer to this document before making changes.
 

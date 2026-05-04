@@ -1,0 +1,4564 @@
+0.5,PROGRAM,SOURCE CODE
+1,Sum of 2 inputs,"AHOY() [
+    DIME num1, num2, sum!!
+    ECHO(""Enter first number: "")!!
+    ASK(""%D"", @num1)!!
+    ECHO(""Enter second number: "")!!
+    ASK(""%D"", @num2)!!
+
+    sum = num1 + num2!!
+    ECHO(""Sum: %D\n"", sum)!!
+]"
+,,
+,,
+2,Difference of 2 inputs,"AHOY() [
+    DIME num1, num2, diff!!
+    ECHO(""Enter first number: "")!!
+    ASK(""%D"", @num1)!!
+    ECHO(""Enter second number: "")!!
+    ASK(""%D"", @num2)!!
+
+    diff = num1 - num2!!
+    ECHO(""Difference: %D\n"", diff)!!
+]"
+,,
+,,
+3,Product of 2 inputs,"AHOY() [
+    DIME num1, num2, product!!
+    ECHO(""Enter first number: "")!!
+    ASK(""%D"", @num1)!!
+    ECHO(""Enter second number: "")!!
+    ASK(""%D"", @num2)!!
+
+    product = num1 * num2!!
+    ECHO(""Product: %D\n"", product)!!
+]"
+,,
+,,
+4,Quotient of 2 inputs,"AHOY() [
+    DIME num1, num2, quotient!!
+    ECHO(""Enter first number: "")!!
+    ASK(""%D"", @num1)!!
+    ECHO(""Enter second number: "")!!
+    ASK(""%D"", @num2)!!
+
+    quotient = num1 / num2!!
+    ECHO(""Quotient: %D\n"", quotient)!!
+]"
+,,
+,,
+5,Multiplicaiton Table," AHOY() [
+    COIN row, col!!
+    COIN table{10}{10}!!
+
+    ECHO(""Enter number of rows (max 10): "")!!
+    ASK(""%C"", @row)!!
+    ECHO(""Enter number of columns (max 10): "")!!
+    ASK(""%C"", @col)!!
+
+    LOOK (row <= 10 && col <= 10) [
+        HOIST (COIN i = 0!! i < row!! +#i) [
+            HOIST (COIN j = 0!! j < col!! +#j) [
+                table{i}{j} = (i + 1) * (j + 1)!!
+            ]
+        ]
+
+        ECHO(""\nMultiplication Table:\n"")!!
+
+        HOIST (COIN i = 0!! i < row!! +#i) [
+            HOIST (COIN j = 0!! j < col!! +#j) [
+                ECHO(""%C\t"", table{i}{j})!!
+            ]
+            ECHO(""\n"")!!
+        ]
+        
+    ] DROP [
+        ECHO(""Error: Rows or columns exceed the maximum size of 10.\n"")!!
+    ]
+]"
+,,
+,,
+6,Triangle made from *,"AHOY() [
+    COIN size!!
+
+    ECHO(""Enter size of Triangle: "")!!
+    ASK(""%C"", @size)!!
+
+    LOOK (size >=2 ) [
+        
+        HOIST (COIN i = 0!! i < size!! +#i) [ 
+            HOIST (COIN j = 1!! j < size - i!! +#j) [
+                ECHO("" "")!!
+            ]
+            HOIST (COIN k = 0!! k <= i!! +#k) [
+                ECHO(""* "")!!
+            ]
+            ECHO(""\n"")!!
+        ]
+        
+    ] DROP [
+        ECHO(""\nInvalid Input: Size must be greater than one.\n"")!!
+    ]
+]"
+,,
+,,
+7,Inverted Triangle made from *,"AHOY() [
+    COIN size, i!!
+    ECHO(""Enter size of Inverted Triangle: "")!!
+    ASK(""%C"", @size)!!
+
+    i = size!!
+
+  LOOK (size >= 2) [
+        
+       HOIST (!! i > 0!! -#i) [       
+          HOIST (COIN s = 0!! s < size - i!! +#s) [
+            ECHO("" "")!!
+          ]
+          HOIST (COIN j = 0!! j < i!! +#j) [
+            ECHO(""* "")!!
+          ]
+          ECHO(""\n"")!!
+        ]  
+    ] DROP [
+        ECHO(""\nInvalid Input: Size must be greater than one.\n"")!!
+    ]
+]"
+,,
+,,
+8,Square made from *,"AHOY() [
+    COIN size!!
+
+    ECHO(""Enter side length of Square: "")!!
+    ASK(""%C"", @size)!!
+
+     LOOK (size >= 2) [
+        
+        HOIST (COIN i = 0!! i < size!! +#i) [
+        HOIST (COIN j = 0!! j < size!! +#j) [
+            ECHO(""*  "")!!
+          ]
+        ECHO(""\n"")!!
+      ]
+        
+    ] DROP [
+        ECHO(""\nInvalid Input: Size must be greater than one.\n"")!!
+    ]
+  
+]"
+,,
+,,
+9,Rectangle made from *,"AHOY() [
+    COIN rows, cols!!
+    ECHO(""Enter number of rows of the Rectangle: "")!!
+    ASK(""%C"", @rows)!!
+    ECHO(""Enter number of columns rows of the Rectangle: "")!!
+    ASK(""%C"", @cols)!!
+
+
+    LOOK (rows >= 1 && cols >= 1) [
+        
+       HOIST (COIN i = 0!! i < rows!! +#i) [
+        HOIST (COIN j = 0!! j < cols!! +#j) [
+            ECHO(""* "")!!
+        ]
+        ECHO(""\n"")!!
+    ]
+        
+    ] DROP [
+        ECHO(""\nInvalid Input: Rows and Columns must be greater than zero.\n"")!!
+    ]
+]"
+,,
+,,
+10,Fibonacci Sequence,"
+AHOY() [
+    COIN limit!!
+    COIN t1 = 0, t2 = 1, next_term = 0!!
+    ECHO(""Enter the number of terms: "")!!
+    ASK(""%C"", @limit)!!
+
+    ECHO(""Fibonacci Series: "")!!
+
+    LOOK (limit > 0) [
+        
+         ~ Check and print the 1st term
+    LOOK (limit >= 1) [
+        ECHO(""%C"", t1)!!
+    ]
+     ~ Check and print the 2nd term
+    LOOK (limit >= 2) [
+        ECHO("", %C"", t2)!!
+    ]
+
+   ~ Calculate
+    LOOK (limit > 2) [
+        HOIST (COIN i = 3!! i <= limit!! +#i) [
+            next_term = t1 + t2!!
+            ECHO("", %C"", next_term)!! ~ Print the next terms
+            
+            t1 = t2!!
+            t2 = next_term!!
+            ]
+    ]
+        
+    ] DROP [
+        ECHO(""\nInvalid Input: Number of terms must be greater than zero.\n"")!!
+    ]
+   
+]"
+,,
+,,
+11,Square root of a Number,"AHOY() [
+    DIME num = 0.0!!
+    DIME result = 0.0, abs_num = 0.0!!
+
+    ECHO(""Enter a number: "")!!
+    ASK(""%D"", @num)!!
+
+    LOOK (num < 0.0) [
+        abs_num = num * -1.0!!
+        result = abs_num ^ 0.5!!
+        ECHO(""Square root of %D is %Di\n"", num, result)!!
+    ] DROP [
+        result = num ^ 0.5!!
+        ECHO(""Square root of %D is %D\n"", num, result)!!
+    ]
+]"
+,,
+,,
+12,Sum of the Square of the number from 1 to N,"~ PROGRAM 12 Sum of the square of the no. from 1 to N
+
+AHOY() [
+    COIN n!!
+    COIN sum = 0!!
+    
+    ECHO(""=============================\n"")!!
+    ECHO(""SQUARE OF NUMBERS FROM 1 TO N\n"")!!
+    ECHO(""=============================\n"")!!
+
+    ECHO(""\nEnter the Value of N: "")!!
+    ASK(""%C"", @n)!!
+
+    ECHO(""-----------------------------\n"")!!
+
+
+    LOOK (n > 0) [
+        HOIST (COIN i = 1!! i <= n!! +#i) [
+             ECHO(""%Cx%C = %C\n"", i, i, i ^ 2)!!
+               sum += i ^ 2!!
+        ]
+         ~ Bottom Divider and Final Output
+    ECHO(""-----------------------------\n"")!!
+    ECHO(""SUM OF SQUARE NUMBERS: %C\n"", sum)!!
+    ECHO(""=============================\n"")!!
+    ] DROP [
+        ECHO(""Error: Please enter a positive number.\n"")!!
+    ]
+]"
+,,
+,,
+13,Sum of the Cube of the number from 1 to N,"AHOY() [
+    COIN n!!
+    COIN sum = 0!!
+
+    ECHO(""=============================\n"")!!
+    ECHO(""CUBE OF NUMBERS FROM 1 TO N\n"")!!
+    ECHO(""=============================\n"")!!
+    
+    ECHO(""Enter the value for N: "")!!
+    ASK(""%C"", @n)!!
+    
+    ECHO(""-----------------------------\n"")!!
+
+    LOOK (n > 0) [
+      HOIST (COIN i = 1!! i <= n!! +#i) [
+        ECHO(""%Cx%Cx%C = %C\n"", i, i, i, i ^ 3)!!
+        
+        sum += i ^ 3!!
+      ] 
+    ] DROP [
+        ECHO(""Please enter a number from 1 and above\n"")!!
+    ]
+    
+    ~ Bottom Divider and Final Output
+    ECHO(""-----------------------------\n"")!!
+    ECHO(""SUM OF CUBED NUMBERS: %C\n"", sum)!!
+    ECHO(""=============================\n"")!!
+]"
+,,
+,,
+14,"Conversion:
+- Binary to Octal, Decimal, Hexadecimal
+- Decimal to Binary, Octal, Hexadecimal","
+~ Maps a COIN digit 0-15 to its hexadecimal SCROLL character
+SCROLL hex_digit(COIN d) [
+    SCROLL r = ""0""!!
+    CHART (d) [
+        COURSE 0:  r = ""0""!! LAND!!
+        COURSE 1:  r = ""1""!! LAND!!
+        COURSE 2:  r = ""2""!! LAND!!
+        COURSE 3:  r = ""3""!! LAND!!
+        COURSE 4:  r = ""4""!! LAND!!
+        COURSE 5:  r = ""5""!! LAND!!
+        COURSE 6:  r = ""6""!! LAND!!
+        COURSE 7:  r = ""7""!! LAND!!
+        COURSE 8:  r = ""8""!! LAND!!
+        COURSE 9:  r = ""9""!! LAND!!
+        COURSE 10: r = ""A""!! LAND!!
+        COURSE 11: r = ""B""!! LAND!!
+        COURSE 12: r = ""C""!! LAND!!
+        COURSE 13: r = ""D""!! LAND!!
+        COURSE 14: r = ""E""!! LAND!!
+        COURSE 15: r = ""F""!! LAND!!
+        ADRIFT:    r = ""?""!! LAND!!
+    ]
+    BACK r!!
+]
+~ Returns AYE if every digit of b is 0 or 1, NAY otherwise
+BOOL is_valid_bin(COIN b) [
+    COIN d     = 0!!
+    BOOL valid = AYE!!
+    HEAVE (b > 0) [
+        d = b % 10!!
+        LOOK ((d != 0) && (d != 1)) [
+            valid = NAY!!
+        ]
+        b = (b - d) / 10!!
+    ]
+    BACK valid!!
+]
+~ Converts a binary number typed as a COIN (e.g. 1010) to its decimal value
+COIN bin_to_dec(COIN b) [
+    COIN dec = 0!!
+    COIN pos = 1!!
+    COIN d   = 0!!
+    HEAVE (b > 0) [
+        d    = b % 10!!
+        dec += d * pos!!
+        pos *= 2!!
+        b    = (b - d) / 10!!
+    ]
+    BACK dec!!
+]
+~ Prints the binary representation of decimal n
+ABYSS print_bin(COIN n) [
+    SCROLL result = ""0""!!
+    COIN rem = 0!!
+    LOOK (n == 0) [
+        ECHO(""0"")!!
+    ] DROP [
+        rem    = n % 2!!
+        n      = (n - rem) / 2!!
+        result = hex_digit(rem)!!
+        HEAVE (n > 0) [
+            rem    = n % 2!!
+            n      = (n - rem) / 2!!
+            result = hex_digit(rem) & result!!
+        ]
+        ECHO(""%S"", result)!!
+    ]
+]
+~ Prints the octal representation of decimal n
+ABYSS print_oct(COIN n) [
+    SCROLL result = ""0""!!
+    COIN rem = 0!!
+    LOOK (n == 0) [
+        ECHO(""0"")!!
+    ] DROP [
+        rem    = n % 8!!
+        n      = (n - rem) / 8!!
+        result = hex_digit(rem)!!
+        HEAVE (n > 0) [
+            rem    = n % 8!!
+            n      = (n - rem) / 8!!
+            result = hex_digit(rem) & result!!
+        ]
+        ECHO(""%S"", result)!!
+    ]
+]
+~ Prints the hexadecimal representation of decimal n
+ABYSS print_hex(COIN n) [
+    SCROLL result = ""0""!!
+    COIN rem = 0!!
+    LOOK (n == 0) [
+        ECHO(""0"")!!
+    ] DROP [
+        rem    = n % 16!!
+        n      = (n - rem) / 16!!
+        result = hex_digit(rem)!!
+        HEAVE (n > 0) [
+            rem    = n % 16!!
+            n      = (n - rem) / 16!!
+            result = hex_digit(rem) & result!!
+        ]
+        ECHO(""%S"", result)!!
+    ]
+]
+AHOY() [
+    ~ Local declarations must strictly be placed at the absolute top
+    COIN choice = 0, continue_choice = 0!!
+    COIN bin_input = 0, dec_input = 0, dec_val = 0!!
+    BOOL continue_conv = AYE!!
+
+    ~ Main Application Loop
+    HAUL [
+        ECHO(""\nNumber Base Converter \n"")!!
+        ECHO(""-----------------------------------\n"")!!
+        ECHO(""1. Binary  -> Octal, Decimal, Hex  \n"")!!
+        ECHO(""2. Decimal -> Binary, Octal, Hex   \n"")!!
+        ECHO(""-----------------------------------\n"")!!
+        
+        ~ Validate Menu Choice (Strictly no negative values)
+        HAUL [
+            ECHO(""Enter choice: "")!!
+            ASK(""%C"", @choice)!!
+            
+            LOOK (choice < 0) [
+                ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+            ]
+        ] HEAVE (choice < 0)!!
+
+        CHART (choice) [
+            COURSE 1:
+                ~ Use HAUL-HEAVE to strictly validate binary input
+                HAUL [
+                    ECHO(""\nEnter binary number: "")!!
+                    ASK(""%C"", @bin_input)!!
+                    
+                    ~ Display error if input is negative
+                    LOOK (bin_input < 0) [
+                        ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                    ]
+                ] HEAVE (bin_input < 0)!!
+
+                LOOK (is_valid_bin(bin_input)) [
+                    dec_val = bin_to_dec(bin_input)!!
+                    ECHO(""\n--- Results ---\n"")!!
+                    ECHO(""Decimal     : %C\n"", dec_val)!!
+                    ECHO(""Octal       : "")!!
+                    print_oct(dec_val)!!
+                    ECHO(""\n"")!!
+                    ECHO(""Hexadecimal : "")!!
+                    print_hex(dec_val)!!
+                    ECHO(""\n"")!!
+                ] DROP [
+                    ECHO(""\nInvalid binary! Only digits 0 and 1 are allowed.\n"")!!
+                ]
+                LAND!!
+                
+            COURSE 2:
+                ~ Use HAUL-HEAVE to strictly validate decimal input
+                HAUL [
+                    ECHO(""\nEnter decimal number: "")!!
+                    ASK(""%C"", @dec_input)!!
+                    
+                    ~ Display error if input is negative
+                    LOOK (dec_input < 0) [
+                        ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                    ]
+                ] HEAVE (dec_input < 0)!!
+
+                ECHO(""\n--- Results ---\n"")!!
+                ECHO(""Binary      : "")!!
+                print_bin(dec_input)!!
+                ECHO(""\n"")!!
+                ECHO(""Octal       : "")!!
+                print_oct(dec_input)!!
+                ECHO(""\n"")!!
+                ECHO(""Hexadecimal : "")!!
+                print_hex(dec_input)!!
+                ECHO(""\n"")!!
+                LAND!!
+                
+            ADRIFT:
+                ECHO(""\nInvalid choice! Please enter 1 or 2.\n"")!!
+                LAND!!
+        ]
+
+        ~ Ask to continue with strict validation against negative and invalid inputs
+        HAUL [
+            ECHO(""\nDo you want to convert another number? (1 for Yes, 0 for No): "")!!
+            ASK(""%C"", @continue_choice)!!
+            
+            LOOK (continue_choice < 0) [
+                ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+            ] DROPLOOK (continue_choice != 1 && continue_choice != 0) [
+                ECHO(""Error: Invalid choice. Please enter exactly 1 or 0.\n"")!!
+            ]
+        ] HEAVE (continue_choice != 1 && continue_choice != 0)!!
+
+        ~ Update the boolean loop flag if the user chooses 0
+        LOOK (continue_choice == 0) [
+            continue_conv = NAY!!
+        ]
+
+    ] HEAVE (continue_conv == AYE)!!
+]"
+,,
+,,
+15,"Reverse of the Digit:
+- Compute and Display the sum of digits
+- Display the reverse of the digit","AHOY() [
+    COIN num!!
+    COIN temp!!
+    COIN remainder!!
+    COIN sum = 0!!
+    COIN reverse = 0!!
+
+    ECHO(""Enter a whole number: "")!!
+    ASK(""%C"", @num)!!
+
+    LOOK (num > 0) [
+        temp = num!!
+
+        HEAVE (temp > 0) [
+            remainder = temp % 10!!
+
+            sum += remainder!!
+
+            reverse = (reverse * 10) + remainder!!
+
+            temp = (temp - remainder) / 10!!
+        ]
+
+        ECHO(""Sum of each digit: %C\n"", sum)!!
+        ECHO(""Reverse of the digit: %C\n"", reverse)!!
+
+    ] DROP [
+        ECHO(""Invalid Input: Please enter a natural number (greater than 0).\n"")!!
+    ]
+]"
+,,
+,,
+16,"Area of the Following using if's or switch:
+- Area of a Circle
+- Area of a Triangle
+- Area of a Square
+- Area of a Rectangle","AHOY() [
+    COIN choice = 0!!
+    DIME pi = 3.14159!!
+    DIME radius = 0.0, base = 0.0, height = 0.0, side = 0.0, length = 0.0, width = 0.0, area = 0.0!!
+
+    HEAVE (choice != 5) [
+        ECHO(""==============================\n"")!!
+        ECHO(""       AREA CALCULATOR        \n"")!!
+        ECHO(""==============================\n"")!!
+        ECHO(""1. Area of a Circle\n"")!!
+        ECHO(""2. Area of a Triangle\n"")!!
+        ECHO(""3. Area of a Square\n"")!!
+        ECHO(""4. Area of a Rectangle\n"")!!
+        ECHO(""5. Exit\n"")!!
+        ECHO(""------------------------------\n"")!!
+        ECHO(""Enter your choice (1-5): "")!!
+        
+        ASK(""%C"", @choice)!!
+
+        CHART (choice) [
+            
+            COURSE 1:
+                ECHO(""\nEnter radius of the circle: "")!!
+                ASK(""%D"", @radius)!!
+                area = pi * (radius * radius)!!
+                ECHO(""Area of the Circle: %D\n"", area)!!
+                LAND!!
+                
+            COURSE 2:
+                ECHO(""\nEnter base of the triangle: "")!!
+                ASK(""%D"", @base)!!
+                ECHO(""Enter height of the triangle: "")!!
+                ASK(""%D"", @height)!!
+                area = 0.5 * base * height!!
+                ECHO(""Area of the Triangle: %D\n"", area)!!
+                LAND!!
+                
+            COURSE 3:
+                ECHO(""\nEnter side of the square: "")!!
+                ASK(""%D"", @side)!!
+                area = side * side!!
+                ECHO(""Area of the Square: %D\n"", area)!!
+                LAND!!
+                
+            COURSE 4:
+                ECHO(""\nEnter length of the rectangle: "")!!
+                ASK(""%D"", @length)!!
+                ECHO(""Enter width of the rectangle: "")!!
+                ASK(""%D"", @width)!!
+                area = length * width!!
+                ECHO(""Area of the Rectangle: %D\n"", area)!!
+                LAND!!
+                
+            COURSE 5:
+                ECHO(""\nExiting Area Calculator...\n"")!!
+                LAND!!
+                
+            ADRIFT:
+                ECHO(""\nInvalid Input. Please select 1 to 5.\n"")!!
+                LAND!!
+        ]
+    ]
+]"
+,,
+,,
+17,"Area of the Following using sub function:
+- Area of a Circle
+- Area of a Triangle
+- Area of a Square
+- Area of a Rectangle","COIN area_rect(COIN width, COIN height) [
+    COIN area!!
+    area = width * height!!
+    BACK area!!
+]
+
+COIN area_sqr(COIN side) [
+    COIN area!!
+    area = side * side!!
+    BACK area!!
+]
+
+DIME area_tri(DIME base, DIME height) [
+    DIME area!!
+    area = 0.5 * base * height!!
+    BACK area!!
+]
+
+DIME area_circ(DIME radius) [
+    DIME area, pi = 3.14159!!
+    area = pi * (radius * radius)!!
+    BACK area!!
+]
+
+AHOY() [
+    COIN choice, width, height, side, rect_area, sqr_area!!
+    DIME base, tri_height, radius, tri_area, circ_area!!
+    
+    ECHO(""==============================\n"")!!
+    ECHO(""       AREA CALCULATOR        \n"")!!
+    ECHO(""==============================\n"")!!
+    ECHO(""1. Area of a Circle\n"")!!
+    ECHO(""2. Area of a Triangle\n"")!!
+    ECHO(""3. Area of a Square\n"")!!
+    ECHO(""4. Area of a Rectangle\n"")!!
+    ECHO(""------------------------------\n"")!!
+    ECHO(""Enter your choice (1-4): "")!!
+    
+    ASK(""%C"", @choice)!!
+
+    CHART (choice) [
+        
+        COURSE 1:
+            ECHO(""\nEnter radius of the circle: "")!!
+            ASK(""%D"", @radius)!!
+            
+            circ_area = area_circ(radius)!!
+            ECHO(""Circle Area: %D\n"", circ_area)!!
+            LAND!!
+            
+        COURSE 2:
+            ECHO(""\nEnter base of the triangle: "")!!
+            ASK(""%D"", @base)!!
+            
+            ECHO(""Enter height of the triangle: "")!!
+            ASK(""%D"", @tri_height)!!
+            
+            tri_area = area_tri(base, tri_height)!!
+            ECHO(""Triangle Area: %D\n"", tri_area)!!
+            LAND!!
+            
+        COURSE 3:
+            ECHO(""\nEnter Square Side: "")!!
+            ASK(""%C"", @side)!!
+            
+            sqr_area = area_sqr(side)!!
+            ECHO(""Square Area: %C\n"", sqr_area)!!
+            LAND!!
+            
+        COURSE 4:
+            ECHO(""\nEnter Rectangle Width: "")!!
+            ASK(""%C"", @width)!!
+            
+            ECHO(""Enter Rectangle Height: "")!!
+            ASK(""%C"", @height)!!
+            
+            rect_area = area_rect(width, height)!!
+            ECHO(""Rectangle Area: %C\n"", rect_area)!!
+            LAND!!
+            
+        ADRIFT:
+            ECHO(""\nInvalid Input\n"")!!
+            LAND!!
+    ]
+]"
+,,
+,,
+18,"Print Natural Numbers Recursively Variants:
+- Print the first 50 natural numbers using recursion.
+- Input value for the first N natural numbers.","~ Prints 'current', then recurses up to 'limit'
+ABYSS print_natural(COIN current, COIN limit) [
+    LOOK (current <= limit) [
+        ECHO(""%C  "", current)!!
+        print_natural(current + 1, limit)!!
+    ]
+]
+
+AHOY() [
+    COIN limit = 0!!
+    ~ Keep asking until the user enters a natural number (1 or greater)
+    HAUL [
+        ECHO(""Enter a natural number: "")!!
+        ASK(""%C"", @limit)!!
+        LOOK (limit <= 0) [
+            ECHO(""Invalid Input: Please enter a natural number (greater than 0).\n"")!!
+        ]
+    ] HEAVE (limit < 1)!!
+    ~ Only reaches here once limit is valid
+    ECHO(""The natural numbers up to %C are:\n"", limit)!!
+    ~ Start the recursion at 1, going up to the user's limit
+    print_natural(1, limit)!!
+    ECHO(""\n"")!!
+]"
+,,
+,,
+19,"Array Elements Print Recursion Variant:
+- Print the array elements using recursion.
+- Sort Out: Ascending and Descending.","~ Global array declaration
+COIN nums{100}!!
+
+ABYSS print_arr(COIN idx, COIN n) [
+    LOOK (idx < n) [
+        ECHO(""%C  "", nums{idx})!!
+        print_arr(idx + 1, n)!!
+    ]
+]
+
+AHOY() [
+    COIN n = 1, choice = 0!!
+    COIN i = 0, j = 0, temp = 0, next = 0, limit = 0!!
+
+    ~ Get number of elements with input validation
+    HAUL [
+        ECHO(""Input the number of elements to be stored in the array: "")!!
+        ASK(""%C"", @n)!!
+        LOOK (n <= 0) [
+            ECHO(""Invalid Input: Please enter a natural number (greater than 0).\n"")!!
+        ]
+    ] HEAVE (n <= 0)!!
+
+    ~ Input each element
+    ECHO(""Input %C elements in the array:\n"", n)!!
+    HOIST (COIN idx = 0!! idx < n!! +#idx) [
+        ECHO(""element - %C : "", idx)!!
+        ASK(""%C"", @nums{idx})!!
+    ]
+
+    ~ Part A: Print elements using recursion
+    ECHO(""\nThe elements in the array are : "")!!
+    print_arr(0, n)!!
+    ECHO(""\n"")!!
+
+    ~ Show sort options
+    ECHO(""\nSort Options:\n"")!!
+    ECHO(""1. Ascending\n"")!!
+    ECHO(""2. Descending\n"")!!
+    ECHO(""Enter your choice (1 or 2): "")!!
+    ASK(""%C"", @choice)!!
+
+    ~ Bubble sort based on choice
+    HOIST (i = 0!! i < n - 1!! +#i) [
+        limit = n - i - 1!!
+        HOIST (j = 0!! j < limit!! +#j) [
+            next = j + 1!!
+            LOOK (choice == 1) [
+                LOOK (nums{j} > nums{next}) [
+                    temp = nums{j}!!
+                    nums{j} = nums{next}!!
+                    nums{next} = temp!!
+                ]
+            ] DROP [
+                LOOK (nums{j} < nums{next}) [
+                    temp = nums{j}!!
+                    nums{j} = nums{next}!!
+                    nums{next} = temp!!
+                ]
+            ]
+        ]
+    ]
+
+    ~ Display sorted result
+    LOOK (choice == 1) [
+        ECHO(""\nSorted in Ascending order:\n"")!!
+    ] DROPLOOK (choice == 2) [
+        ECHO(""\nSorted in Descending order:\n"")!!
+    ] DROP [
+        ECHO(""\nInvalid choice. Please enter 1 or 2.\n"")!!
+    ]
+    HOIST (COIN k = 0!! k < n!! +#k) [
+        ECHO(""%C  "", nums{k})!!
+    ]
+    ECHO(""\n"")!!
+]"
+,,
+,,
+20,"Count Digit Recursion Variants:
+- Count the digits of a given number using recursion","COIN count_digits(COIN n)
+[
+    COIN total!!
+    
+     LOOK (n < 10)
+    [
+        total = 1!!
+    ]
+    DROP
+    [
+        total = 1 + count_digits(n / 10)!!
+    ]
+
+    BACK total!!
+]
+
+AHOY()[
+    COIN input_num!!
+    COIN result!!
+    COIN valid = 0!!  
+
+    ECHO(""=============================\n"")!!
+    ECHO(""      COUNT OF NUMBERS       \n"")!!
+    ECHO(""=============================\n"")!!
+
+    HEAVE (valid == 0) [
+        ECHO(""\nInput a number: "")!!
+        ASK(""%C"", @input_num)!!
+
+        LOOK (input_num < 0) [
+            ECHO(""Negative numbers are not allowed!! Try again.\n"")!!
+        ]
+        DROP [
+            valid = 1!! 
+        ]
+    ]
+    
+    result = count_digits(input_num)!!
+    ECHO(""\nThe number of digits in the number is : %C\n"", result)!!
+]"
+,,
+,,
+21,Write a program that prompts the user to input a series of integers until the user stops entering 0 using a while loop. Calculate and print the sum of all the positive interger entered. ,"~ Returns AYE if n is a positive integer (greater than 0)
+BOOL is_positive(COIN n) [
+    BOOL result = AYE!!
+    LOOK (n < 0) [
+        result = NAY!!
+    ]
+    BACK result!!
+]
+
+AHOY() [
+    COIN num = 0!!
+    COIN sum = 0!!
+    ECHO(""     Sum of Positive Integers      \n"")!!
+    ECHO(""-----------------------------------\n"")!!
+    ECHO(""Enter positive integers one by one.\n"")!!
+    ECHO(""Enter 0 to stop and see the sum.  \n"")!!
+    ECHO(""-----------------------------------\n"")!!
+    ECHO(""Enter number: "")!!
+    ASK(""%C"", @num)!!
+    HEAVE (num != 0) [
+        LOOK (is_positive(num)) [
+            sum += num!!
+            ECHO(""Added! Total running sum: %C\n"", sum)!!
+        ] DROP [
+            ECHO(""Invalid! Negative numbers are not allowed.\n"")!!
+        ]
+        ECHO(""Enter number: "")!!
+        ASK(""%C"", @num)!!
+    ]
+    ECHO(""-----------------------------------\n"")!!
+    ECHO(""Sum of positive integers: %C\n"", sum)!!
+]"
+,,
+,,
+22,Write a program that prompts the user to input a series of numbers until they input a duplicate number. Use a while loop to check for duplicate,"AHOY() [
+    COIN choice = 0!!
+    COIN count = 0, current_num = 0, occurrences = 0, i = 0!!
+    
+    COIN history{100} = [0] !!
+
+    HEAVE (choice != 3) [
+        ECHO(""==============================\n"")!!
+        ECHO(""        NUMBER CHECKER        \n"")!!
+        ECHO(""==============================\n"")!!
+        ECHO(""1. Duplicate Checker\n"")!!
+        ECHO(""2. Triplicate Checker\n"")!!
+        ECHO(""3. Exit\n"")!!
+        ECHO(""------------------------------\n"")!!
+        ECHO(""Enter choice (1-3): "")!!
+        ASK(""%C"", @choice)!!
+
+        CHART (choice) [
+            
+            COURSE 1:
+                ECHO(""\n--- DUPLICATE CHECKER ---\n"")!!
+                ECHO(""Enter numbers. Stops on duplicate.\n"")!!
+                count = 0!!
+
+                HEAVE (AYE) [
+                    ECHO(""Enter a number: "")!!
+                    ASK(""%C"", @current_num)!!
+                    occurrences = 0!!
+                    i = 0!!
+
+                    HEAVE (i < count) [
+                        LOOK (history{i} == current_num) [
+                            occurrences += 1!!
+                        ]
+                        +#i!!
+                    ]
+
+                    LOOK (occurrences >= 1) [
+                        ECHO(""\nDUPLICATE DETECTED! You entered %C again.\n"", current_num)!!
+                        LAND!!
+                    ] DROP [
+                        history{count} = current_num!!
+                        +#count!!
+                    ]
+                ]
+                LAND!!
+
+            COURSE 2:
+                ECHO(""\n--- TRIPLICATE CHECKER ---\n"")!!
+                ECHO(""Enter numbers. Stops on triplicate.\n"")!!
+               
+                count = 0!!
+
+                HEAVE (AYE) [
+                    ECHO(""Enter a number: "")!!
+                    ASK(""%C"", @current_num)!!
+                    occurrences = 0!!
+                    i = 0!!
+
+                    HEAVE (i < count) [
+                        LOOK (history{i} == current_num) [
+                            occurrences += 1!!
+                        ]
+                        +#i!!
+                    ]
+
+                    LOOK (occurrences >= 2) [
+                        ECHO(""\nTRIPLICATE DETECTED! You entered %C three times.\n"", current_num)!!
+                        ~ LAND para patayin ang infinite loop
+                        LAND!!
+                    ] DROP [
+                        history{count} = current_num!!
+                        +#count!!
+                    ]
+                ]
+                LAND!!
+                
+            COURSE 3:
+                ECHO(""\nExiting Number Checker...\n"")!!
+                LAND!!
+
+            ADRIFT:
+                ECHO(""\nInvalid Input. Please select 1 to 3.\n"")!!
+                LAND!!
+        ]
+    ]
+]"
+,,
+,,
+23,Write a program that prompts the user to enter a positive integer. It then calculates and prints the factorial of that number using a while loop.,"AHOY() [
+    COIN n!!
+    COIN fact!!
+    COIN i!!
+    COIN valid = 0!! 
+
+    ECHO(""=============================\n"")!!
+    ECHO(""      FACTORIAL CALCULATOR    \n"")!!
+    ECHO(""=============================\n"")!!
+
+    HEAVE (valid == 0) [
+        ECHO(""\nEnter a positive integer: "")!!
+        ASK(""%C"", @n)!!
+        
+        LOOK (n < 0) [
+            ECHO(""Invalid: Negative number detected!! Try again.\n"")!!
+            ECHO(""=============================\n"")!!
+        ] 
+        DROP [
+            valid = 1!! 
+        ]
+    ]
+
+    ECHO(""-----------------------------\n"")!!
+
+    fact = 1!!
+    i = 1!!
+    HEAVE (i <= n) [
+        fact = fact * i!!
+        +#i!!
+    ]
+
+    ECHO(""Factorial of %C = %C\n"", n, fact)!!
+    ECHO(""=============================\n"")!!
+]"
+,,
+,,
+24,"Write a program that prompts the user to input a username. Use a loop to keep asking for a username until a valid one is entered (e.g., at least 8 characters long, with at least one capital letter and at least one special character, combination of letter(capital/small, number, special character).","BOOL check_upper(SCROLL c) [
+    BACK c == ""A"" || c == ""B"" || c == ""C"" || c == ""D"" || c == ""E"" ||
+         c == ""F"" || c == ""G"" || c == ""H"" || c == ""I"" || c == ""J"" ||
+         c == ""K"" || c == ""L"" || c == ""M"" || c == ""N"" || c == ""O"" ||
+         c == ""P"" || c == ""Q"" || c == ""R"" || c == ""S"" || c == ""T"" ||
+         c == ""U"" || c == ""V"" || c == ""W"" || c == ""X"" || c == ""Y"" ||
+         c == ""Z""!!
+]
+
+BOOL check_digit(SCROLL c) [
+    BACK c == ""0"" || c == ""1"" || c == ""2"" || c == ""3"" || c == ""4"" ||
+         c == ""5"" || c == ""6"" || c == ""7"" || c == ""8"" || c == ""9""!!
+]
+
+BOOL check_special(SCROLL c) [
+    BACK c == ""!"" || c == ""@"" || c == ""#"" || c == ""$"" || c == ""%"" ||
+         c == ""^"" || c == ""&"" || c == ""*"" || c == ""("" || c == "")"" ||
+         c == ""-"" || c == ""_"" || c == ""+"" || c == ""="" || c == ""/"" ||
+         c == ""?"" || c == ""."" || c == ""~"" || c == ""<"" || c == "">""!!
+]
+
+COIN str_length(SCROLL s) [
+    SCROLL word!!
+    COIN len!!
+    word = s!!
+    len = 0!!
+    HEAVE (len < 25) [
+        LOOK (word{len} == ""\0"") [
+            LAND!!
+        ]
+        len += 1!!
+    ]
+    BACK len!!
+]
+
+BOOL validate_user(SCROLL uname) [
+    SCROLL name!!
+    COIN length!!
+    BOOL has_upper!!
+    BOOL has_digit!!
+    BOOL has_special!!
+    BOOL result!!
+    name = uname!!
+    length = str_length(name)!!
+    has_upper = NAY!!
+    has_digit = NAY!!
+    has_special = NAY!!
+    ~ Iterate through each character and check for required types
+    HOIST (COIN i = 0!! i < length!! +#i) [
+        LOOK (check_upper(name{i})) [
+            has_upper = AYE!!
+        ]
+        LOOK (check_digit(name{i})) [
+            has_digit = AYE!!
+        ]
+        LOOK (check_special(name{i})) [
+            has_special = AYE!!
+        ]
+    ]
+    ~ Username is valid only if ALL conditions are satisfied
+    result = length >= 8 && has_upper && has_digit && has_special!!
+    BACK result!!
+]
+
+ABYSS show_errors(SCROLL uname) [
+    SCROLL name!!
+    COIN length!!
+    BOOL has_upper!!
+    BOOL has_digit!!
+    BOOL has_special!!
+    name = uname!!
+    length = str_length(name)!!
+    has_upper = NAY!!
+    has_digit = NAY!!
+    has_special = NAY!!
+    HOIST (COIN i = 0!! i < length!! +#i) [
+        LOOK (check_upper(name{i})) [
+            has_upper = AYE!!
+        ]
+        LOOK (check_digit(name{i})) [
+            has_digit = AYE!!
+        ]
+        LOOK (check_special(name{i})) [
+            has_special = AYE!!
+        ]
+    ]
+    ECHO(""  Reason(s) for rejection:\n"")!!
+    LOOK (length < 8) [
+        ECHO(""    [x] Must be at least 8 characters (current: %C)\n"", length)!!
+    ]
+    LOOK (!has_upper) [
+        ECHO(""    [x] Missing at least one uppercase letter (A-Z)\n"")!!
+    ]
+    LOOK (!has_digit) [
+        ECHO(""    [x] Missing at least one digit (0-9)\n"")!!
+    ]
+    LOOK (!has_special) [
+        ECHO(""    [x] Missing at least one special character (!@#$%^&*()-_+=/?.<>~)\n"")!!
+    ]
+]
+
+~( ================================================================
+   MAIN PROGRAM - Keep prompting until a valid username is entered
+   ================================================================ )~
+AHOY() [
+    SCROLL username!!
+    BOOL valid!!
+    valid = NAY!!
+    ECHO(""============================================\n"")!!
+    ECHO(""Username requirements:\n"")!!
+    ECHO(""  - At least 8 characters long\n"")!!
+    ECHO(""  - At least 1 uppercase letter (A-Z)\n"")!!
+    ECHO(""  - At least 1 digit (0-9)\n"")!!
+    ECHO(""  - At least 1 special character\n"")!!
+    ECHO(""  - Combination of letters, numbers, specials\n"")!!
+    ECHO(""============================================\n\n"")!!
+    ~ Keep asking until a valid username is entered
+    HAUL [
+        ECHO(""Enter a username: "")!!
+        ASK(""%S"", @username)!!
+        valid = validate_user(username)!!
+        LOOK (!valid) [
+            ECHO(""\nUsername \d%S\d is INVALID.\n"", username)!!
+            show_errors(username)!!
+            ECHO(""\nPlease try again.\n\n"")!!
+        ]
+    ] HEAVE (!valid)!!
+    ECHO(""\nUsername \d%S\d is VALID!\n"", username)!!
+    ECHO(""Welcome aboard, %S!\n"", username)!!
+]"
+,,
+,,
+25,"Write a program that implements a program to check if the following is a palindrome using a while loop.
+- Given a number, determine if the number is palindrome or not a palindrome.
+- Given a word, determine if the word is a palindrome or not a palindrome. ","~ Reverses a COIN number and returns it
+COIN reverse_num(COIN n) [
+    COIN rev = 0!!
+    COIN rem = 0!!
+    HEAVE (n > 0) [
+        rem = n % 10!!
+        rev = rev * 10 + rem!!
+        n   = (n - rem) / 10!!
+    ]
+    BACK rev!!
+]
+
+AHOY() [
+    PARCH word{50}!!
+    PARCH ch    = 'a'!!
+    COIN choice = 0!!
+    COIN num    = 1!!
+    COIN orig   = 0!!
+    COIN rev    = 0!!
+    COIN len    = 0!!
+    COIN left   = 0!!
+    COIN right  = 0!!
+    BOOL pal    = AYE!!
+    ECHO(""=================================\n"")!!
+    ECHO(""        Palindrome Checker       \n"")!!
+    ECHO(""=================================\n"")!!
+    ECHO(""1. Number Palindrome Check       \n"")!!
+    ECHO(""2. Word Palindrome Check         \n"")!!
+    ECHO(""---------------------------------\n"")!!
+    ECHO(""Enter your choice (1 or 2): "")!!
+    ASK(""%C"", @choice)!!
+    CHART (choice) [
+        COURSE 1:
+            HAUL [
+                ECHO(""\nEnter a positive number: "")!!
+                ASK(""%C"", @num)!!
+                LOOK (num <= 0) [
+                    ECHO(""\nInvalid! Please enter a positive number (greater than 0).\n"")!!
+                ]
+            ] HEAVE (num == 0)!!
+            orig = num!!
+            rev  = reverse_num(num)!!
+            ECHO(""\n--- Result ---\n"")!!
+            LOOK (orig == rev) [
+                ECHO(""%C is a palindrome.\n"", orig)!!
+            ] DROP [
+                ECHO(""%C is not a palindrome.\n"", orig)!!
+            ]
+            LAND!!
+        COURSE 2:
+            ECHO(""\nEnter characters one by one.\n"")!!
+            ECHO(""Enter # when done.\n"")!!
+            len = 0!!
+            ASK(""%P"", @ch)!!
+            HEAVE (ch != '#') [
+                word{len} = ch!!
+                len      += 1!!
+                ASK(""%P"", @ch)!!
+            ]
+            LOOK (len == 0) [
+                ECHO(""\nInvalid! No characters were entered.\n"")!!
+            ] DROP [
+                left  = 0!!
+                right = len - 1!!
+                pal   = AYE!!
+                HEAVE (left < right) [
+                    LOOK (word{left} != word{right}) [
+                        pal = NAY!!
+                    ]
+                    left  += 1!!
+                    right -= 1!!
+                ]
+                ECHO(""\n--- Result ---\n"")!!
+                LOOK (pal == AYE) [
+                    ECHO(""The word is a palindrome.\n"")!!
+                ] DROP [
+                    ECHO(""The word is not a palindrome.\n"")!!
+                ]
+            ]
+            LAND!!
+        ADRIFT:
+            ECHO(""\nInvalid choice! Please enter 1 or 2.\n"")!!
+            LAND!!
+    ]
+    ECHO(""=================================\n"")!!
+]"
+,,
+,,
+26,Write a program that inputs any 5 letter word and arrange it in ascending or descending order. The user will have a choice if it is ascending or descending.,"~ Function to manually convert SCROLL letters to ASCII COIN
+COIN get_val(SCROLL c) [
+    COIN v = 0!!
+    CHART (c) [
+        ~ Uppercase Letters (65-90)
+        COURSE ""A"": v = 65!! LAND!!
+        COURSE ""B"": v = 66!! LAND!!
+        COURSE ""C"": v = 67!! LAND!!
+        COURSE ""D"": v = 68!! LAND!!
+        COURSE ""E"": v = 69!! LAND!!
+        COURSE ""F"": v = 70!! LAND!!
+        COURSE ""G"": v = 71!! LAND!!
+        COURSE ""H"": v = 72!! LAND!!
+        COURSE ""I"": v = 73!! LAND!!
+        COURSE ""J"": v = 74!! LAND!!
+        COURSE ""K"": v = 75!! LAND!!
+        COURSE ""L"": v = 76!! LAND!!
+        COURSE ""M"": v = 77!! LAND!!
+        COURSE ""N"": v = 78!! LAND!!
+        COURSE ""O"": v = 79!! LAND!!
+        COURSE ""P"": v = 80!! LAND!!
+        COURSE ""Q"": v = 81!! LAND!!
+        COURSE ""R"": v = 82!! LAND!!
+        COURSE ""S"": v = 83!! LAND!!
+        COURSE ""T"": v = 84!! LAND!!
+        COURSE ""U"": v = 85!! LAND!!
+        COURSE ""V"": v = 86!! LAND!!
+        COURSE ""W"": v = 87!! LAND!!
+        COURSE ""X"": v = 88!! LAND!!
+        COURSE ""Y"": v = 89!! LAND!!
+        COURSE ""Z"": v = 90!! LAND!!
+        
+        ~ Lowercase Letters (97-122)
+        COURSE ""a"": v = 97!! LAND!!
+        COURSE ""b"": v = 98!! LAND!!
+        COURSE ""c"": v = 99!! LAND!!
+        COURSE ""d"": v = 100!! LAND!!
+        COURSE ""e"": v = 101!! LAND!!
+        COURSE ""f"": v = 102!! LAND!!
+        COURSE ""g"": v = 103!! LAND!!
+        COURSE ""h"": v = 104!! LAND!!
+        COURSE ""i"": v = 105!! LAND!!
+        COURSE ""j"": v = 106!! LAND!!
+        COURSE ""k"": v = 107!! LAND!!
+        COURSE ""l"": v = 108!! LAND!!
+        COURSE ""m"": v = 109!! LAND!!
+        COURSE ""n"": v = 110!! LAND!!
+        COURSE ""o"": v = 111!! LAND!!
+        COURSE ""p"": v = 112!! LAND!!
+        COURSE ""q"": v = 113!! LAND!!
+        COURSE ""r"": v = 114!! LAND!!
+        COURSE ""s"": v = 115!! LAND!!
+        COURSE ""t"": v = 116!! LAND!!
+        COURSE ""u"": v = 117!! LAND!!
+        COURSE ""v"": v = 118!! LAND!!
+        COURSE ""w"": v = 119!! LAND!!
+        COURSE ""x"": v = 120!! LAND!!
+        COURSE ""y"": v = 121!! LAND!!
+        COURSE ""z"": v = 122!! LAND!!
+        
+        ADRIFT: v = 0!! LAND!!
+    ]
+    BACK v!!
+]
+
+AHOY() [
+    COIN choice = 0!!
+    SCROLL word = ""     ""!!
+    SCROLL arr{5} = ["" "", "" "", "" "", "" "", "" ""]!!
+    
+    COIN vals{5}!!
+    
+    COIN next_j = 0, limit = 0, temp_val = 0!!
+    SCROLL temp_char = "" ""!!
+
+    HEAVE (choice != 3) [
+        ECHO(""============================\n"")!!
+        ECHO(""Enter a 5-letter word: "")!!
+        ASK(""%S"", @word)!!
+
+        arr{0} = word{0}!!
+        arr{1} = word{1}!!
+        arr{2} = word{2}!!
+        arr{3} = word{3}!!
+        arr{4} = word{4}!!
+
+        vals{0} = get_val(arr{0})!!
+        vals{1} = get_val(arr{1})!!
+        vals{2} = get_val(arr{2})!!
+        vals{3} = get_val(arr{3})!!
+        vals{4} = get_val(arr{4})!!
+
+        ECHO(""\nArrange in:\n1. Ascending\n2. Descending\n3. Exit\nChoice: "")!!
+        ASK(""%C"", @choice)!!
+
+        LOOK (choice == 1) [
+            ~ ASCENDING BUBBLE SORT
+            HOIST (COIN i = 0!! i < 4!! +#i) [
+                limit = 4 - i!!
+                HOIST (COIN j = 0!! j < limit!! +#j) [
+                    next_j = j + 1!!
+                    LOOK (vals{j} > vals{next_j}) [
+                        temp_val = vals{j}!!
+                        vals{j} = vals{next_j}!!
+                        vals{next_j} = temp_val!!
+
+                        temp_char = arr{j}!!
+                        arr{j} = arr{next_j}!!
+                        arr{next_j} = temp_char!!
+                    ]
+                ]
+            ]
+            ECHO(""\nOutput (Ascending): %S%S%S%S%S\n"", arr{0}, arr{1}, arr{2}, arr{3}, arr{4})!!
+            
+        ] DROPLOOK (choice == 2) [
+            ~ DESCENDING BUBBLE SORT
+            HOIST (COIN i = 0!! i < 4!! +#i) [
+                limit = 4 - i!!
+                HOIST (COIN j = 0!! j < limit!! +#j) [
+                    next_j = j + 1!!
+                    LOOK (vals{j} < vals{next_j}) [
+                        temp_val = vals{j}!!
+                        vals{j} = vals{next_j}!!
+                        vals{next_j} = temp_val!!
+
+                        temp_char = arr{j}!!
+                        arr{j} = arr{next_j}!!
+                        arr{next_j} = temp_char!!
+                    ]
+                ]
+            ]
+            ECHO(""\nOutput (Descending): %S%S%S%S%S\n"", arr{0}, arr{1}, arr{2}, arr{3}, arr{4})!!
+            
+        ] DROPLOOK (choice == 3) [
+            ECHO(""\nExiting program. Goodbye!\n"")!!
+            
+        ] DROP [
+            ECHO(""\nError: Invalid choice! Please select 1, 2, or 3.\n"")!!
+        ]
+    ]
+]"
+,,
+,,
+27,"Addition of two matrices. Ask the user to input 5 numbers/elements in each array A and Array B, store the sum of the numbers in  Array A & Array B in Array C.","AHOY() [
+    COIN a{5}!!
+    COIN b{5}!!
+    COIN c{5}!!
+    COIN i = 0, disp = 0!!
+
+    ECHO(""==========================================\n"")!!
+    ECHO(""            Matrix Addition            \n"")!!
+    ECHO(""==========================================\n"")!!
+
+    ECHO(""Enter 5 numbers for Array A:\n"")!!
+    HOIST (i = 0!! i < 5!! +#i) [
+        disp = i + 1!!
+        ECHO(""Element %C: "", disp)!!
+        ASK(""%C"", @a{i})!!
+    ]
+
+    ECHO(""\nEnter 5 numbers for Array B:\n"")!!
+    HOIST (i = 0!! i < 5!! +#i) [
+        disp = i + 1!!
+        ECHO(""Element %C: "", disp)!!
+        ASK(""%C"", @b{i})!!
+    ]
+
+    ECHO(""\nCalculating the sum into Array C...\n"")!!
+    HOIST (i = 0!! i < 5!! +#i) [
+        c{i} = a{i} + b{i}!!
+    ]
+
+    ECHO(""\n Array C (Sum of A and B) \n"")!!
+    ECHO(""------------------------------------------\n"")!!
+    HOIST (i = 0!! i < 5!! +#i) [
+        disp = i + 1!!
+        ECHO(""Element %C: %C\n"", disp, c{i})!!
+    ]
+]"
+,,
+,,
+28,"Write a program that will  compute and display  the average grade of a student in the following subjects: Math, Science, English and Filipino.  Each subject contans 5 quizzes. Ask the user to input the score in 5 quizzes for each subjects, compute and display the average of each subject.","AHOY() [
+    DIME q1 = 0.0, q2 = 0.0, q3 = 0.0, q4 = 0.0, q5 = 0.0!!
+    DIME avg_math = 0.0, avg_science = 0.0, avg_english = 0.0, avg_filipino = 0.0!!
+    DIME overall_avg = 0.0!!
+    COIN valid = 0!!
+
+    ECHO(""=====================================\n"")!!
+    ECHO(""      STUDENT AVERAGE CALCULATOR     \n"")!!
+    ECHO(""=====================================\n"")!!
+
+    ~ ==== MATH ====
+    ECHO(""\n--- Math (5 Quizzes) ---\n"")!!
+
+    ~ Quiz 1
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 1 score: "")!! ASK(""%D"", @q1)!!
+        LOOK (q1 < 0) [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 2
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 2 score: "")!! 
+        ASK(""%D"", @q2)!!
+        LOOK (q2 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 3
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 3 score: "")!! 
+        ASK(""%D"", @q3)!!
+        LOOK (q3 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 4
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 4 score: "")!! 
+        ASK(""%D"", @q4)!!
+        LOOK (q4 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 5
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 5 score: "")!! ASK(""%D"", @q5)!!
+        LOOK (q5 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    avg_math = (q1 + q2 + q3 + q4 + q5) / 5.0!!
+    ECHO(""Math Average: %D\n"", avg_math)!!
+
+    ~ ==== SCIENCE ====
+    ECHO(""\n--- Science (5 Quizzes) ---\n"")!!
+    
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 1 score: "")!! 
+        ASK(""%D"", @q1)!!
+        LOOK (q1 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 2
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 2 score: "")!! 
+        ASK(""%D"", @q2)!!
+        LOOK (q2 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 3
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 3 score: "")!! 
+        ASK(""%D"", @q3)!!
+        LOOK (q3 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 4
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 4 score: "")!! 
+        ASK(""%D"", @q4)!!
+        LOOK (q4 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 5
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 5 score: "")!! ASK(""%D"", @q5)!!
+        LOOK (q5 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    avg_science = (q1 + q2 + q3 + q4 + q5) / 5.0!!
+    ECHO(""Science Average: %D\n"", avg_science)!!
+
+    ~ ==== ENGLISH ====
+    ECHO(""\n--- English (5 Quizzes) ---\n"")!!
+    
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 1 score: "")!! 
+        ASK(""%D"", @q1)!!
+        LOOK (q1 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 2
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 2 score: "")!! 
+        ASK(""%D"", @q2)!!
+        LOOK (q2 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 3
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 3 score: "")!! 
+        ASK(""%D"", @q3)!!
+        LOOK (q3 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 4
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 4 score: "")!! 
+        ASK(""%D"", @q4)!!
+        LOOK (q4 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 5
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 5 score: "")!! ASK(""%D"", @q5)!!
+        LOOK (q5 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    avg_english = (q1 + q2 + q3 + q4 + q5) / 5.0!!
+    ECHO(""English Average: %D\n"", avg_english)!!
+
+    ~ ==== FILIPINO ====
+    ECHO(""\n--- Filipino (5 Quizzes) ---\n"")!!
+    
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 1 score: "")!! 
+        ASK(""%D"", @q1)!!
+        LOOK (q1 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 2
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 2 score: "")!! 
+        ASK(""%D"", @q2)!!
+        LOOK (q2 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 3
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 3 score: "")!! 
+        ASK(""%D"", @q3)!!
+        LOOK (q3 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 4
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 4 score: "")!! 
+        ASK(""%D"", @q4)!!
+        LOOK (q4 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    ~ Quiz 5
+    valid = 0!! HEAVE (valid == 0) [
+        ECHO(""Quiz 5 score: "")!! ASK(""%D"", @q5)!!
+        LOOK (q5 < 0) 
+        [ 
+        ECHO(""Invalid: Negative grade!! Try again.\n"")!! 
+        ] DROP [ 
+        valid = 1!! 
+        ]
+    ]
+    avg_filipino = (q1 + q2 + q3 + q4 + q5) / 5.0!!
+    ECHO(""Filipino Average: %D\n"", avg_filipino)!!
+ 
+    ~ ===== FINAL SUMMARY ====
+    overall_avg = (avg_math + avg_science + avg_english + avg_filipino) / 4.0!!
+
+    ECHO(""\n=====================================\n"")!!
+    ECHO(""          GRADE SUMMARY              \n"")!!
+    ECHO(""=====================================\n"")!!
+    ECHO(""Math Average     : %D\n"", avg_math)!!
+    ECHO(""Science Average  : %D\n"", avg_science)!!
+    ECHO(""English Average  : %D\n"", avg_english)!!
+    ECHO(""Filipino Average : %D\n"", avg_filipino)!!
+    ECHO(""-------------------------------------\n"")!!
+    ECHO(""Overall Average  : %D\n"", overall_avg)!!
+    ECHO(""=====================================\n"")!!
+]"
+,,
+,,
+29,Display the sum of all even nos. and the average of all odd numbers from 1 to N. N is a user input.,"COIN n, even_sum = 0, odd_count = 0!!
+DIME odd_sum = 0.0, odd_avg!!
+
+AHOY() [
+  ECHO(""Enter N: "")!!
+  ASK(""%C"", @n)!!
+
+  LOOK(n > 1)[
+    HOIST (COIN i = 1!! i <= n!! +#i) [
+      LOOK (i % 2 == 0) [
+        even_sum += i!!
+      ] DROP [
+        odd_sum += i!!
+        odd_count += 1!!
+      ]
+    ]
+  ] DROP [
+    HOIST (COIN i = 1!! i >= n!! -#i) [
+      LOOK (i % 2 == 0) [
+        even_sum += i!!
+      ] DROP [
+        odd_sum += i!!
+        odd_count += 1!!
+      ]
+    ]
+  ]
+
+  ECHO(""Sum of even numbers from 1 to %C: %C\n"", n, even_sum)!!
+
+  LOOK (odd_count > 0) [
+    odd_avg = odd_sum / odd_count!!
+    ECHO(""Average of odd numbers from 1 to %C: %D\n"", n, odd_avg)!!
+  ] DROP [
+    ECHO(""No odd numbers found in range.\n"")!!
+  ]
+]"
+,,
+,,
+30,Write a program to find the GCD of two numbers using recursion.   ,"~ GCD using recursion
+
+COIN gcd(COIN a, COIN b) [
+  COIN result!!
+  LOOK (b == 0) [
+    result = a!!
+  ] DROP [
+    result = gcd(b, a % b)!!
+  ]
+  BACK result!!
+]
+
+AHOY() [
+  COIN num1, num2, g!!
+
+  ECHO(""Enter first number: "")!!
+  ASK(""%C"", @num1)!!
+
+  ECHO(""Enter second number: "")!!
+  ASK(""%C"", @num2)!!
+
+  LOOK(num1 < 0 && num2 < 0)[
+    num1 *= -1!!
+    num2 *= -1!!
+  ] DROPLOOK(num1 < 0 && num2 >= 0)[
+    num1 *= -1!!
+  ] DROPLOOK(num2 < 0 && num1 >= 0)[
+    num2 *= -1!!
+  ]
+  
+  g = gcd(num1, num2)!!
+
+  ECHO(""GCD of %C and %C is: %C\n"", num1, num2, g)!!
+]"
+,,
+,,
+31,Write a program to get the largest element of an array using recursion.,"COIN arr{5}!!
+
+~ Recursive Function to get the highest element
+COIN get_max_rec(COIN n) [
+    COIN result = 0, prev_n = 0, current_val = 0, max_of_rest = 0!!
+
+    LOOK (n == 1) [
+        result = arr{0}!!
+    ] DROP [
+        prev_n = n - 1!!
+        max_of_rest = get_max_rec(prev_n)!!
+        
+        current_val = arr{prev_n}!!
+
+        LOOK (current_val > max_of_rest) [
+            result = current_val!!
+        ] DROP [
+            result = max_of_rest!!
+        ]
+    ]
+
+    BACK result!!
+]
+
+AHOY() [
+    COIN size = 5, max_val = 0!!
+
+    ECHO(""==============================\n"")!!
+    ECHO(""   LARGEST ARRAY ELEMENT    \n"")!!
+    ECHO(""==============================\n"")!!
+    ECHO(""Enter 5 whole numbers:\n"")!!
+
+    HOIST (COIN i = 0!! i < 5!! +#i) [
+        ECHO(""Element %C: "", i)!!
+        ASK(""%C"", @arr{i})!!
+    ]
+
+    max_val = get_max_rec(size)!!
+
+    ECHO(""\n------------------------------\n"")!!
+    ECHO(""The largest element is: %C\n"", max_val)!!
+    ECHO(""==============================\n\n"")!!
+]"
+,,
+,,
+32,Write a program to find the LCM of two numbers using recursion.,"COIN get_lcm(COIN a, COIN b, COIN m) [
+    COIN res = 0, rem = 0, next_m = 0!!
+
+    rem = m % b!!
+
+    LOOK (rem == 0) [
+        res = m!!
+        
+    ] DROP [
+        next_m = m + a!!
+        res = get_lcm(a, b, next_m)!!
+    ]
+
+    BACK res!!
+]
+
+AHOY() [
+    COIN num1 = 0, num2 = 0, result = 0!!
+
+    ECHO(""===================================\n"")!!
+    ECHO(""          LCM Calculator           \n"")!!
+    ECHO(""===================================\n"")!!
+
+    HAUL [
+        ECHO(""Enter the first number: "")!!
+        ASK(""%C"", @num1)!!
+        
+        LOOK (num1 <= 0) [
+            ECHO(""Error: 0 and negative values are not accepted. Try again.\n"")!!
+        ]
+    ] HEAVE (num1 <= 0)!!
+
+    HAUL [
+        ECHO(""Enter the second number: "")!!
+        ASK(""%C"", @num2)!!
+
+        LOOK (num2 <= 0) [
+            ECHO(""Error: 0 and negative values are not accepted. Try again.\n"")!!
+        ]
+    ] HEAVE (num2 <= 0)!!
+
+    result = get_lcm(num1, num2, num1)!!
+
+    ECHO(""\nThe LCM of %C and %C is: %C\n"", num1, num2, result)!!
+]"
+,,
+,,
+33,Write a  program to find the Hailstone Sequence of a given number up to 1.,"AHOY() [
+    COIN n = 1!!
+
+    ECHO(""=====================================\n"")!!
+    ECHO(""       HAILSTONE SEQUENCE            \n"")!!
+    ECHO(""=====================================\n"")!!
+    ECHO(""Enter a positive number: "")!!
+    ASK(""%C"", @n)!!
+    HEAVE (n < 1) [
+        ECHO(""=====================================\n"")!!
+        ECHO(""Invalid! Please enter a positive number.\n"")!!
+        ECHO(""Enter a positive number: "")!!
+        ASK(""%C"", @n)!!
+    ]
+
+    ECHO(""=====================================\n"")!!
+    ECHO(""Hailstone sequence starting at %C:\n"", n)!!
+
+    ~ Print first number
+    ECHO(""%C  "", n)!!
+
+    ~ Loop until n reaches 1
+    HEAVE (n != 1) [
+        ~ If even
+        LOOK (n % 2 == 0) [
+            n = n / 2!!
+        ] DROP [
+        ~ If odd
+            n = (n * 3) + 1!!
+        ]
+        ECHO(""%C  "", n)!!
+    ]
+
+    ECHO(""\n=====================================\n"")!!
+]"
+,,
+,,
+34,Write a program  to find the first capital letter in a string using recursion. Input any length of string then determine the first capital letter.,"SCROLL find_capital(SCROLL str, COIN idx) [
+    SCROLL ch !!
+    SCROLL result !!
+
+    ch = str{idx} !!
+    result = ""\0"" !!
+
+    LOOK(ch != ""\0"") [
+        LOOK(ch == ""A"" || ch == ""B"" || ch == ""C"" || ch == ""D"" || ch == ""E"" || ch == ""F"" || ch == ""G"" || ch == ""H"" || ch == ""I"" || ch == ""J"" || ch == ""K"" || ch == ""L"" || ch == ""M"" || ch == ""N"" || ch == ""O"" || ch == ""P"" || ch == ""Q"" || ch == ""R"" || ch == ""S"" || ch == ""T"" || ch == ""U"" || ch == ""V"" || ch == ""W"" || ch == ""X"" || ch == ""Y"" || ch == ""Z"") [
+            result = ch !!
+        ]
+        DROP [
+            result = find_capital(str, idx + 1) !!
+        ]
+    ]
+
+    BACK result !!
+]
+
+AHOY() [
+    SCROLL word !!
+    SCROLL result !!
+
+    ASK(""Enter a string: %S"", @word) !!
+    result = find_capital(word, 0) !!
+
+    LOOK(result == ""\0"") [
+        ECHO(""No capital letter found.\n"") !!
+    ]
+    DROP [
+        ECHO(""First capital letter: %S\n"", result) !!
+    ]
+]"
+,,
+,,
+35,"Same scenario with problem number 4, thus time display the number of capital letters in a word.","COIN count_capitals(SCROLL str, COIN idx) [
+    SCROLL ch !!
+    COIN rest !!
+    COIN result !!
+
+    ch = str{idx} !!
+    result = 0 !!
+
+    LOOK(ch != ""\0"") [
+        rest = count_capitals(str, idx + 1) !!
+        LOOK(ch == ""A"" || ch == ""B"" || ch == ""C"" || ch == ""D"" || ch == ""E"" || ch == ""F"" || ch == ""G"" || ch == ""H"" || ch == ""I"" || ch == ""J"" || ch == ""K"" || ch == ""L"" || ch == ""M"" || ch == ""N"" || ch == ""O"" || ch == ""P"" || ch == ""Q"" || ch == ""R"" || ch == ""S"" || ch == ""T"" || ch == ""U"" || ch == ""V"" || ch == ""W"" || ch == ""X"" || ch == ""Y"" || ch == ""Z"") [
+            result = rest + 1 !!
+        ]
+        DROP [
+            result = rest !!
+        ]
+    ]
+
+    BACK result !!
+]
+
+AHOY() [
+    SCROLL word !!
+    COIN count !!
+
+    ASK(""Enter a word: %S"", @word) !!
+    count = count_capitals(word, 0) !!
+    ECHO(""No. of capital letters: %C\n"", count) !!
+]"
+,,
+,,
+36,"Strong Numbers:
+- Sum of factorials of digits equal to the no.
+- Input a no. then determine if the no. is a strong no. or not.","AHOY() [
+    COIN n!!
+    COIN temp!!
+    COIN digit!!
+    COIN sum!!
+    COIN fact!!
+    COIN i!!
+    COIN count!!
+    COIN j!!
+    COIN digits{20}!!
+
+    ECHO(""=============================\n"")!!
+    ECHO(""        STRONG NUMBER    \n"")!!
+    ECHO(""============================="")!!
+    ECHO(""\nEnter a number: "")!!
+    ASK(""%C"", @n)!!
+    ECHO(""-----------------------------\n"")!!
+
+    LOOK (n < 0) [
+        ECHO(""Positive numbers only!!\n"")!!
+    ] DROP [
+    sum = 0!!
+    temp = n!!
+    count = 0!!
+
+    LOOK (n == 0) [
+        ECHO(""0 = 0!\n"")!!
+        ECHO(""    = 1\n"")!!
+        ECHO(""    = 1\n"")!!
+        ECHO(""-----------------------------\n"")!!
+        ECHO(""0 is NOT a Strong Number.\n"")!!
+    ] DROP [
+        ~ Store digits in reverse into array
+        HEAVE (temp > 0) [
+            digits{count} = temp % 10!!
+            temp = temp / 10!!
+            +#count!!
+        ]
+
+        ~ Print Line 1: 145 = 1! + 4! + 5!
+        ECHO(""%C = "", n)!!
+        j = count - 1!!
+        HEAVE (j >= 0) [
+            LOOK (j > 0) [
+                ECHO(""%C! + "", digits{j})!!
+            ] DROP [
+                ECHO(""%C!\n"", digits{j})!!
+            ]
+            -#j!!
+        ]
+
+        ~ Compute factorials and print Line 2: = 1 + 24 + 120
+        ECHO(""    = "")!!
+        j = count - 1!!
+        HEAVE (j >= 0) [
+            digit = digits{j}!!
+            fact = 1!!
+            i = 1!!
+            HEAVE (i <= digit) [
+                fact = fact * i!!
+                +#i!!
+            ]
+            sum = sum + fact!!
+            LOOK (j > 0) [
+                ECHO(""%C + "", fact)!!
+            ] DROP [
+                ECHO(""%C\n"", fact)!!
+            ]
+            -#j!!
+            ] 
+        ]
+
+        ~ Print Line 3: = sum
+        ECHO(""    = %C\n"", sum)!!
+        ECHO(""-----------------------------\n"")!!
+
+        LOOK (sum == n) [
+            ECHO(""%C is a Strong Number!\n"", n)!!
+        ] DROP [
+            ECHO(""%C is NOT a Strong Number.\n"", n)!!
+        ] 
+    ]
+
+    ECHO(""=============================\n"")!!
+]"
+,,
+,,
+37,"Perfect Number:
+- Sum of its proper divisrors equal the number.
+- Tell whether the number is a perfect no. or not.","COIN sum_divisors(COIN n) [
+    COIN total = 0!!
+    HOIST (COIN i = 1!! i < n!! +#i) [
+        LOOK (n % i == 0) [
+            total += i!!
+        ]
+    ]
+    BACK total!!
+]
+
+AHOY() [
+    COIN num!!
+    COIN div_sum!!
+    ECHO(""Enter a number: "")!!
+    ASK(""%C"", @num)!!
+    div_sum = sum_divisors(num)!!
+    LOOK (div_sum == num && num > 1) [
+        ECHO(""%C is a Perfect Number!\n"", num)!!
+    ] DROP [
+        ECHO(""%C is NOT a Perfect Number.\n"", num)!!
+    ]
+]"
+,,
+,,
+38,"Prime Numbers:
+- Factors are 1 & itself
+- Start & end numbers & determine all the prime nos. in between.","~ Prime Numbers
+
+BOOL is_prime(COIN n) [
+  COIN i = 2!!
+  BOOL result = AYE!!
+
+  LOOK (n < 2) [
+    result = NAY!!
+  ]
+
+  HEAVE ((i * i <= n) && (result == AYE)) [
+    LOOK (n % i == 0) [
+      result = NAY!!
+    ]
+    +#i!!
+  ]
+
+  BACK result!!
+]
+
+AHOY() [
+  COIN start, end, count = 0!!
+
+  ECHO(""Enter start number: "")!!
+  ASK(""%C"", @start)!!
+    
+  ECHO(""Enter end number: "")!!
+  ASK(""%C"", @end)!!
+
+  ECHO(""\nPrime numbers from %C to %C:\n"", start, end)!!
+
+  HEAVE (start <= end) [
+    LOOK (is_prime(start)) [
+      ECHO(""%C\n"", start)!!
+      count += 1!!
+    ]
+    +#start!!
+  ]
+
+  ECHO(""\nTotal primes found: %C\n"", count)!!
+]"
+,,
+,,
+39,Find the Frequency in digits,"AHOY() [
+    ~ Local Declarations strictly at the top of the function
+    COIN input_num = 0, temp_num = 0, digit = 0, i = 0!!
+    
+    ~ Fixed-size array to track the counts of digits 0 through 9
+    COIN freq{10}!!
+
+    ECHO(""======================================\n"")!!
+    ECHO(""           Digit Frequency            \n"")!!
+    ECHO(""======================================\n"")!!
+
+    ~ Use HAUL-HEAVE to prevent negative inputs
+    ~ COIN naturally limits the user to 16 digits automatically!
+    HAUL [
+        ECHO(""Enter a number (Max 16 digits): "")!!
+        ASK(""%C"", @input_num)!!
+
+        LOOK (input_num < 0) [
+            ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+        ]
+    ] HEAVE (input_num < 0)!!
+
+    ~ Initialize the frequency array strictly to 0
+    HOIST (i = 0!! i < 10!! +#i) [
+        freq{i} = 0!!
+    ]
+
+    ~ Extract digits mathematically
+    LOOK (input_num == 0) [
+        ~ Special case: if the user simply entered 0
+        freq{0} = 1!!
+        
+    ] DROP [
+        temp_num = input_num!!
+        
+        ~ Loop using Modulo to get the last digit, and Division to drop it
+        HEAVE (temp_num > 0) [
+            digit = temp_num % 10!!
+            freq{digit} += 1!!
+            
+            ~ Safely truncate the last digit to move on to the next
+            temp_num = (temp_num - digit) / 10!!
+        ]
+    ]
+
+    ~ Display the frequencies in numerical order (0 through 9)
+    ECHO(""\nFrequency in digits:\n"")!!
+    
+    HOIST (i = 0!! i < 10!! +#i) [
+        ~ Only display digits that actually appeared in the input
+        LOOK (freq{i} > 0) [
+            ECHO(""%C-%C\n"", freq{i}, i)!!
+        ]
+    ]
+]"
+,,
+,,
+40,Automorphic Numbers,"AHOY() [
+    COIN num = 0, sq = 0, temp = 0, mod_val = 1, rem = 0!!
+
+    ECHO(""======================================\n"")!!
+    ECHO(""      Automorphic Number Checker      \n"")!!
+    ECHO(""======================================\n"")!!
+
+    ECHO(""Enter a number to check: "")!!
+    ASK(""%C"", @num)!!
+
+    sq = num * num!!
+    temp = num!!
+
+    LOOK (temp == 0) [
+        mod_val = 10!!
+        
+    ] DROP [
+        HAUL [
+            mod_val = mod_val * 10!!
+            temp = temp / 10!!
+            
+        ] HEAVE (temp > 0)!!
+    ]
+
+    rem = sq % mod_val!!
+
+    ECHO(""\n--- Results ---\n"")!!
+    ECHO(""Base Number: %C\n"", num)!!
+    ECHO(""Squared Value: %C\n"", sq)!!
+
+    LOOK (rem == num) [
+        ECHO(""\n%C is an Automorphic Number!\n"", num)!!
+    ] DROP [
+        ECHO(""\n%C is NOT an Automorphic Number.\n"", num)!!
+    ]
+]"
+,,
+,,
+41,Neon Numbers,"AHOY() [
+    COIN num = 0, square = 0!!
+    COIN sum = 0, digit = 0!!
+
+    ECHO(""=== Neon Number Checker ===\n"")!!
+    ECHO(""Enter a number: "")!!
+    ASK(""%C"", @num)!!
+
+    square = num * num!!
+    ECHO(""Square of %C is %C\n"", num, square)!!
+
+    HEAVE (square > 0) [
+        digit = square % 10!!
+        sum += digit!!
+        square /= 10!!
+    ]
+
+    ECHO(""Sum of digits: %C\n"", sum)!!
+
+    LOOK (sum == num) [
+        ECHO(""\nResult: %C is a Neon Number!\n"", num)!!
+    ] DROP [
+        ECHO(""\nResult: %C is NOT a Neon Number.\n"", num)!!
+    ]
+]"
+,,
+,,
+42,"Disaruim Numbers:
+- a number where the sum of digits powered w/ their position wquals the number.","AHOY() [
+    COIN num = 0, temp = 0!!
+    COIN len = 0, sum = 0!!
+    COIN digit = 0!!
+
+    ECHO(""=== Disarium Number Checker ===\n"")!!
+    ECHO(""Enter a number: "")!!
+    ASK(""%C"", @num)!!
+
+    temp = num!!
+
+    HEAVE (temp > 0) [
+        +#len!!
+        temp /= 10!!
+    ]
+
+    temp = num!!
+
+    HEAVE (temp > 0) [
+        digit = temp % 10!!
+        sum += digit ^ len!!
+        -#len!!
+        temp /= 10!!
+    ]
+    LOOK (sum == num) [
+        ECHO(""\nResult: %C is a Disarium Number!\n"", num)!!
+    ] DROP [
+        ECHO(""\nResult: %C is NOT a Disarium Number.\n"", num)!!
+    ]
+]"
+,,
+,,
+43,"Emirp Numbers:
+- is a prime number whose reverse is also a prime.","COIN is_prime(COIN n) [
+    COIN result = 1!!
+    LOOK (n < 2) [
+        result = 0!!
+    ]
+    HOIST (COIN i = 2!! i * i <= n && result == 1!! +#i) [
+        LOOK (n % i == 0) [
+            result = 0!!
+        ]
+    ]
+    BACK result!!
+]
+
+COIN reverse_num(COIN n) [
+    COIN rev = 0!!
+    COIN temp = n!!
+    HEAVE (temp > 0) [
+        rev = (rev * 10) + (temp % 10)!!
+        temp /= 10!!
+    ]
+    BACK rev!!
+]
+
+AHOY() [
+    COIN num!!
+    COIN rev!!
+    COIN prime1!!
+    COIN prime2!!
+    ECHO(""Enter a number: "")!!
+    ASK(""%C"", @num)!!
+    rev = reverse_num(num)!!
+    prime1 = is_prime(num)!!
+    prime2 = is_prime(rev)!!
+    ECHO(""Original : %C\n"", num)!!
+    ECHO(""Reversed : %C\n"", rev)!!
+    LOOK (prime1 == 1) [
+        ECHO(""%C is PRIME\n"", num)!!
+    ] DROP [
+        ECHO(""%C is NOT PRIME\n"", num)!!
+    ]
+    LOOK (prime2 == 1) [
+        ECHO(""%C is PRIME\n"", rev)!!
+    ] DROP [
+        ECHO(""%C is NOT PRIME\n"", rev)!!
+    ]
+    LOOK (prime1 == 1 && prime2 == 1 && num != rev) [
+        ECHO(""%C is an Emirp Number!\n"", num)!!
+    ] DROP [
+        ECHO(""%C is NOT an Emirp Number.\n"", num)!!
+    ]
+]"
+,,
+,,
+44,"Pascal's Triangle:
+- Input number of rows
+- It starts and end with 1. Middle no. is the sum of the 2 nos. above the number.","AHOY() [
+    COIN rows = 0, i = 0, j = 0, prev_i = 0, prev_j = 0!!
+    COIN val1 = 0, val2 = 0, spaces = 0, space_k = 0!!
+
+    ~ SeaStack array declaration with fixed size
+    COIN pascal{20}{20}!!
+
+    ECHO(""===================================\n"")!!
+    ECHO(""          Pascal Triangle          \n"")!!
+    ECHO(""===================================\n"")!!
+    ECHO(""Enter the number of rows for Pascal's Triangle: "")!!
+    ASK(""%C"", @rows)!!
+
+    HAUL [
+        LOOK (rows > 20 || rows < 1) [
+            ECHO(""Invalid input. Please enter a number between 1 and 20: "")!!
+            ASK(""%C"", @rows)!!
+        ]
+    ] HEAVE (rows > 20 || rows < 1)!!
+
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j <= i!! +#j) [
+            
+            LOOK (j == 0 || j == i) [
+                pascal{i}{j} = 1!!
+            ] DROP [
+                prev_i = i - 1!!
+                prev_j = j - 1!!
+
+                val1 = pascal{prev_i}{prev_j}!!
+                val2 = pascal{prev_i}{j}!!
+
+                pascal{i}{j} = val1 + val2!!
+            ]
+        ]
+    ]
+
+    ECHO(""\n--- Pascal's Triangle ---\n"")!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        
+        spaces = rows - i!!
+        spaces *= 2!!
+        
+        ~ I-print ang leading spaces para sa kasalukuyang row
+        HOIST (space_k = 0!! space_k < spaces!! +#space_k) [
+            ECHO("" "")!!
+        ]
+
+        ~ I-print ang arrays gamit ang space-padding na nagme-maintain sa lapad na ""4""
+        HOIST (j = 0!! j <= i!! +#j) [
+            val1 = pascal{i}{j}!!
+            
+            LOOK (val1 < 10) [
+                ECHO(""   %C"", val1)!!  
+            ] DROPLOOK (val1 < 100) [
+                ECHO(""  %C"", val1)!!   
+            ] DROPLOOK (val1 < 1000) [
+                ECHO("" %C"", val1)!!   
+            ] DROP [
+                ECHO(""%C"", val1)!!
+            ]
+        ]
+        
+        ECHO(""\n"")!!
+    ]
+    ]"
+,,
+,,
+45,"Matrix
+- Matrix addition
+- Matrix multiplication
+- Matrix transpose (swap)","COIN a{10}{10}!!
+COIN b{10}{10}!!
+COIN c{10}{10}!!
+
+ABYSS input_a(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""  [%C][%C]: "", i, j)!!
+            ASK(""%C"", @a{i}{j})!!
+        ]
+    ]
+]
+ABYSS input_b(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""  [%C][%C]: "", i, j)!!
+            ASK(""%C"", @b{i}{j})!!
+        ]
+    ]
+]
+ABYSS print_a(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        ECHO(""  "")!!
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""%C "", a{i}{j})!!
+        ]
+        ECHO(""\n"")!!
+    ]
+]
+ABYSS print_b(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        ECHO(""  "")!!
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""%C "", b{i}{j})!!
+        ]
+        ECHO(""\n"")!!
+    ]
+]
+ABYSS print_c(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        ECHO(""  "")!!
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""%C "", c{i}{j})!!
+        ]
+        ECHO(""\n"")!!
+    ]
+]
+~ function to add matrix - rows and cols of both A and B must be identical
+ABYSS add_matrices(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            c{i}{j} = a{i}{j} + b{i}{j}!!
+        ]
+    ]
+]
+~ function to multiply matrix - cols of A must equal rows of B
+ABYSS multiply_matrices(COIN rows_a, COIN cols_a, COIN cols_b) [
+    COIN i, j, k, total!!
+    HOIST (i = 0!! i < rows_a!! +#i) [
+        HOIST (j = 0!! j < cols_b!! +#j) [
+            total = 0!!
+            HOIST (k = 0!! k < cols_a!! +#k) [
+                total += a{i}{k} * b{k}{j}!!
+            ]
+            c{i}{j} = total!!
+        ]
+    ]
+]
+~ function to transpose matrix
+ABYSS transpose_matrix(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            c{j}{i} = a{i}{j}!!
+        ]
+    ]
+]
+~ main function
+AHOY() [
+    COIN choice = 1!!
+    COIN rows_a = 1!!
+    COIN cols_a = 1!!
+    COIN rows_b = 1!!
+    COIN cols_b = 1!!
+
+    ~ ask input from the user - Matrix A
+    ECHO(""\n===== ENTER MATRIX A =====\n"")!!
+    HAUL [
+        ASK(""Rows: %C"", @rows_a)!!
+        LOOK (rows_a <= 0) [
+            ECHO(""Invalid! Rows must be greater than 0.\n"")!!
+        ]
+    ] HEAVE (rows_a <= 0)!!
+    HAUL [
+        ASK(""Cols: %C"", @cols_a)!!
+        LOOK (cols_a <= 0) [
+            ECHO(""Invalid! Cols must be greater than 0.\n"")!!
+        ]
+    ] HEAVE (cols_a <= 0)!!
+    ECHO(""\nEnter elements of Matrix A:\n"")!!
+    input_a(rows_a, cols_a)!!
+
+    ~ ask input from the user - Matrix B
+    ECHO(""\n===== ENTER MATRIX B =====\n"")!!
+    HAUL [
+        ASK(""Rows: %C"", @rows_b)!!
+        LOOK (rows_b <= 0) [
+            ECHO(""Invalid! Rows must be greater than 0.\n"")!!
+        ]
+    ] HEAVE (rows_b <= 0)!!
+    HAUL [
+        ASK(""Cols: %C"", @cols_b)!!
+        LOOK (cols_b <= 0) [
+            ECHO(""Invalid! Cols must be greater than 0.\n"")!!
+        ]
+    ] HEAVE (cols_b <= 0)!!
+    ECHO(""\nEnter elements of Matrix B:\n"")!!
+    input_b(rows_b, cols_b)!!
+
+    ECHO(""\n--- Matrix A ---\n"")!!
+    print_a(rows_a, cols_a)!!
+    ECHO(""\n--- Matrix B ---\n"")!!
+    print_b(rows_b, cols_b)!!
+
+    ~ main menu
+    HAUL [
+        ECHO(""\n====== MATRIX MENU ======\n"")!!
+        ECHO(""[1] Matrix Addition\n"")!!
+        ECHO(""[2] Matrix Multiplication\n"")!!
+        ECHO(""[3] Matrix Transpose\n"")!!
+        ECHO(""[4] EXIT\n"")!!
+        ECHO(""=========================\n"")!!
+        ASK(""Choice: %C"", @choice)!!
+        LOOK (choice == 4) [
+            ECHO(""\nGoodbye!\n"")!!
+            LAND!!
+        ]
+        CHART(choice) [
+            COURSE 1:
+                LOOK (rows_a == rows_b && cols_a == cols_b) [
+                    add_matrices(rows_a, cols_a)!!
+                    ECHO(""\n--- Result (A + B) ---\n"")!!
+                    print_c(rows_a, cols_a)!!
+                ] DROP [
+                    ECHO(""\nCannot add! Both matrices must have equal dimensions.\n"")!!
+                ]
+                LAND!!
+            COURSE 2:
+                LOOK (cols_a == rows_b) [
+                    multiply_matrices(rows_a, cols_a, cols_b)!!
+                    ECHO(""\n--- Result (A x B) ---\n"")!!
+                    print_c(rows_a, cols_b)!!
+                ] DROP [
+                    ECHO(""\nCannot multiply! Cols of A must equal Rows of B.\n"")!!
+                ]
+                LAND!!
+            COURSE 3:
+                transpose_matrix(rows_a, cols_a)!!
+                ECHO(""\n--- Transpose of A ---\n"")!!
+                print_c(cols_a, rows_a)!!
+                LAND!!
+            ADRIFT:
+                ECHO(""\nInvalid choice! Try again.\n"")!!
+                LAND!!
+        ]
+    ] HEAVE (choice != 4)!!
+]"
+,,
+,,
+46,"Student Records
+Create a program that:
+- Adds student records (name, student number, course)
+- Displays all records
+- Searches by student number
+- Menu
+ Add Record
+ Display Record (all)
+ Search Record (individual)
+ Edit Record
+ Delete Record
+ Exit","~( Program 2: Student Records Management System 
+   Add, Edit, Delete, Display, and Search student records )~
+
+~ Declare array for Student Name, Number, and Course
+~ Maximum of 50 records
+SCROLL names{50}!!
+COIN nums{50}!!
+SCROLL courses{50}!!
+COIN count = 0!!
+
+~ Checks if Student Record exists
+COIN find(COIN target)[
+  COIN id = -1!!
+  HOIST(COIN i = 0!! i <= count!! +#i)[
+    LOOK(nums{i} == target)[
+      id = i!!
+    ] DROP [
+      SAIL!!
+    ]
+  ]
+  BACK id!!
+]             
+
+~ ADD a Student Record
+ABYSS add_sr() [
+  COIN num!!
+  SCROLL name, course!!
+  BOOL invalid = NAY!!
+  
+  LOOK (count >= 50) [
+    ECHO(""[INVALID] Maximum of 50 records reached.\n"")!!
+  ] DROP [
+    ECHO(""\n--- Add Student Record ---\n"")!!
+    
+    ECHO(""Student Name   : "")!!
+    ASK(""%S"", @name)!!
+    
+    ECHO(""Student Number : "")!!
+    ASK(""%C"", @num)!!
+    
+    HAUL[
+      LOOK(num < 0) [
+        invalid = AYE!!
+        ECHO(""[INVALID] Student number must be numbers only."")!!
+        ECHO(""\nEnter a new student number: "")!!
+        ASK(""%C"", @num)!!
+      ] DROPLOOK(find(num) != -1)[
+        invalid = AYE!!
+        ECHO(""[INVALID] Student number %C already exists."", num)!!
+        ECHO(""\nEnter a new student number: "")!!
+        ASK(""%C"", @num)!!
+      ] DROP [
+        invalid = NAY!!
+      ]
+    ] HEAVE(invalid == AYE)!!
+        
+    ECHO(""Course         : "")!!
+    ASK(""%S"", @course)!!
+
+    names{count} = name!!
+    nums{count} = num!!
+    courses{count} = course!!
+    count += 1!!
+
+    ECHO(""--- Record added successfully. ---\n"")!!
+  ] 
+]
+
+~ DISPLAY all Student Records
+ABYSS display_sr() [
+  ECHO(""\n--- Student Record(s) ---\n"")!!
+    HOIST (COIN i = 0!! i < count!! +#i) [
+      ECHO(""\n[ Record %C ]\n"", i+1)!!
+      ECHO(""Name           : %S\n"", names{i})!!
+      ECHO(""Student Number : %C\n"", nums{i})!!
+      ECHO(""Course         : %S\n"", courses{i})!!
+    ]
+  ECHO(""\n--- Total of %C Student Record/s"", count)!!
+]
+
+~ SEARCH for a Student Record/s
+ABYSS search_sr() [
+  COIN amt, target, id, a=0!!
+  
+  ECHO(""\n--- Search Student Record ---\n"")!!
+  HAUL[
+    ECHO(""Enter how many students to search: "")!!
+    ASK(""%C"", @amt)!!
+    
+    LOOK(amt <= count) [
+      HAUL[
+        ECHO(""\nEnter student number to search: "")!!
+        ASK(""%C"", @target)!!
+        id = find(target)!!
+
+        LOOK (id != -1) [
+          ECHO(""\nRecord Found:\n"")!!
+          ECHO(""Name           : %S\n"", names{id})!!
+          ECHO(""Student Number : %C\n"", nums{id})!!
+          ECHO(""Course         : %S\n"", courses{id})!!
+              +#a!!
+        ] DROP [
+          ECHO(""\n[INVALID] Student number %C does not exist.\n"", target)!!
+        ] 
+      ] HEAVE(a != amt)!!
+    ] DROP [
+      ECHO(""\n[INVALID] The number exceeds the total existing records.\n"")!!
+    ]
+  ] HEAVE(amt >= count)!!
+]
+
+~ EDIT a Student Record
+ABYSS edit_sr() [
+  COIN target, edit, id!!
+  
+  ECHO(""\n--- Edit Student Record ---\n"")!!
+  ECHO(""Enter student number to edit: "")!!
+  ASK(""%C"", @target)!!
+  id = find(target)!!
+  
+  LOOK (id != -1) [
+    ECHO(""\nCurrent Record:\n"")!!
+    ECHO(""Name           : %S\n"", names{id})!!
+    ECHO(""Student Number : %C\n"", nums{id})!!
+    ECHO(""Course         : %S\n"", courses{id})!!
+
+    HAUL[
+      ECHO(""\nEnter detail/s to edit:\n"")!!
+      ECHO(""[1] Name\n[2] Course\n[3] Name & Course\n"")!!
+      ASK(""%C"", @edit)!!
+
+      CHART(edit)[
+        COURSE 1:
+          ECHO(""Enter new name: "")!!
+          ASK(""%S"", @names{id})!!
+          LAND!!
+        COURSE 2:
+          ECHO(""Enter new course: "")!!
+          ASK(""%S"", @courses{id})!!
+          LAND!!
+        COURSE 3:
+          ECHO(""Enter new name: "")!!
+          ASK(""%S"", @names{id})!!
+          ECHO(""\nEnter new course: "")!!
+          ASK(""%S"", @courses{id})!!
+          LAND!!
+        ADRIFT:
+          ECHO(""Invalid choice.\n"")!!
+          LAND!!
+        ]
+      ] HEAVE (edit > 3 && edit < 1)!!
+
+      ECHO(""Record updated successfully.\n"")!!
+    ] DROP [
+      ECHO(""[INVALID] Student number %C not found.\n"", target)!!
+    ]
+]
+
+~ DELETE a Student Record
+ABYSS delete_sr() [
+  COIN target, id, i, upd!!
+  
+  ECHO(""\n--- Delete Student Record ---\n"")!!
+  ECHO(""Enter student number to delete: "")!!
+  ASK(""%C"", @target)!!
+  id = find(target)!!
+
+  LOOK (id != -1) [
+    ECHO(""\nDeleting record:\n"")!!
+    ECHO(""Name           : %S\n"", names{id})!!
+    ECHO(""Student Number : %C\n"", nums{id})!!
+    ECHO(""Course         : %S\n"", courses{id})!!
+
+    HOIST (i = id!! i < count - 1!! +#i) [
+      upd = i + 1!!
+      names{i} = names{upd}!!
+      nums{i} = nums{upd}!!
+      courses{i} = courses{upd}!!
+    ]
+    count -= 1!!
+    ECHO(""Record deleted successfully.\n"")!!
+  ] DROP [
+    ECHO(""[INVALID] Student number %C not found.\n"", target)!!
+  ]
+]
+
+AHOY() [
+    COIN choice, exit!!
+    BOOL continue = AYE!!
+    
+    HAUL [
+        ECHO(""\n========================================\n"")!!
+        ECHO(""     STUDENT RECORD MANAGEMENT SYSTEM\n"")!!
+        ECHO(""========================================\n"")!!
+        ECHO(""[1] Add Record\n"")!!
+        ECHO(""[2] Display Records\n"")!!
+        ECHO(""[3] Search Record\n"")!!
+        ECHO(""[4] Edit Record\n"")!!
+        ECHO(""[5] Delete Record\n"")!!
+        ECHO(""[6] Exit\n"")!!
+        ECHO(""----------------------------------------\n"")!!
+        
+        ECHO(""Enter choice: "")!!
+        ASK(""%C"", @choice)!!
+
+        CHART (choice) [
+        COURSE 1:
+          add_sr()!!
+          LAND!!
+        COURSE 2:
+          LOOK(count < 1) [
+            ECHO(""\nThere are no existing records yet.\n"")!!
+          ] DROP [
+            display_sr()!!
+          ] LAND!!
+        COURSE 3:
+          LOOK(count < 1) [
+            ECHO(""\nThere are no existing records yet.\n"")!!
+          ] DROP [
+            search_sr()!!
+          ] LAND!!
+        COURSE 4:
+          LOOK(count < 1) [
+            ECHO(""\nThere are no existing records yet.\n"")!!
+          ] DROP [
+            edit_sr()!!
+          ] LAND!!
+        COURSE 5:
+          LOOK(count < 1) [
+            ECHO(""\nThere are no existing records yet.\n"")!!
+          ] DROP [
+            delete_sr()!!
+          ] LAND!!
+        COURSE 6:
+          ECHO(""Exiting System..."")!!
+          continue = NAY!!
+          LAND!!
+        ADRIFT:
+          ECHO(""Invalid choice.\n"")!!
+          LAND!!
+        ]
+    ] HEAVE (continue != NAY)!!
+]"
+,,
+,,
+47,"Banking Transactions
+Simulate: 
+- Deposit 
+- Withdraw
+- Balance inquiry
+- Display trxn’s summary
+
+ Data included: Client name, client account number, date
+ Input: number of clients, number of trxns per client
+ Max number of clients: 5 , each clients can have at least 5 trxns per day.  Maximum deposit: 50,000php
+ Maximum Withdrawal: 20,000php
+ Amount to be withdrawn <= balance","AHOY() [
+    COIN num_clients = 0, num_trxns = 0, choice = 0, add_more = 0!!
+    COIN i = 0, k = 0, m = 0, type = 0, global_idx = 0!!
+    COIN global_client_idx = 0, daily_client_cnt = 0, clients_avail = 0!!
+    COIN client_num = 0, day_idx = 0, current_client_idx = 0, valid_trxns = 0!!
+    DIME amount = 0.0, daily_dep = 0.0, daily_with = 0.0!!
+    DIME total_dep_today = 0.0, total_with_today = 0.0!!
+    BOOL another_day = AYE, is_unique = AYE, valid_date = NAY!!
+    BOOL valid_choice = NAY, more_clients_today = AYE, valid_amount = NAY!!
+    SCROLL current_date!!
+
+    SCROLL client_names{100}!!
+    COIN client_acc_nums{100}!!
+    DIME client_balances{100}!!
+
+    SCROLL prev_dates{25}!!
+
+    COIN trxn_client_idx{100}!!
+    COIN trxn_types{100}!!
+    DIME trxn_amounts{100}!!
+    SCROLL trxn_dates{100}!!
+
+    ECHO(""=================================================\n"")!!
+    ECHO(""            SEASTACK BANKING SYSTEM              \n"")!!
+    ECHO(""=================================================\n"")!!
+
+    HAUL [
+        ECHO(""\n=================================================\n"")!!
+        HAUL [
+            valid_date = AYE!!
+            ECHO(""Enter Transaction Date (e.g. 04-20-2026): "")!!
+            ASK(""%S"", @current_date)!!
+
+            LOOK (current_date{2} != ""-"" || current_date{5} != ""-"") [
+                ECHO(""Error: Invalid date format. Please strictly use mm-dd-yyyy.\n"")!!
+                valid_date = NAY!!
+            ] DROP [
+                HOIST (k = 0!! k < day_idx!! +#k) [
+                    LOOK (current_date == prev_dates{k}) [
+                        ECHO(""Error: This date has already been processed. Please enter a new date.\n"")!!
+                        valid_date = NAY!!
+                    ]
+                ]
+            ]
+        ] HEAVE (valid_date == NAY)!!
+
+        prev_dates{day_idx} = current_date!!
+        +#day_idx!!
+
+        daily_client_cnt = 0!!
+        more_clients_today = AYE!!
+
+        HAUL [
+            clients_avail = 5 - daily_client_cnt!!
+            ECHO(""\n--- Clients available for %S: %C ---\n"", current_date, clients_avail)!!
+            ECHO(""Enter number of clients to process right now: "")!!
+            ASK(""%C"", @num_clients)!!
+
+            LOOK (num_clients > clients_avail) [
+                ECHO(""Error: You can only process up to %C more clients today.\n"", clients_avail)!!
+            ] DROPLOOK (num_clients < 0) [
+                ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+            ] DROPLOOK (num_clients == 0) [
+                ECHO(""Error: Please enter a valid number of clients.\n"")!!
+            ] DROP [
+                
+                HOIST (i = 0!! i < num_clients!! +#i) [
+                    current_client_idx = global_client_idx!!
+                    client_num = current_client_idx + 1!!
+                    
+                    ECHO(""\n--- Client %C Registration ---\n"", client_num)!!
+                    
+                    HAUL [
+                        is_unique = AYE!!
+                        ECHO(""Enter Client Name: "")!!
+                        ASK(""%S"", @client_names{current_client_idx})!!
+                        HOIST (m = 0!! m < current_client_idx!! +#m) [
+                            LOOK (client_names{current_client_idx} == client_names{m}) [
+                                ECHO(""Error: Client name already exists. Please choose a different name.\n"")!!
+                                is_unique = NAY!!
+                            ]
+                        ]
+                    ] HEAVE (is_unique == NAY)!!
+
+                    HAUL [
+                        is_unique = AYE!!
+                        ECHO(""Enter Account Number: "")!!
+                        ASK(""%C"", @client_acc_nums{current_client_idx})!!
+                        HOIST (m = 0!! m < current_client_idx!! +#m) [
+                            LOOK (client_acc_nums{current_client_idx} == client_acc_nums{m}) [
+                                ECHO(""Error: Account number already exists. Please enter a different number.\n"")!!
+                                is_unique = NAY!!
+                            ]
+                        ]
+                    ] HEAVE (is_unique == NAY)!!
+
+                    client_balances{current_client_idx} = 0.0!!
+
+                    ECHO(""\n--- Transactions for %S on %S ---\n"", client_names{current_client_idx}, current_date)!!
+                    
+                    HAUL [
+                        ECHO(""Enter number of transactions for this client (Max 5): "")!!
+                        ASK(""%C"", @num_trxns)!!
+                        LOOK (num_trxns > 5) [
+                            ECHO(""Error: Clients are strictly limited to 5 transactions per day.\n"")!!
+                        ] DROPLOOK (num_trxns < 0) [
+                            ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                        ]
+                    ] HEAVE (num_trxns > 5 || num_trxns < 0)!!
+
+                    daily_dep = 0.0!!
+                    daily_with = 0.0!!
+                    
+                    valid_trxns = 0!!
+
+                    HEAVE (valid_trxns < num_trxns) [
+                        LOOK (global_idx >= 100) [
+                            ECHO(""Error: System transaction limit reached.\n"")!!
+                            valid_trxns = num_trxns!!
+                        ] DROP [
+                            ECHO(""\nTransaction Type \n1 - Deposit \n2 - Withdraw \n3 - Inquiry \nChoose an option: "")!!
+                            ASK(""%C"", @type)!!
+
+                            CHART (type) [
+                                COURSE 1:
+                                    HAUL [
+                                        valid_amount = AYE!!
+                                        ECHO(""Enter Deposit Amount: "")!!
+                                        ASK(""%D"", @amount)!!
+                                        total_dep_today = daily_dep + amount!!
+
+                                        LOOK (amount < 0.0) [
+                                            ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                                            valid_amount = NAY!!
+                                        ] DROPLOOK (total_dep_today > 50000.0) [
+                                            ECHO(""Error: Combined deposits for this date exceed 50000.0 php. Try again.\n"")!!
+                                            valid_amount = NAY!!
+                                        ]
+                                    ] HEAVE (valid_amount == NAY)!!
+
+                                    client_balances{current_client_idx} += amount!!
+                                    daily_dep += amount!!
+                                    
+                                    trxn_client_idx{global_idx} = current_client_idx!!
+                                    trxn_dates{global_idx} = current_date!!
+                                    trxn_types{global_idx} = type!!
+                                    trxn_amounts{global_idx} = amount!!
+                                    +#global_idx!!
+                                    +#valid_trxns!!
+                                    
+                                    ECHO(""Deposit successful.\n"")!!
+                                    LAND!!
+
+                                COURSE 2:
+                                    HAUL [
+                                        valid_amount = AYE!!
+                                        ECHO(""Enter Withdrawal Amount: "")!!
+                                        ASK(""%D"", @amount)!!
+                                        total_with_today = daily_with + amount!!
+
+                                        LOOK (amount < 0.0) [
+                                            ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                                            valid_amount = NAY!!
+                                        ] DROPLOOK (total_with_today > 20000.0) [
+                                            ECHO(""Error: Combined withdrawals for this date exceed 20000.0 php. Try again.\n"")!!
+                                            valid_amount = NAY!!
+                                        ] DROPLOOK (amount > client_balances{current_client_idx}) [
+                                            ECHO(""Error: Insufficient balance. Try again.\n"")!!
+                                            valid_amount = NAY!!
+                                        ]
+                                    ] HEAVE (valid_amount == NAY)!!
+
+                                    client_balances{current_client_idx} -= amount!!
+                                    daily_with += amount!!
+                                    
+                                    trxn_client_idx{global_idx} = current_client_idx!!
+                                    trxn_dates{global_idx} = current_date!!
+                                    trxn_types{global_idx} = type!!
+                                    trxn_amounts{global_idx} = amount!!
+                                    +#global_idx!!
+                                    +#valid_trxns!!
+                                    
+                                    ECHO(""Withdrawal successful.\n"")!!
+                                    LAND!!
+
+                                COURSE 3:
+                                    ECHO(""Current Balance Inquiry: %D php\n"", client_balances{current_client_idx})!!
+                                    
+                                    trxn_client_idx{global_idx} = current_client_idx!!
+                                    trxn_dates{global_idx} = current_date!!
+                                    trxn_types{global_idx} = type!!
+                                    trxn_amounts{global_idx} = 0.0!!
+                                    +#global_idx!!
+                                    +#valid_trxns!!
+                                    LAND!!
+
+                                ADRIFT:
+                                    ECHO(""Invalid Transaction Type. Try again.\n"")!!
+                                    LAND!!
+                            ]
+                        ]
+                    ]
+                    +#global_client_idx!!
+                ]
+                
+                daily_client_cnt += num_clients!!
+
+                LOOK (daily_client_cnt < 5) [
+                    HAUL [
+                        valid_choice = AYE!!
+                        clients_avail = 5 - daily_client_cnt!!
+                        ECHO(""\nYou can still add %C client(s) for %S.\n"", clients_avail, current_date)!!
+                        ECHO(""Would you like to add more clients for today? (1 for Yes, 0 for No): "")!!
+                        ASK(""%C"", @add_more)!!
+
+                        LOOK (add_more != 1 && add_more != 0) [
+                            ECHO(""Error: Invalid choice format. Please enter exactly 1 or 0.\n"")!!
+                            valid_choice = NAY!!
+                        ]
+                    ] HEAVE (valid_choice == NAY)!!
+
+                    LOOK (add_more == 0) [
+                        more_clients_today = NAY!!
+                    ]
+                ] DROPLOOK (daily_client_cnt >= 5) [
+                    ECHO(""\nMaximum daily limit of 5 clients reached for %S.\n"", current_date)!!
+                    more_clients_today = NAY!!
+                ]
+            ]
+        ] HEAVE (more_clients_today == AYE)!!
+
+        HAUL [
+            valid_choice = AYE!!
+            ECHO(""\nWould you like to process another day? (1 for Yes, 0 for No): "")!!
+            ASK(""%C"", @choice)!!
+            
+            LOOK (choice != 1 && choice != 0) [
+                ECHO(""Error: Invalid choice format. Please enter exactly 1 or 0.\n"")!!
+                valid_choice = NAY!!
+            ]
+        ] HEAVE (valid_choice == NAY)!!
+
+        LOOK (choice == 0) [
+            another_day = NAY!!
+        ]
+    ] HEAVE (another_day == AYE)!!
+
+    ECHO(""\n================ TRANSACTION SUMMARY ================\n"")!!
+    HOIST (i = 0!! i < global_client_idx!! +#i) [
+        ECHO(""Client Name: %S\n"", client_names{i})!!
+        ECHO(""Account Number: %C\n"", client_acc_nums{i})!!
+        ECHO(""Final Balance: %D php\n"", client_balances{i})!!
+        ECHO(""--- Transactions ---\n"")!!
+
+        HOIST (k = 0!! k < global_idx!! +#k) [
+            LOOK (trxn_client_idx{k} == i) [
+                type = trxn_types{k}!!
+                amount = trxn_amounts{k}!!
+
+                LOOK (type == 1) [
+                    ECHO(""Date: %S | Type: Deposit  | Amount: %D php\n"", trxn_dates{k}, amount)!!
+                ] DROPLOOK (type == 2) [
+                    ECHO(""Date: %S | Type: Withdraw | Amount: %D php\n"", trxn_dates{k}, amount)!!
+                ]
+            ]
+        ]
+        ECHO(""---------------------------------------------------\n"")!!
+    ]
+]"
+,,
+,,
+48,"Jeepney Passengers (Stop) 
+ Loading
+ Unloading
+ Show Passengers
+ Exit
+Maximum jeep capacity: 22 (excluding the diver)
+
+Constraints:
+ Number of passengers <= maximum jeep capacity
+ Number of passengers to load <= remaining vacant seat/s
+ Number of passengers to unload <= total number of current passengers
+ No passenger can seat on the same location
+ Jeep driver cannot stop anywhere
+ Loading : Loading Area
+ Unloading: Unloading Area","AHOY() [
+    COIN choice = 0, i = 0!!
+    COIN load_count = 0, unload_count = 0!!
+    COIN current_passengers = 0, vacant_seats = 0!!
+    COIN loaded = 0, unloaded = 0!!
+    COIN display_seat = 0!!
+
+    ~ 0 = Vacant, 1 = Occupied
+    COIN seats{22} = [0] !!
+
+    HEAVE (choice != 4) [
+        current_passengers = 0!!
+        HOIST (i = 0!! i < 22!! +#i) [
+            LOOK (seats{i} == 1) [
+                +#current_passengers!!
+            ]
+        ]
+        vacant_seats = 22 - current_passengers!!
+
+        ECHO(""\n=================================\n"")!!
+        ECHO(""     JEEPNEY PASSENGER SYSTEM    \n"")!!
+        ECHO(""=================================\n"")!!
+        ECHO(""Current Load: %C / 22\n"", current_passengers)!!
+        ECHO(""Vacant Seats: %C\n"", vacant_seats)!!
+        ECHO(""1. Stop at Loading Area\n"")!!
+        ECHO(""2. Stop at Unloading Area\n"")!!
+        ECHO(""3. Show Passenger Seat Locations\n"")!!
+        ECHO(""4. Exit to Terminal\n"")!!
+        ECHO(""Enter choice: "")!!
+        ASK(""%C"", @choice)!!
+
+        CHART (choice) [
+            
+            COURSE 1:
+                ECHO(""\n--- LOADING AREA ---\n"")!!
+                LOOK (vacant_seats == 0) [
+                    ECHO(""The jeepney is full! Cannot load more passengers.\n"")!!
+                ] DROP [
+                    ECHO(""Enter number of passengers to load: "")!!
+                    ASK(""%C"", @load_count)!!
+
+                    ~ Constraint: Number of passengers to load <= remaining vacant seats
+                    LOOK (load_count > vacant_seats) [
+                        ECHO(""Cannot load. Exceeds remaining vacant seats (%C)!\n"", vacant_seats)!!
+                    ] DROP [
+                        loaded = 0!!
+                        
+                        ~ Find vacant seats (seats{i} == 0)
+                        HOIST (i = 0!! i < 22!! +#i) [
+                            LOOK (loaded < load_count && seats{i} == 0) [
+                                seats{i} = 1!!
+                                +#loaded!!
+                            ]
+                        ]
+                        ECHO(""Successfully loaded %C passengers.\n"", loaded)!!
+                    ]
+                ]
+                LAND!!
+
+            COURSE 2:
+                ECHO(""\n--- UNLOADING AREA ---\n"")!!
+                LOOK (current_passengers == 0) [
+                    ECHO(""The jeepney is empty! No passengers to unload.\n"")!!
+                ] DROP [
+                    ECHO(""Enter number of passengers to unload: "")!!
+                    ASK(""%C"", @unload_count)!!
+
+                    ~ Constraint: Number of passengers to unload <= total number of current passengers
+                    LOOK (unload_count > current_passengers) [
+                        ECHO(""Cannot unload. Exceeds current passengers (%C)!\n"", current_passengers)!!
+                    ] DROP [
+                        unloaded = 0!!
+                        
+                        ~ Unload current passengers (seats{i} == 1) 
+                        HOIST (i = 0!! i < 22!! +#i) [
+                            LOOK (unloaded < unload_count && seats{i} == 1) [
+                                seats{i} = 0!!
+                                +#unloaded!!
+                            ]
+                        ]
+                        ECHO(""Successfully unloaded %C passengers.\n"", unloaded)!!
+                    ]
+                ]
+                LAND!!
+
+            COURSE 3:
+                ECHO(""\n--- PASSENGER SEAT LOCATIONS ---\n"")!!
+                HOIST (i = 0!! i < 22!! +#i) [
+                    display_seat = i + 1!!
+                    
+                    LOOK (seats{i} == 1) [
+                        ECHO(""Seat %C: [OCCUPIED]\n"", display_seat)!!
+                    ] DROP [
+                        ECHO(""Seat %C: [Vacant]\n"", display_seat)!!
+                    ]
+                ]
+                LAND!!
+
+            COURSE 4:
+                ECHO(""\nArrived at terminal. End of trip!\n"")!!
+                LAND!!
+
+            ADRIFT:
+                ECHO(""\nJeep driver cannot stop anywhere! Invalid choice.\n"")!!
+                LAND!!
+        ]
+    ]
+]"
+,,
+,,
+49,Combination of all programs (1-4) into 1 program.,"~ ============================================================
+~ COMBINED PROGRAM
+~ ============================================================
+~ PROGRAM 1: MATRIX - Global Declarations 
+~ ============================================================
+COIN a{10}{10}!!
+COIN b{10}{10}!!
+COIN c{10}{10}!!
+~ ============================================================
+~ PROGRAM 2: Student Records - Global Declarations
+~ ============================================================
+SCROLL names{50}!!
+COIN nums{50}!!
+SCROLL courses{50}!!
+COIN count = 0!!
+
+~ PROGRAM 1: MATRIX - Functions
+ABYSS input_a(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""  [%C][%C]: "", i, j)!!
+            ASK(""%C"", @a{i}{j})!!
+        ]
+    ]
+]
+
+ABYSS input_b(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""  [%C][%C]: "", i, j)!!
+            ASK(""%C"", @b{i}{j})!!
+        ]
+    ]
+]
+
+ABYSS print_a(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        ECHO(""  "")!!
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""%C "", a{i}{j})!!
+        ]
+        ECHO(""\n"")!!
+    ]
+]
+
+ABYSS print_b(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        ECHO(""  "")!!
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""%C "", b{i}{j})!!
+        ]
+        ECHO(""\n"")!!
+    ]
+]
+
+ABYSS print_c(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        ECHO(""  "")!!
+        HOIST (j = 0!! j < cols!! +#j) [
+            ECHO(""%C "", c{i}{j})!!
+        ]
+        ECHO(""\n"")!!
+    ]
+]
+
+~ function to add matrix - rows and cols of both A and B must be identical
+ABYSS add_matrices(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            c{i}{j} = a{i}{j} + b{i}{j}!!
+        ]
+    ]
+]
+
+~ function to multiply matrix - cols of A must equal rows of B
+ABYSS multiply_matrices(COIN rows_a, COIN cols_a, COIN cols_b) [
+    COIN i, j, k, total!!
+    HOIST (i = 0!! i < rows_a!! +#i) [
+        HOIST (j = 0!! j < cols_b!! +#j) [
+            total = 0!!
+            HOIST (k = 0!! k < cols_a!! +#k) [
+                total += a{i}{k} * b{k}{j}!!
+            ]
+            c{i}{j} = total!!
+        ]
+    ]
+]
+
+~ function to transpose matrix
+ABYSS transpose_matrix(COIN rows, COIN cols) [
+    COIN i, j!!
+    HOIST (i = 0!! i < rows!! +#i) [
+        HOIST (j = 0!! j < cols!! +#j) [
+            c{j}{i} = a{i}{j}!!
+        ]
+    ]
+]
+~ PROGRAM 2: STUDENT RECORDS - Functions
+~( Program 2: Student Records Management System 
+   Add, Edit, Delete, Display, and Search student records )~
+
+~ Checks if Student Record exists
+COIN find(COIN target)[
+  COIN id = -1!!
+  HOIST(COIN i = 0!! i <= count!! +#i)[
+    LOOK(nums{i} == target)[
+      id = i!!
+    ] DROP [
+      SAIL!!
+    ]
+  ]
+  BACK id!!
+]             
+
+~ ADD a Student Record
+ABYSS add_sr() [
+  COIN num!!
+  SCROLL name, course!!
+  BOOL invalid = NAY!!
+  
+  LOOK (count >= 50) [
+    ECHO(""[INVALID] Maximum of 50 records reached.\n"")!!
+  ] DROP [
+    ECHO(""\n--- Add Student Record ---\n"")!!
+    
+    ECHO(""Student Name   : "")!!
+    ASK(""%S"", @name)!!
+    
+    ECHO(""Student Number : "")!!
+    ASK(""%C"", @num)!!
+    
+    HAUL[
+      LOOK(num < 0) [
+        invalid = AYE!!
+        
+    ECHO(""[INVALID] Student number must be a positive integer."")!!
+    ECHO(""\nEnter a new student number: "")!!
+    ASK(""%C"", @num)!!
+      ] DROPLOOK(find(num) != -1)[
+        invalid = AYE!!
+        
+    ECHO(""[INVALID] Student number %C already exists."", num)!!
+    ECHO(""\nEnter a new student number: "")!!
+    ASK(""%C"", @num)!!
+      ]
+  ] HEAVE(invalid == AYE)!!
+        
+    ECHO(""Course         : "")!!
+    ASK(""%S"", @course)!!
+
+    names{count} = name!!
+    nums{count} = num!!
+    courses{count} = course!!
+    count += 1!!
+
+    ECHO(""--- Record added successfully. ---\n"")!!
+  ] 
+]
+
+~ DISPLAY all Student Records
+ABYSS display_sr() [
+  ECHO(""\n--- Student Record(s) ---\n"")!!
+    HOIST (COIN i = 0!! i < count!! +#i) [
+      ECHO(""\n[ Record %C ]\n"", i+1)!!
+      ECHO(""Name           : %S\n"", names{i})!!
+      ECHO(""Student Number : %C\n"", nums{i})!!
+      ECHO(""Course         : %S\n"", courses{i})!!
+    ]
+  ECHO(""\n--- Total of %C Student Record/s"", count)!!
+]
+
+~ SEARCH for a Student Record/s
+ABYSS search_sr() [
+  COIN amt, target, id, a=0!!
+  
+  ECHO(""\n--- Search Student Record ---\n"")!!
+  HAUL[
+  ECHO(""Enter how many students to search: "")!!
+  ASK(""%C"", @amt)!!
+    
+  LOOK(amt <= count) [
+   HAUL[
+    ECHO(""\nEnter student number to search: "")!!
+    ASK(""%C"", @target)!!
+    id = find(target)!!
+
+  LOOK (id != -1) [
+   ECHO(""\nRecord Found:\n"")!!
+   ECHO(""Name           : %S\n"", names{id})!!
+   ECHO(""Student Number : %C\n"", nums{id})!!
+   ECHO(""Course         : %S\n"", courses{id})!!
+    +#a!!
+    ] DROP [
+      ECHO(""\n[INVALID] Student number %C does not exist.\n"", target)!!
+      ] 
+     ] HEAVE(a != amt)!!
+    ] DROP [
+      ECHO(""\n[INVALID] The number exceeds the total existing records\n."")!!
+    ]
+  ] HEAVE(amt >= count)!!
+]
+
+~ EDIT a Student Record
+ABYSS edit_sr() [
+  COIN target, edit, id!!
+  
+  ECHO(""\n--- Edit Student Record ---\n"")!!
+  ECHO(""Enter student number to edit: "")!!
+  ASK(""%C"", @target)!!
+  id = find(target)!!
+  
+  LOOK (id != -1) [
+    ECHO(""\nCurrent Record:\n"")!!
+    ECHO(""Name           : %S\n"", names{id})!!
+    ECHO(""Student Number : %C\n"", nums{id})!!
+    ECHO(""Course         : %S\n"", courses{id})!!
+
+  HAUL[
+    ECHO(""\nEnter detail/s to edit:\n"")!!
+    ECHO(""[1] Name\n[2] Course\n[3] Name & Course\n"")!!
+    ASK(""%C"", @edit)!!
+
+  CHART(edit)[
+    COURSE 1:
+     ECHO(""Enter new name: "")!!
+     ASK(""%S"", @names{id})!!
+     LAND!!
+  COURSE 2:
+    ECHO(""Enter new course: "")!!
+    ASK(""%S"", @courses{id})!!
+    LAND!!
+  COURSE 3:
+    ECHO(""Enter new name: "")!!
+    ASK(""%S"", @names{id})!!
+    ECHO(""\nEnter new course: "")!!
+    ASK(""%S"", @courses{id})!!
+     LAND!!
+   ADRIFT:
+    ECHO(""Invalid choice.\n"")!!
+     LAND!!
+    ]
+ ] HEAVE (edit > 3 && edit < 1)!!
+
+    ECHO(""Record updated successfully.\n"")!!
+ ] DROP [
+    ECHO(""[INVALID] Student number %C not found.\n"", target)!!
+  ]
+]
+
+~ DELETE a Student Record
+ABYSS delete_sr() [
+  COIN target, id, i, upd!!
+  
+  ECHO(""\n--- Delete Student Record ---\n"")!!
+  ECHO(""Enter student number to delete: "")!!
+  ASK(""%C"", @target)!!
+  id = find(target)!!
+
+  LOOK (id != -1) [
+    ECHO(""\nDeleting record:\n"")!!
+    ECHO(""Name           : %S\n"", names{id})!!
+    ECHO(""Student Number : %C\n"", nums{id})!!
+    ECHO(""Course         : %S\n"", courses{id})!!
+
+    ~ Shift all subsequent records one position to the left
+  HOIST (i = id!! i < count - 1!! +#i) [
+    upd = i + 1!!
+    names{i} = names{upd}!!
+    nums{i} = nums{upd}!!
+    courses{i} = courses{upd}!!
+  ]
+    count -= 1!!
+    ECHO(""Record deleted successfully.\n"")!!
+  ] DROP [
+    ECHO(""[INVALID] Student number %C not found.\n"", target)!!
+  ]
+]
+
+~ ============================================================
+~ MAIN PROGRAM
+~ ============================================================
+AHOY() [
+    COIN main_choice = 0!!
+    BOOL main_prog = AYE!!
+
+~ -------------------------------------------------------
+~ P1 locals (choice -> choice1)
+~ -------------------------------------------------------
+    COIN choice1, rows_a, cols_a, rows_b, cols_b!!
+
+~ -------------------------------------------------------
+~ P2 locals (choice -> choice2, continue -> continue2)
+~ -------------------------------------------------------
+    COIN choice2, exit!!
+    BOOL continue2 = AYE!!
+
+~ -------------------------------------------------------
+~ P3 locals (choice -> choice3, i -> i3, k -> k3, m -> m3, type -> type3)
+~ -------------------------------------------------------
+    COIN num_clients = 0, num_trxns = 0, choice3 = 0, add_more = 0!!
+    COIN i3 = 0, k3 = 0, m3 = 0, type3 = 0, global_idx = 0!!
+    COIN global_client_idx = 0, daily_client_cnt = 0, clients_avail = 0!!
+    COIN client_num = 0, day_idx = 0, current_client_idx = 0, valid_trxns = 0!!
+    DIME amount = 0.0, daily_dep = 0.0, daily_with = 0.0!!
+    DIME total_dep_today = 0.0, total_with_today = 0.0!!
+    BOOL another_day = AYE, is_unique = AYE, valid_date = NAY!!
+    BOOL valid_choice = NAY, more_clients_today = AYE, valid_amount = NAY!!
+    SCROLL current_date!!
+    SCROLL client_names{100}!!
+    COIN client_acc_nums{100}!!
+    DIME client_balances{100}!!
+    SCROLL prev_dates{25}!!
+    COIN trxn_client_idx{100}!!
+    COIN trxn_types{100}!!
+    DIME trxn_amounts{100}!!
+    SCROLL trxn_dates{100}!!
+
+~ -------------------------------------------------------
+~ P4 locals (choice -> choice4, i -> i4)
+~ -------------------------------------------------------
+    COIN choice4 = 0, i4 = 0!!
+    COIN load_count = 0, unload_count = 0!!
+    COIN current_passengers = 0, vacant_seats = 0!!
+    COIN loaded = 0, unloaded = 0!!
+    COIN display_seat = 0!!
+    COIN seats{22} = [0]!!
+
+~ -------------------------------------------------------
+~ MAIN MENU LOOP
+~ -------------------------------------------------------
+  HAUL [
+   ECHO(""========================================\n"")!!
+   ECHO(""             MAIN MENU                  \n"")!!
+   ECHO(""========================================\n"")!!
+    ECHO(""[1] Matrix\n"")!!
+    ECHO(""[2] Student Records\n"")!!
+    ECHO(""[3] Banking Transactions\n"")!!
+    ECHO(""[4] Jeepney Passengers\n"")!!
+    ECHO(""[5] Exit\n"")!!
+    ECHO(""========================================\n"")!!
+    ECHO(""Enter choice: "")!!
+    ASK(""%C"", @main_choice)!!
+
+  CHART (main_choice) [
+~ ================================================
+~ PROGRAM 1: MATRIX
+~ ================================================
+  COURSE 1:
+      ~ ask input from the user
+    ECHO(""\n===== ENTER MATRIX A =====\n"")!!
+    ASK(""Rows: %C"", @rows_a)!!
+    ASK(""Cols: %C"", @cols_a)!!
+    ECHO(""\nEnter elements of Matrix A:\n"")!!
+    input_a(rows_a, cols_a)!!
+
+    ECHO(""\n===== ENTER MATRIX B =====\n"")!!
+    ASK(""Rows: %C"", @rows_b)!!
+    ASK(""Cols: %C"", @cols_b)!!
+    ECHO(""\nEnter elements of Matrix B:\n"")!!
+    input_b(rows_b, cols_b)!!
+
+      ECHO(""\n--- Matrix A ---\n"")!!
+      print_a(rows_a, cols_a)!!
+      ECHO(""\n--- Matrix B ---\n"")!!
+      print_b(rows_b, cols_b)!!
+
+~ main menu
+  HAUL [
+    ECHO(""\n====== MATRIX MENU ======\n"")!!
+    ECHO(""[1] Matrix Addition\n"")!!
+    ECHO(""[2] Matrix Multiplication\n"")!!
+    ECHO(""[3] Matrix Transpose\n"")!!
+    ECHO(""[4] EXIT\n"")!!
+    ECHO(""=========================\n"")!!
+    ASK(""Choice: %C"", @choice1)!!
+    LOOK (choice1 == 4) [
+    ECHO(""\nGoodbye!\n"")!!
+      LAND!!
+    ]
+     CHART(choice1) [
+  COURSE 1:
+      LOOK (rows_a == rows_b && cols_a == cols_b) [
+        add_matrices(rows_a, cols_a)!!
+        ECHO(""\n--- Result (A + B) ---\n"")!!
+        print_c(rows_a, cols_a)!!
+ ] DROP [
+        ECHO(""\nCannot add! Both matrices must have equal dimensions.\n"")!!
+        ]
+      LAND!!
+  COURSE 2:
+      LOOK (cols_a == rows_b) [
+        multiply_matrices(rows_a, cols_a, cols_b)!!
+        ECHO(""\n--- Result (A x B) ---\n"")!!
+        print_c(rows_a, cols_b)!!
+ ] DROP [
+        ECHO(""\nCannot multiply! Cols of A must equal Rows of B.\n"")!!
+        ]
+      LAND!!
+  COURSE 3:
+        transpose_matrix(rows_a, cols_a)!!
+        ECHO(""\n--- Transpose of A ---\n"")!!
+        print_c(cols_a, rows_a)!!
+      LAND!!
+  ADRIFT:
+        ECHO(""\nInvalid choice! Try again.\n"")!!
+      LAND!!
+    ]
+] HEAVE (choice1 != 4)!!
+      LAND!!
+~ ================================================
+~ PROGRAM 2: STUDENT RECORDS
+~ ================================================        
+  COURSE 2:
+      continue2 = AYE!!
+   HAUL [
+      ECHO(""\n========================================\n"")!!
+      ECHO(""     STUDENT RECORD MANAGEMENT SYSTEM\n"")!!
+      ECHO(""========================================\n"")!!
+      ECHO(""[1] Add Record\n"")!!
+      ECHO(""[2] Display Records\n"")!!
+      ECHO(""[3] Search Record\n"")!!
+      ECHO(""[4] Edit Record\n"")!!
+      ECHO(""[5] Delete Record\n"")!!
+      ECHO(""[6] Exit\n"")!!
+      ECHO(""----------------------------------------\n"")!!   
+         ECHO(""Enter choice: "")!!
+         ASK(""%C"", @choice2)!!
+      CHART (choice2) [
+    COURSE 1:
+          add_sr()!!
+          LAND!!
+    COURSE 2:
+        LOOK(count < 0) [
+          ECHO(""\nThere are no existing records yet.\n"")!!
+    ] DROP [
+          display_sr()!!
+           ] LAND!!
+    COURSE 3:
+        LOOK(count < 0) [
+          ECHO(""\nThere are no existing records yet.\n"")!!
+     ] DROP [
+           search_sr()!!
+            ] LAND!!
+    COURSE 4:
+        LOOK(count < 0) [
+          ECHO(""\nThere are no existing records yet.\n"")!!
+     ] DROP [
+           edit_sr()!!
+            ] LAND!!
+    COURSE 5:
+        LOOK(count < 0) [
+          ECHO(""\nThere are no existing records yet.\n"")!!
+      ] DROP [
+            delete_sr()!!
+             ] LAND!!
+     COURSE 6:
+          ECHO(""Exiting System..."")!!
+            continue2 = NAY!!
+               LAND!!
+     ADRIFT:
+          ECHO(""Invalid choice.\n"")!!
+               LAND!!
+                    ]
+       ] HEAVE (continue2 != NAY)!!
+               LAND!!
+~ ================================================
+~ PROGRAM 3: BANKING TRANSACTIONS
+~ ================================================
+    COURSE 3:
+      ~ Reset P3 state
+      num_clients = 0!!
+      num_trxns = 0!!
+      choice3 = 0!!
+      add_more = 0!!
+      i3 = 0!!
+      k3 = 0!!
+      m3 = 0!!
+      type3 = 0!!
+      global_idx = 0!!
+      global_client_idx = 0!!
+      daily_client_cnt = 0!!
+      clients_avail = 0!!
+      client_num = 0!!
+      day_idx = 0!!
+      current_client_idx = 0!!
+      valid_trxns = 0!!
+      amount = 0.0!!
+      daily_dep = 0.0!!
+      daily_with = 0.0!!
+      total_dep_today = 0.0!!
+      total_with_today = 0.0!!
+      another_day = AYE!!
+      is_unique = AYE!!
+      valid_date = NAY!!
+      valid_choice = NAY!!
+      more_clients_today = AYE!!
+      valid_amount = NAY!!
+  ECHO(""=================================================\n"")!!
+  ECHO(""            SEASTACK BANKING SYSTEM              \n"")!!
+  ECHO(""=================================================\n"")!!
+      ~ Main Loop for entering Transactions Day by Day
+  HAUL [
+      ~ 1. Transaction Date must start at the top
+  HAUL [
+      valid_date = AYE!!
+      ECHO(""Enter Transaction Date (e.g. 04-20-2026): "")!!
+      ASK(""%S"", @current_date)!!
+      ~ Check the specific format by looking at the location of the hyphens
+  LOOK (current_date{2} != ""-"" || current_date{5} != ""-"") [
+      ECHO(""Error: Invalid date format. Please strictly use mm-dd-yyyy.\n"")!!
+      valid_date = NAY!!
+] DROP [
+      ~ Ensure the user does not input the exact same date as a previous day
+  HOIST (k3 = 0!! k3 < day_idx!! +#k3) [
+  LOOK (current_date == prev_dates{k3}) [
+      ECHO(""Error: This date has already been processed. Please enter a new date.\n"")!!
+      valid_date = NAY!!
+     ]
+  ]
+]
+] HEAVE (valid_date == NAY)!!
+
+     ~ Store the safely validated date
+      prev_dates{day_idx} = current_date!!
+      +#day_idx!!
+
+    ~ Reset daily client counter
+      daily_client_cnt = 0!!
+      more_clients_today = AYE!!
+    ~ 2. Inner Loop to manage up to 5 Clients for this specific Date
+  HAUL [
+      clients_avail = 5 - daily_client_cnt!!
+      ECHO(""\n--- Clients available for %S: %C ---\n"", current_date, clients_avail)!!
+      ECHO(""Enter number of clients to process right now: "")!!
+      ASK(""%C"", @num_clients)!!
+     ~ Validate that the input does not exceed remaining daily slots and is NOT negative
+  LOOK (num_clients > clients_avail) [
+      ECHO(""Error: You can only process up to %C more clients today.\n"", clients_avail)!!
+] DROPLOOK (num_clients < 0) [
+      ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+] DROPLOOK (num_clients == 0) [
+      ECHO(""Error: Please enter a valid number of clients.\n"")!!
+] DROP [                      
+     
+     ~ Loop through the requested number of clients
+  HOIST (i3 = 0!! i3 < num_clients!! +#i3) [
+      current_client_idx = global_client_idx!!
+      client_num = current_client_idx + 1!!
+                                
+      ECHO(""\n--- Client %C Registration ---\n"", client_num)!!       
+       ~ Check for Duplicate Client Names
+  HAUL [
+      is_unique = AYE!!
+      ECHO(""Enter Client Name: "")!!
+      ASK(""%S"", @client_names{current_client_idx})!!
+      HOIST (m3 = 0!! m3 < current_client_idx!! +#m3) [
+  LOOK (client_names{current_client_idx} == client_names{m3}) [
+      ECHO(""Error: Client name already exists. Please choose a different name.\n"")!!
+      is_unique = NAY!!
+     ]
+   ]
+] HEAVE (is_unique == NAY)!!
+      ~ Check for Duplicate Account Numbers
+  HAUL [
+      is_unique = AYE!!
+      ECHO(""Enter Account Number: "")!!
+      ASK(""%C"", @client_acc_nums{current_client_idx})!!
+  HOIST (m3 = 0!! m3 < current_client_idx!! +#m3) [
+   LOOK (client_acc_nums{current_client_idx} == client_acc_nums{m3}) [
+      ECHO(""Error: Account number already exists. Please enter a different number.\n"")!!
+      is_unique = NAY!!
+      ]
+    ]
+] HEAVE (is_unique == NAY)!!
+       client_balances{current_client_idx} = 0.0!!
+      ~ Process transactions for THIS client
+       ECHO(""\n--- Transactions for %S on %S ---\n"", client_names{current_client_idx}, current_date)!!
+      ~ Validate transaction count (Max 5 PER DAY and NO negatives)
+  HAUL [
+       ECHO(""Enter number of transactions for this client (Max 5): "")!!
+       ASK(""%C"", @num_trxns)!!
+  LOOK (num_trxns > 5) [
+                                        ECHO(""Error: Clients are strictly limited to 5 transactions per day.\n"")!!
+                                    ] DROPLOOK (num_trxns < 0) [
+                                        ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                                    ]
+                                ] HEAVE (num_trxns > 5 || num_trxns < 0)!!
+
+                                daily_dep = 0.0!!
+                                daily_with = 0.0!!
+                                
+                                ~ Reset successful transaction counter
+                                valid_trxns = 0!!
+
+                                ~ HEAVE loop ensures failed transactions grant another chance
+                                HEAVE (valid_trxns < num_trxns) [
+                                    LOOK (global_idx >= 100) [
+                                        ECHO(""Error: System transaction limit reached.\n"")!!
+                                        ~ Force the loop to safely terminate if global arrays are full
+                                        valid_trxns = num_trxns!!
+                                    ] DROP [
+                                        ECHO(""\nTransaction Type \n1 - Deposit \n2 - Withdraw \n3 - Inquiry \nChoose an option: "")!!
+                                        ASK(""%C"", @type3)!!
+
+                                        CHART (type3) [
+                                            COURSE 1:
+                                                ~ Continuously ask for the Deposit Amount if it violates limits
+                                                HAUL [
+                                                    valid_amount = AYE!!
+                                                    ECHO(""Enter Deposit Amount: "")!!
+                                                    ASK(""%D"", @amount)!!
+                                                    total_dep_today = daily_dep + amount!!
+
+                                                    LOOK (amount < 0.0) [
+                                                        ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                                                        valid_amount = NAY!!
+                                                    ] DROPLOOK (total_dep_today > 50000.0) [
+                                                        ECHO(""Error: Combined deposits for this date exceed 50000.0 php. Try again.\n"")!!
+                                                        valid_amount = NAY!!
+                                                    ]
+                                                ] HEAVE (valid_amount == NAY)!!
+
+                                                client_balances{current_client_idx} += amount!!
+                                                daily_dep += amount!!
+                                                
+                                                ~ Log to the global 1D Arrays securely
+                                                trxn_client_idx{global_idx} = current_client_idx!!
+                                                trxn_dates{global_idx} = current_date!!
+                                                trxn_types{global_idx} = type3!!
+                                                trxn_amounts{global_idx} = amount!!
+                                                +#global_idx!!
+                                                +#valid_trxns!!
+                                                
+                                                ECHO(""Deposit successful.\n"")!!
+                                                LAND!!
+
+                                            COURSE 2:
+                                                ~ Continuously ask for the Withdrawal Amount if it violates limits
+                                                HAUL [
+                                                    valid_amount = AYE!!
+                                                    ECHO(""Enter Withdrawal Amount: "")!!
+                                                    ASK(""%D"", @amount)!!
+                                                    total_with_today = daily_with + amount!!
+
+                                                    LOOK (amount < 0.0) [
+                                                        ECHO(""Error: Negative values are not accepted. Try again.\n"")!!
+                                                        valid_amount = NAY!!
+                                                    ] DROPLOOK (total_with_today > 20000.0) [
+                                                        ECHO(""Error: Combined withdrawals for this date exceed 20000.0 php. Try again.\n"")!!
+                                                        valid_amount = NAY!!
+                                                    ] DROPLOOK (amount > client_balances{current_client_idx}) [
+                                                        ECHO(""Error: Insufficient balance. Try again.\n"")!!
+                                                        valid_amount = NAY!!
+                                                    ]
+                                                ] HEAVE (valid_amount == NAY)!!
+
+                                                client_balances{current_client_idx} -= amount!!
+                                                daily_with += amount!!
+                                                
+                                                ~ Log to the global 1D Arrays securely
+                                                trxn_client_idx{global_idx} = current_client_idx!!
+                                                trxn_dates{global_idx} = current_date!!
+                                                trxn_types{global_idx} = type3!!
+                                                trxn_amounts{global_idx} = amount!!
+                                                +#global_idx!!
+                                                +#valid_trxns!!
+                                                
+                                                ECHO(""Withdrawal successful.\n"")!!
+                                                LAND!!
+
+                                            COURSE 3:
+                                                ECHO(""Current Balance Inquiry: %D php\n"", client_balances{current_client_idx})!!
+                                                
+                                                ~ Log inquiry to the global arrays
+                                                trxn_client_idx{global_idx} = current_client_idx!!
+                                                trxn_dates{global_idx} = current_date!!
+                                                trxn_types{global_idx} = type3!!
+                                                trxn_amounts{global_idx} = 0.0!!
+                                                +#global_idx!!
+                                                +#valid_trxns!!
+                                                LAND!!
+
+                                            ADRIFT:
+                                                ECHO(""Invalid Transaction Type. Try again.\n"")!!
+                                                LAND!!
+                                        ]
+                                    ]
+                                ]
+                                ~ Increment the global client tracker
+                                +#global_client_idx!!
+                            ]
+                            
+                            ~ Increment the daily limit tracker
+                            daily_client_cnt += num_clients!!
+
+                            ~ 3. Check if there are still slots available TODAY
+                            LOOK (daily_client_cnt < 5) [
+                                HAUL [
+                                    valid_choice = AYE!!
+                                    clients_avail = 5 - daily_client_cnt!!
+                                    ECHO(""\nYou can still add %C client(s) for %S.\n"", clients_avail, current_date)!!
+                                    ECHO(""Would you like to add more clients for today? (1 for Yes, 0 for No): "")!!
+                                    ASK(""%C"", @add_more)!!
+
+                                    LOOK (add_more != 1 && add_more != 0) [
+                                        ECHO(""Error: Invalid choice format. Please enter exactly 1 or 0.\n"")!!
+                                        valid_choice = NAY!!
+                                    ]
+                                ] HEAVE (valid_choice == NAY)!!
+
+                                LOOK (add_more == 0) [
+                                    more_clients_today = NAY!!
+                                ]
+                            ] DROPLOOK (daily_client_cnt >= 5) [
+                                ECHO(""\nMaximum daily limit of 5 clients reached for %S.\n"", current_date)!!
+                                more_clients_today = NAY!!
+                            ]
+                        ]
+                    ] HEAVE (more_clients_today == AYE)!!
+
+                    ~ Prompt to process another day WITH strict format validation
+                    HAUL [
+                        valid_choice = AYE!!
+                        ECHO(""\nWould you like to process another day? (1 for Yes, 0 for No): "")!!
+                        ASK(""%C"", @choice3)!!
+                        
+                        LOOK (choice3 != 1 && choice3 != 0) [
+                            ECHO(""Error: Invalid choice format. Please enter exactly 1 or 0.\n"")!!
+                            valid_choice = NAY!!
+                        ]
+                    ] HEAVE (valid_choice == NAY)!!
+
+                    LOOK (choice3 == 0) [
+                        another_day = NAY!!
+                    ]
+                ] HEAVE (another_day == AYE)!!
+
+                ~ Display Final Transaction Summary for ALL global clients
+                ECHO(""\n================ TRANSACTION SUMMARY ================\n"")!!
+                HOIST (i3 = 0!! i3 < global_client_idx!! +#i3) [
+                    ECHO(""Client Name: %S\n"", client_names{i3})!!
+                    ECHO(""Account Number: %C\n"", client_acc_nums{i3})!!
+                    ECHO(""Final Balance: %D php\n"", client_balances{i3})!!
+                    ECHO(""--- Transactions ---\n"")!!
+
+                    ~ Loop through the global transaction log and extract matches for this client
+                    HOIST (k3 = 0!! k3 < global_idx!! +#k3) [
+                        LOOK (trxn_client_idx{k3} == i3) [
+                            type3 = trxn_types{k3}!!
+                            amount = trxn_amounts{k3}!!
+
+                            ~ Only print valid deposits and withdrawals
+                            LOOK (type3 == 1) [
+                                ECHO(""Date: %S | Type: Deposit  | Amount: %D php\n"", trxn_dates{k3}, amount)!!
+                            ] DROPLOOK (type3 == 2) [
+                                ECHO(""Date: %S | Type: Withdraw | Amount: %D php\n"", trxn_dates{k3}, amount)!!
+                            ]
+                        ]
+                    ]
+                    ECHO(""---------------------------------------------------\n"")!!
+                ]
+                LAND!!
+
+            ~ ================================================
+            ~ PROGRAM 4: JEEPNEY PASSENGERS
+            ~ ================================================
+            COURSE 4:
+                ~ Reset P4 state
+                choice4 = 0!!
+                i4 = 0!!
+                load_count = 0!!
+                unload_count = 0!!
+                current_passengers = 0!!
+                vacant_seats = 0!!
+                loaded = 0!!
+                unloaded = 0!!
+                display_seat = 0!!
+                HOIST (i4 = 0!! i4 < 22!! +#i4) [
+                    seats{i4} = 0!!
+                ]
+
+                ~ 0 = Vacant, 1 = Occupied
+                HEAVE (choice4 != 4) [
+                    current_passengers = 0!!
+                    HOIST (i4 = 0!! i4 < 22!! +#i4) [
+                        LOOK (seats{i4} == 1) [
+                            +#current_passengers!!
+                        ]
+                    ]
+                    vacant_seats = 22 - current_passengers!!
+
+                    ECHO(""\n=================================\n"")!!
+                    ECHO(""     JEEPNEY PASSENGER SYSTEM    \n"")!!
+                    ECHO(""=================================\n"")!!
+                    ECHO(""Current Load: %C / 22\n"", current_passengers)!!
+                    ECHO(""Vacant Seats: %C\n"", vacant_seats)!!
+                    ECHO(""1. Stop at Loading Area\n"")!!
+                    ECHO(""2. Stop at Unloading Area\n"")!!
+                    ECHO(""3. Show Passenger Seat Locations\n"")!!
+                    ECHO(""4. Exit to Terminal\n"")!!
+                    ECHO(""Enter choice: "")!!
+                    ASK(""%C"", @choice4)!!
+
+                    CHART (choice4) [
+                        
+                        COURSE 1:
+                            ECHO(""\n--- LOADING AREA ---\n"")!!
+                            LOOK (vacant_seats == 0) [
+                                ECHO(""The jeepney is full! Cannot load more passengers.\n"")!!
+                            ] DROP [
+                                ECHO(""Enter number of passengers to load: "")!!
+                                ASK(""%C"", @load_count)!!
+
+                                ~ Constraint: Number of passengers to load <= remaining vacant seats
+                                LOOK (load_count > vacant_seats) [
+                                    ECHO(""Cannot load. Exceeds remaining vacant seats (%C)!\n"", vacant_seats)!!
+                                ] DROP [
+                                    loaded = 0!!
+                                    
+                                    ~ Find vacant seats (seats{i4} == 0)
+                                    HOIST (i4 = 0!! i4 < 22!! +#i4) [
+                                        LOOK (loaded < load_count && seats{i4} == 0) [
+                                            seats{i4} = 1!!
+                                            +#loaded!!
+                                        ]
+                                    ]
+                                    ECHO(""Successfully loaded %C passengers.\n"", loaded)!!
+                                ]
+                            ]
+                            LAND!!
+
+                        COURSE 2:
+                            ECHO(""\n--- UNLOADING AREA ---\n"")!!
+                            LOOK (current_passengers == 0) [
+                                ECHO(""The jeepney is empty! No passengers to unload.\n"")!!
+                            ] DROP [
+                                ECHO(""Enter number of passengers to unload: "")!!
+                                ASK(""%C"", @unload_count)!!
+
+                                ~ Constraint: Number of passengers to unload <= total number of current passengers
+                                LOOK (unload_count > current_passengers) [
+                                    ECHO(""Cannot unload. Exceeds current passengers (%C)!\n"", current_passengers)!!
+                                ] DROP [
+                                    unloaded = 0!!
+                                    
+                                    ~ Unload current passengers (seats{i4} == 1) 
+                                    HOIST (i4 = 0!! i4 < 22!! +#i4) [
+                                        LOOK (unloaded < unload_count && seats{i4} == 1) [
+                                            seats{i4} = 0!!
+                                            +#unloaded!!
+                                        ]
+                                    ]
+                                    ECHO(""Successfully unloaded %C passengers.\n"", unloaded)!!
+                                ]
+                            ]
+                            LAND!!
+
+                        COURSE 3:
+                            ECHO(""\n--- PASSENGER SEAT LOCATIONS ---\n"")!!
+                            HOIST (i4 = 0!! i4 < 22!! +#i4) [
+                                display_seat = i4 + 1!!
+                                
+                                LOOK (seats{i4} == 1) [
+                                    ECHO(""Seat %C: [OCCUPIED]\n"", display_seat)!!
+                                ] DROP [
+                                    ECHO(""Seat %C: [Vacant]\n"", display_seat)!!
+                                ]
+                            ]
+                            LAND!!
+
+                        COURSE 4:
+                            ECHO(""\nArrived at terminal. End of trip!\n"")!!
+                            LAND!!
+
+                        ADRIFT:
+                            ECHO(""\nJeep driver cannot stop anywhere! Invalid choice.\n"")!!
+                            LAND!!
+                    ]
+                ]
+                LAND!!
+
+            COURSE 5:
+                ECHO(""\nExiting program. Goodbye!\n"")!!
+                main_prog = NAY!!
+                LAND!!
+
+            ADRIFT:
+                ECHO(""\nInvalid choice. Please enter 1-5.\n"")!!
+                LAND!!
+        ]
+    ] HEAVE (main_prog != NAY)!!
+]"
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+50,"Military Time to Standard Time Converter
+
+Create a program that converts military time (24-hour format) to standard time (12-hour format) and vice versa.","AHOY() [
+    COIN choice!!
+    COIN hours, minutes!!
+    COIN sd_time!!
+    SCROLL period!!
+    BOOL f_time = AYE!!
+
+    HAUL [
+        ECHO(""\n=================================\n"")!!
+        ECHO(""   MILITARY & STANDARD TIME      \n"")!!
+        ECHO(""        CONVERTER                \n"")!!
+        ECHO(""=================================\n"")!!
+        ECHO(""[1] Military to Standard Time\n"")!!
+        ECHO(""[2] Standard to Military Time\n"")!!
+        ECHO(""[3] Exit\n"")!!
+        ECHO(""=================================\n"")!!
+        ECHO(""Enter choice: "")!!
+        ASK(""%C"", @choice)!!
+
+        CHART (choice) [
+
+            COURSE 1:
+                ECHO(""\n--- Military to Standard Time ---\n"")!!
+                ECHO(""Enter military time (0000 - 2359)\n"")!!
+
+                HAUL [
+                    ECHO(""Hours   (00-23): "")!!
+                    ASK(""%C"", @hours)!!
+                    LOOK (hours < 0 || hours > 23) [
+                        ECHO(""Invalid! Hours must be between 0 and 23.\n"")!!
+                    ]
+                ] HEAVE (hours < 0 || hours > 23)!!
+
+                  HAUL [
+                    ECHO(""Minutes (00-59): "")!!
+                    ASK(""%C"", @minutes)!!
+                    LOOK (minutes < 0 || minutes > 59) [
+                        ECHO(""Invalid! Minutes must be between 0 and 59.\n"")!!
+                    ]
+                ] HEAVE (minutes < 0 || minutes > 59)!!
+
+                ~ Determine AM or PM
+                LOOK (hours == 0) [
+                    sd_time = 12!!
+                    period = ""AM""!!
+                ] DROPLOOK (hours < 12) [
+                    sd_time = hours!!
+                    period = ""AM""!!
+                ] DROPLOOK (hours == 12) [
+                    sd_time = 12!!
+                    period = ""PM""!!
+                ] DROP [
+                    sd_time = hours - 12!!
+                    period = ""PM""!!
+                ]
+
+                ECHO(""-----------------------------\n"")!!
+                ECHO(""Military Time : %C:%C\n"", hours, minutes)!!
+                ECHO(""Standard Time : %C:%C %S\n"", sd_time, minutes, period)!!
+                ECHO(""-----------------------------\n"")!!
+                LAND!!
+
+            COURSE 2:
+                ECHO(""\n--- Standard to Military Time ---\n"")!!
+                ECHO(""Enter standard time\n"")!!
+
+                HAUL [
+                    ECHO(""Hours   (1-12): "")!!
+                    ASK(""%C"", @hours)!!
+                    LOOK (hours < 1 || hours > 12) [
+                        ECHO(""Invalid! Hours must be between 1 and 12.\n"")!!
+                    ]
+                ] HEAVE (hours < 1 || hours > 12)!!
+
+                HAUL [
+                    ECHO(""Minutes (00-59): "")!!
+                    ASK(""%C"", @minutes)!!
+                    LOOK (minutes < 0 || minutes > 59) [
+                        ECHO(""Invalid! Minutes must be between 0 and 59.\n"")!!
+                    ]
+                ] HEAVE (minutes < 0 || minutes > 59)!!
+
+                HAUL [
+                    ECHO(""Period  (1=AM, 2=PM): "")!!
+                    ASK(""%C"", @choice)!!
+                    LOOK (choice != 1 && choice != 2) [
+                        ECHO(""Invalid! Enter 1 for AM or 2 for PM.\n"")!!
+                    ]
+                ] HEAVE (choice != 1 && choice != 2)!!
+
+                ~ Convert to military
+                LOOK (choice == 1) [
+                    LOOK (hours == 12) [
+                        sd_time = 0!!
+                    ] DROP [
+                        sd_time = hours!!
+                    ]
+                    period = ""AM""!!
+                ] DROP [
+                    LOOK (hours == 12) [
+                        sd_time = 12!!
+                    ] DROP [
+                        sd_time = hours + 12!!
+                    ]
+                    period = ""PM""!!
+                ]
+
+                ECHO(""-----------------------------\n"")!!
+                ECHO(""Standard Time : %C:%C %S\n"", hours, minutes, period)!!
+                ECHO(""Military Time : %C:%C\n"", sd_time, minutes)!!
+                ECHO(""-----------------------------\n"")!!
+                LAND!!
+
+            COURSE 3:
+                ECHO(""\nEnd!\n"")!!
+                f_time = NAY!!
+                LAND!!
+
+            ADRIFT:
+                ECHO(""\nInvalid choice. Enter 1, 2, or 3.\n"")!!
+                LAND!!
+        ]
+    ] HEAVE (f_time != NAY)!!
+]"
+,,
+,,
+51,"Number Guessing Game
+
+Create a program that challenges the user to guess a secret predefined number. The user will have a limited number of attempts, and the program will provide hints after each incorrect guess.","LOCKE COIN secret = 30!!
+LOCKE COIN max_tries = 7!!
+
+AHOY() [
+    COIN guess = 1!!
+    COIN tries = 0!!
+    COIN remaining = 0!!
+    COIN diff = 0!!
+    BOOL won = NAY!!
+
+    ECHO(""=================================\n"")!!
+    ECHO(""      NUMBER GUESSING GAME       \n"")!!
+    ECHO(""=================================\n"")!!
+    ECHO(""You have %C attempts to guess it.\n"", max_tries)!!
+    ECHO(""---------------------------------\n"")!!
+
+    HEAVE (tries < max_tries && won == NAY) [
+        +#tries!!
+        remaining = max_tries - tries!!
+        ECHO(""\nAttempt %C of %C\n"", tries, max_tries)!!
+        ASK(""Your guess: %C"", @guess)!!
+
+        LOOK (guess == secret) [
+            ECHO(""\n*** CORRECT! ***\n"")!!
+            ECHO(""You guessed the secret number %C!\n"", secret)!!
+            ECHO(""You got it in %C attempt(s)!\n"", tries)!!
+            won = AYE!!
+        ] DROPLOOK (guess < secret) [
+            diff = secret - guess!!
+            ECHO(""Higher! "")!!
+            LOOK (diff <= 3) [
+                ECHO(""You are VERY CLOSE!\n"")!!
+            ] DROPLOOK (diff <= 10) [
+                ECHO(""Getting WARM...\n"")!!
+            ] DROP [
+                ECHO(""Way off!\n"")!!
+            ]
+            LOOK (remaining > 0) [
+                ECHO(""%C attempt(s) remaining.\n"", remaining)!!
+            ]
+        ] DROP [
+            diff = guess - secret!!
+            ECHO(""Too HIGH! "")!!
+            LOOK (diff <= 3) [
+                ECHO(""You are VERY CLOSE!\n"")!! 
+            ] DROPLOOK (diff <= 10) [
+                ECHO(""Getting WARM...\n"")!!
+            ] DROP [
+                ECHO(""Way off!\n"")!!
+            ]
+            LOOK (remaining > 0) [
+                ECHO(""%C attempt(s) remaining.\n"", remaining)!!
+            ]
+        ]
+    ]
+
+    LOOK (won == NAY) [
+        ECHO(""\n--- GAME OVER! ---\n"")!!
+        ECHO(""The secret number was %C.\n"", secret)!!
+    ]
+    ECHO(""=================================\n"")!!
+]"
+,,
+,,
+52,"Array Sorting Program
+
+Create three arrays: Array A, Array B, and Array C.
+
+Input 5 numbers into Array A.
+Input 5 numbers into Array B.
+
+1.) Ask the user to choose whether the numbers should be sorted in ascending or descending order.
+
+2.) Ask the user to choose the sorting technique:
+Bubble Sort
+Balloon Sort
+
+3.) Use Array C to display the combined 10 sorted numbers.","AHOY() [
+    COIN a{5}!!
+    COIN b{5}!!
+    COIN c{10}!!
+    
+    COIN i = 0, j = 0, c_idx = 0, temp = 0, limit = 0, j_next = 0!!
+    COIN order = 0, technique = 0, vis_num = 0!!
+    BOOL valid_input = NAY!!
+
+    ECHO(""=================================\n"")!!
+    ECHO(""      Array Sorting Program      \n"")!!
+    ECHO(""=================================\n"")!!
+
+    ~ Prompt user to fill array a
+    ECHO(""\n--- Input for Array A (5 numbers) ---\n"")!!
+    HOIST (COIN i = 0!! i < 5!! +#i) [
+        vis_num = i + 1!!
+        ECHO(""Enter number %C: "", vis_num)!!
+        ASK(""%C"", @a{i})!!
+    ]
+
+    ~ Prompt user to fill array b
+    ECHO(""\n--- Input for Array B (5 numbers) ---\n"")!!
+    HOIST (COIN i = 0!! i < 5!! +#i) [
+        vis_num = i + 1!!
+        ECHO(""Enter number %C: "", vis_num)!!
+        ASK(""%C"", @b{i})!!
+    ]
+
+    ~ Safely merge array a and array b into array c
+    c_idx = 0!!
+    HOIST (COIN i = 0!! i < 5!! +#i) [
+        c{c_idx} = a{i}!!
+        +#c_idx!!
+    ]
+    HOIST (COIN i = 0!! i < 5!! +#i) [
+        c{c_idx} = b{i}!!
+        +#c_idx!!
+    ]
+
+    ~ 1.) Ask the user to choose the sorting order
+    HAUL [
+        valid_input = AYE!!
+        ECHO(""\n1.) Choose Sorting Order:\n"")!!
+        ECHO(""1. Ascending\n"")!!
+        ECHO(""2. Descending\n"")!!
+        ECHO(""Choice: "")!!
+        ASK(""%C"", @order)!!
+
+        LOOK (order != 1 && order != 2) [
+            ECHO(""Error: Please enter exactly 1 or 2.\n"")!!
+            valid_input = NAY!!
+        ]
+    ] HEAVE (valid_input == NAY)!!
+
+    ~ 2.) Ask the user to choose the sorting technique
+    HAUL [
+        valid_input = AYE!!
+        ECHO(""\n2.) Choose Sorting Technique:\n"")!!
+        ECHO(""1. Bubble Sort\n"")!!
+        ECHO(""2. Balloon Sort\n"")!!
+        ECHO(""Choice: "")!!
+        ASK(""%C"", @technique)!!
+
+        LOOK (technique != 1 && technique != 2) [
+            ECHO(""Error: Please enter exactly 1 or 2.\n"")!!
+            valid_input = NAY!!
+        ]
+    ] HEAVE (valid_input == NAY)!!
+
+    ~ Process the chosen sorting logic
+    CHART (technique) [
+        COURSE 1:
+            ~ BUBBLE SORT ALGORITHM
+            HOIST (COIN i = 0!! i < 9!! +#i) [
+                limit = 9 - i!!
+                j = 0!!
+                
+                ~ Inner HEAVE loop safely compares adjacent elements
+                HEAVE (j < limit) [
+                    j_next = j + 1!!
+                    
+                    LOOK (order == 1) [
+                        ~ Ascending Bubble Swap
+                        LOOK (c{j} > c{j_next}) [
+                            temp = c{j}!!
+                            c{j} = c{j_next}!!
+                            c{j_next} = temp!!
+                        ]
+                    ] DROPLOOK (order == 2) [
+                        ~ Descending Bubble Swap
+                        LOOK (c{j} < c{j_next}) [
+                            temp = c{j}!!
+                            c{j} = c{j_next}!!
+                            c{j_next} = temp!!
+                        ]
+                    ]
+                    +#j!!
+                ]
+            ]
+            LAND!!
+
+        COURSE 2:
+            ~ BALLOON SORT ALGORITHM (Selection Variant)
+            HOIST (COIN i = 0!! i < 9!! +#i) [
+                j = i + 1!!
+                
+                ~ Inner HEAVE loop safely compares the anchored 'i' with all subsequent elements
+                HEAVE (j < 10) [
+                    
+                    LOOK (order == 1) [
+                        ~ Ascending Balloon Swap
+                        LOOK (c{i} > c{j}) [
+                            temp = c{i}!!
+                            c{i} = c{j}!!
+                            c{j} = temp!!
+                        ]
+                    ] DROPLOOK (order == 2) [
+                        ~ Descending Balloon Swap
+                        LOOK (c{i} < c{j}) [
+                            temp = c{i}!!
+                            c{i} = c{j}!!
+                            c{j} = temp!!
+                        ]
+                    ]
+                    +#j!!
+                ]
+            ]
+            LAND!!
+
+        ADRIFT:
+            ~ Safety net fallback
+            LAND!!
+    ]
+
+    ~ 3.) Display the combined and fully sorted 10 numbers
+    ECHO(""\n3.) Combined Sorted Numbers (Array C):\n"")!!
+    HOIST (COIN i = 0!! i < 10!! +#i) [
+        ECHO(""%C "", c{i})!!
+    ]
+    ECHO(""\n"")!!
+]"
+,,
+,,
+53,"Reverse a String
+
+Create a program that asks the user to input a string and then displays the string in reverse order.","AHOY()[
+  COIN len = 0!!
+  SCROLL word!!
+
+  ECHO(""Enter string: "")!!
+  ASK(""%S"", @word)!!
+
+  HEAVE (word{len} != ""\0"") [
+    len += 1!!
+  ]
+
+  ECHO(""\nOriginal: %S\nReverse: "", word)!!
+  HOIST(COIN i = 0!! len >= i!! -#len)[
+    ECHO(""%S"", word{len})!!
+  ]
+]"
+,,
+,,
+54,"Character and Number Input Validator
+
+1.) Ask the user to choose whether to input characters or numbers.
+
+2.)If the user selects characters, allow them to input a series of characters.
+
+3.) If the user enters a number, the program should stop accepting input.
+
+4.) If the user selects numbers, allow them to input a series of numbers.
+
+5.) If the user enters a character, the program should stop accepting input.","AHOY() [
+    COIN choice = 0!!
+    PARCH input_char = 'a'!!
+    BOOL is_running = AYE, is_digit = NAY!!
+
+    ECHO(""==============================\n"")!!
+    ECHO(""  Character & Number Checker  \n"")!!
+    ECHO(""==============================\n"")!!
+    ECHO(""1. Input Characters\n"")!!
+    ECHO(""2. Input Numbers\n"")!!
+    ECHO(""------------------------------\n"")!!
+    ECHO(""Enter your choice (1-2): "")!!
+    ASK(""%C"", @choice)!!
+
+    CHART (choice) [
+
+        COURSE 1:
+            ECHO(""\n--- Character Input Mode ---\n"")!!
+            ECHO(""Enter characters. Stops if a number (0-9) is entered.\n"")!!
+            is_running = AYE!!
+
+            HEAVE (is_running == AYE) [
+                ECHO(""Enter a character: "")!!
+                ASK(""%P"", @input_char)!!
+
+                is_digit = (input_char == '0' || input_char == '1' || input_char == '2' || input_char == '3' || input_char == '4' || input_char == '5' || input_char == '6' || input_char == '7' || input_char == '8' || input_char == '9')!!
+
+                LOOK (is_digit == AYE) [
+                    ECHO(""\nNumber detected! Stopping input.\n"")!!
+                    is_running = NAY!!
+                ] DROP [
+                    ECHO(""Valid Character Entered: %P\n"", input_char)!!
+                ]
+            ]
+            LAND!!
+
+        COURSE 2:
+            ECHO(""\n--- Number Input Mode ---\n"")!!
+            ECHO(""Enter single digits. Stops if a character is entered.\n"")!!
+            is_running = AYE!!
+
+            HEAVE (is_running == AYE) [
+                ECHO(""Enter a number (0-9): "")!!
+                ASK(""%P"", @input_char)!!
+
+                is_digit = (input_char == '0' || input_char == '1' || input_char == '2' || input_char == '3' || input_char == '4' || input_char == '5' || input_char == '6' || input_char == '7' || input_char == '8' || input_char == '9')!!
+
+                LOOK (is_digit == NAY) [
+                    ECHO(""\nCharacter detected! Stopping input.\n"")!!
+                    is_running = NAY!!
+                ] DROP [
+                    ECHO(""Valid Number Entered: %P\n"", input_char)!!
+                ]
+            ]
+            LAND!!
+
+        ADRIFT:
+            ECHO(""\nInvalid Choice. Please restart the program and select 1 or 2.\n"")!!
+            LAND!!
+    ]
+]"
