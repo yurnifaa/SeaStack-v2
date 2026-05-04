@@ -7,8 +7,9 @@ import re
 import io
 import queue
 
-# Add the parent directory to sys.path to allow imports from sibling folders
+# Add project root and backend/ to sys.path for both absolute and bare imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
