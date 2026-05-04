@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Fish, Play, Square, FolderOpen, Download, SquareTerminal, Copy, Check } from "lucide-react";
+import { Fish, Play, Square, FolderOpen, Download, SquareTerminal } from "lucide-react";
 import SeaStackEditor from "../components/CodeEditor";
 import { simplifyRuntimeMessage } from "../utils/runtimeErrorMsg";
 import type { Tab, FormattedError, RawError } from "../types";
@@ -74,14 +74,6 @@ export default function Home() {
   // Resize handle state
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [leftWidth, setLeftWidth] = useState(60);
-
-  // Chat state
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'assistant'; content: string}[]>([]);
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -607,44 +599,6 @@ export default function Home() {
     );
   };
 
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, isChatLoading]);
-
-  const handleChatSend = async () => {
-    if (!chatInput.trim() || isChatLoading) return;
-    const userMsg = chatInput.trim();
-    setChatInput('');
-    const newMessages = [...chatMessages, { role: 'user' as const, content: userMsg }];
-    setChatMessages(newMessages);
-    setIsChatLoading(true);
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: `Error: ${data.error}` }]);
-      } else {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: data.content }]);
-      }
-    } catch {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Is the dev server running?' }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
-
-  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleChatSend();
-    }
-  };
-
   // ==========================================
   // --- RENDER ---
   // ==========================================
@@ -658,11 +612,8 @@ export default function Home() {
             width={30}
             height={30}
             className="logo"
-            onClick={() => setIsChatOpen(prev => !prev)}
-            style={{ cursor: 'pointer', transition: 'opacity 0.2s', opacity: isChatOpen ? 0.7 : 1 }}
-            title={isChatOpen ? "Close chat" : "Open secret chat"}
           />
-          <span className="title">SeaStack</span>
+          <span className="title" font-bold>SeaStack</span>
           <nav className="main-nav">
             <ul>
               <li>
@@ -695,12 +646,12 @@ export default function Home() {
             style={{ display: "none" }}
           />
           <div style={{ display: 'flex', gap: '4px' }}>
-            {/* <GooeyButton onClick={handleFileBtnClick}> HOY JANA BALIKAN MO TO AT I-UNCOMMENT MO OR ELSE
+            <GooeyButton onClick={handleFileBtnClick}>
               <FolderOpen size={15} />
             </GooeyButton>
             <GooeyButton onClick={handleSaveFile}>
               <Download size={15} />
-            </GooeyButton> */}
+            </GooeyButton>
           </div>
 
           <label className="switch">
@@ -769,14 +720,14 @@ export default function Home() {
             <SeaStackEditor code={code} setCode={setCode} isDarkMode={isDarkMode} />
           </div>
 
-          {/* Error Panel / Chat Panel */}
-          <div className="error-panel" style={{ height: isChatOpen ? '190px' : '190px', transition: 'height 0.25s ease' }}>
+          {/* Error Panel */}
+          <div className="error-panel">
             <nav className="error-panel-nav">
               <ul>
                 <li>
                   <a className="active">
-                    {isChatOpen ? 'Error Log' : 'Error Logs'}
-                    {!isChatOpen && errors.length > 0 && (
+                    Error Logs
+                    {errors.length > 0 && (
                       <span style={{
                         marginLeft: '8px',
                         backgroundColor: '#ef4444',
@@ -794,66 +745,17 @@ export default function Home() {
               </ul>
             </nav>
 
-            {isChatOpen ? (
-              <div className="chat-panel">
-                <div className="chat-messages">
-                  {chatMessages.length === 0 && (
-                    <div className="chat-empty">Hey! Ask me anything about SeaStack or your code.</div>
-                  )}
-                  {chatMessages.map((msg, i) => (
-                    <div key={i} className={`chat-msg chat-msg--${msg.role}`}>
-                      <span className="chat-label">{msg.role === 'user' ? '[Me]' : '[ERROR]'}</span>
-                      <span className="chat-text">{msg.content}</span>
-                      <button
-                        className="chat-copy-btn"
-                        title="Copy to clipboard"
-                        onClick={() => {
-                          navigator.clipboard.writeText(msg.content)
-                          setCopiedIndex(i)
-                          setTimeout(() => setCopiedIndex(null), 1500)
-                        }}
-                      >
-                        {copiedIndex === i
-                          ? <Check size={13} strokeWidth={2.5} />
-                          : <Copy size={13} strokeWidth={2} />}
-                      </button>
-                    </div>
-                  ))}
-                  {isChatLoading && (
-                    <div className="chat-msg chat-msg--assistant">
-                      <span className="chat-label">[ERROR]</span>
-                      <span className="chat-text chat-typing">typing…</span>
-                    </div>
-                  )}
-                  <div ref={chatEndRef} />
+            <div className="error-panel-content">
+              {errors.length === 0 && !isRunning && !errorPhase ? (
+                <div style={{ fontSize: '0.85rem', color: c.placeholder, fontStyle: 'italic', fontVariantLigatures: 'none' }}>
+                  Press Run to compile and execute your SeaStack program.
                 </div>
-                <div className="chat-input-row">
-                  <input
-                    className="chat-input"
-                    type="text"
-                    placeholder="Ask..."
-                    value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
-                    onKeyDown={handleChatKeyDown}
-                    disabled={isChatLoading}
-                    autoComplete="off"
-                    spellCheck={false}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="error-panel-content">
-                {errors.length === 0 && !isRunning && !errorPhase ? (
-                  <div style={{ fontSize: '0.85rem', color: c.placeholder, fontStyle: 'italic', fontVariantLigatures: 'none' }}>
-                    Press Run to compile and execute your SeaStack program.
-                  </div>
-                ) : errors.length === 0 ? (
-                  <ErrorList errors={[]} phaseName="" />
-                ) : (
-                  <ErrorList errors={errors} phaseName={errorPhase || "Unknown"} />
-                )}
-              </div>
-            )}
+              ) : errors.length === 0 ? (
+                <ErrorList errors={[]} phaseName="" />
+              ) : (
+                <ErrorList errors={errors} phaseName={errorPhase || "Unknown"} />
+              )}
+            </div>
           </div>
         </div>
 
