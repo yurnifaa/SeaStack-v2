@@ -27,7 +27,7 @@ const seaLight = createTheme({
   styles: [
     { tag: t.typeName, color: '#1d4ed8', fontWeight: 'bold' },      // Datatypes: Deep Blue
     { tag: t.keyword, color: '#c2410c', fontWeight: 'bold' },       // Keywords: Deep Orange
-    { tag: t.comment, color: '#6b7280', fontWeight: 'bold' },       // Comments: Medium Grey
+    { tag: t.comment, color: '#555961 ', fontWeight: 'bold' },       // Comments: Medium Grey
     { tag: t.string, color: '#15803d', fontWeight: 'bold' },        // Strings: Deep Green
     { tag: t.number, color: '#1d4ed8', fontWeight: 'bold' },        // Numbers: Deep Blue
     { tag: t.variableName, color: '#111827', fontWeight: 'semibold' },  // Identifiers: Near Black

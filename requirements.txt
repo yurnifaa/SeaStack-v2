@@ -2,3 +2,4 @@ flask
 flask-cors
 asgiref
 gunicorn==21.2.0
+gevent
