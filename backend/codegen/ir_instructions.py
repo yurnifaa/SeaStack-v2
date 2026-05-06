@@ -2,9 +2,9 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, List
 
 
-# =======================
-# QUAD CLASS
-# =======================
+# =================================================================================================
+# QUAD CLASS: represents a three-address code instruction through quadruples
+# =================================================================================================
 
 @dataclass
 class Quad:
@@ -149,9 +149,9 @@ COMPOUND_OP_MAP = {
 }
 
 
-# =======================
-# IR PROGRAM CLASS
-# =======================
+# =================================================================================================
+# IR PROGRAM CLASS: represents the IR program as a list of quadruples
+# =================================================================================================
 
 @dataclass
 class IRProgram:

@@ -1,7 +1,7 @@
 from backend.lexical.token import Token
 
 # =================================================================================================
-# LEXER ERRORS CLASS: reads source code character by character and returns a list of tokens
+# LEXER ERRORS CLASS: returns lexical errors
 # =================================================================================================
 
 class LexerErrors:
