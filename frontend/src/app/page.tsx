@@ -613,7 +613,7 @@ export default function Home() {
             height={30}
             className="logo"
           />
-          <span className="title" font-bold>SeaStack</span>
+          <span className="title">SeaStack</span>
           <nav className="main-nav">
             <ul>
               <li>

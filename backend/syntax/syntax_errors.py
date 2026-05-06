@@ -3,7 +3,7 @@
 # PARSER ERRORS CLASS: returns parser errors
 # =================================================================================================
 
-class ParserErrors:
+class SyntaxErrors:
     ERROR_TEMPLATES = {
         "UNEXPECTED_TOKEN": (
             "Line {line}, Col {col} | Unexpected token: '{found}'.\n"

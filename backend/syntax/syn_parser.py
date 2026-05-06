@@ -1,5 +1,5 @@
-from syntax.Predict_Set import PREDICT
-from backend.syntax.syn_error_msg import ErrorHandler
+from syntax.predict_set import PREDICT
+from backend.syntax.syntax_errors import SyntaxErrors
 
 # =================================================================================================
 # PARSER CLASS: reads source code token by token and validates the structure
@@ -23,7 +23,7 @@ class Parser:
         self.pos = 0
         self.current_token = self.tokens[self.pos] if self.tokens else None
         self.errors = []
-        self.err_handler = ErrorHandler(source_code)
+        self.err_handler = SyntaxErrors(source_code)
 
     # =======================
     # PARSER HELPERS
