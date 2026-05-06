@@ -112,7 +112,7 @@ class ParamNode(ASTNode):
 # assign statement
 class AssignNode(ASTNode):
     def __init__(self, var_name, target_kind, index1, index2, member, value, token=None):
-        self.var_name = var_name        # str - variable id
+        self.var_name = var_name        # str - id
         self.target_kind = target_kind  # lhs type - variable / array element / structure member
         self.index1 = index1            # ASTNode | None
         self.index2 = index2            # ASTNode | None
@@ -123,57 +123,57 @@ class AssignNode(ASTNode):
 # compound assignment 
 class CompoundAssignNode(ASTNode):
     def __init__(self, var_name, target_kind, index1, index2, member, operator, value, token=None):
-        self.var_name = var_name        # str - variable id
+        self.var_name = var_name        # str - id
         self.target_kind = target_kind  # lhs type - variable / array element / structure member
         self.index1 = index1
         self.index2 = index2
         self.member = member
         self.operator = operator        # compound assign operator - +=, -=, *=, /=, %=, ^=
-        self.value = value              # ASTNode (numeric expression)
+        self.value = value              # ASTNode 
         self.token = token
 
-
+# ASK statement
 class AskNode(ASTNode):
     def __init__(self, format_string, targets, token=None):
-        self.format_string = format_string  # str
+        self.format_string = format_string  # str - format string
         self.targets = targets              # list[AddressNode]
         self.token = token
 
-# Single @id target inside ASK.
+# address of input
 class AddressNode(ASTNode):
     def __init__(self, var_name, target_kind, index1, index2, member, token=None):
-        self.var_name = var_name
-        self.target_kind = target_kind
+        self.var_name = var_name        # str - id
+        self.target_kind = target_kind  # type - variable / array element / structure member
         self.index1 = index1
         self.index2 = index2
         self.member = member
         self.token = token
 
-
+# ECHO statement
 class EchoNode(ASTNode):
     def __init__(self, format_string, args, token=None):
-        self.format_string = format_string  # str
+        self.format_string = format_string  # str - format string
         self.args = args                    # list[ASTNode]
         self.token = token
 
-
+# LOOK statement
 class LookNode(ASTNode):
     def __init__(self, condition, body, droplooks, drop_body, token=None):
         self.condition = condition    # ASTNode (BOOL)
         self.body = body              # list[ASTNode]
-        self.droplooks = droplooks   # list[(condition, body)]
-        self.drop_body = drop_body   # list[ASTNode] | None
+        self.droplooks = droplooks    # list[(condition, body)]
+        self.drop_body = drop_body    # list[ASTNode] | None
         self.token = token
 
-
+# CHART statement
 class ChartNode(ASTNode):
     def __init__(self, expr, courses, adrift_body, token=None):
-        self.expr = expr              # ASTNode (COIN|PARCH|SCROLL)
-        self.courses = courses        # list[CourseNode]
+        self.expr = expr                # ASTNode (COIN / PARCH / SCROLL)
+        self.courses = courses          # list[CourseNode]
         self.adrift_body = adrift_body  # list[ASTNode] | None
         self.token = token
 
-
+# COURSE statement
 class CourseNode(ASTNode):
     def __init__(self, value, body, jump, token=None):
         self.value = value   # ASTNode (literal)
@@ -181,7 +181,7 @@ class CourseNode(ASTNode):
         self.jump = jump     # 'SAIL' | 'LAND' | None
         self.token = token
 
-
+# HOIST statement
 class HoistNode(ASTNode):
     def __init__(self, inits, condition, updates, body, jump, token=None):
         self.inits = inits          # list[HoistInitNode]
@@ -191,29 +191,29 @@ class HoistNode(ASTNode):
         self.jump = jump            # str | None
         self.token = token
 
-# One HOIST initializer — new var or existing var assignment.
+# HOIST initialization
 class HoistInitNode(ASTNode):
     def __init__(self, declares_new, var_name, value, token=None):
-        self.declares_new = declares_new  # bool
+        self.declares_new = declares_new  # BOOL
         self.var_name = var_name          # str
         self.value = value                # LiteralNode (COIN-lit)
         self.token = token
 
-# One HOIST update — unary or compound.
+# HOIST update
 class HoistUpdateNode(ASTNode):
     def __init__(self, update_kind, var_name, target_kind, index1, member,
                  unary_op, compound_op, value, token=None):
-        self.update_kind = update_kind  # 'unary' | 'compound'
+        self.update_kind = update_kind  # unary / compound assignment
         self.var_name = var_name
-        self.target_kind = target_kind  # 'var' | 'array1d' | 'member'
+        self.target_kind = target_kind  # variable / array element / member
         self.index1 = index1
         self.member = member
-        self.unary_op = unary_op        # '+#' | '-#' | None
+        self.unary_op = unary_op        # +# | -# | None
         self.compound_op = compound_op  # str | None
         self.value = value              # ASTNode | None
         self.token = token
 
-
+# HEAVE statement
 class HeaveNode(ASTNode):
     def __init__(self, condition, body, jump, token=None):
         self.condition = condition
@@ -221,7 +221,7 @@ class HeaveNode(ASTNode):
         self.jump = jump
         self.token = token
 
-
+# HAUL HEAVE statement
 class HaulHeaveNode(ASTNode):
     def __init__(self, body, condition, jump, token=None):
         self.body = body
@@ -229,28 +229,28 @@ class HaulHeaveNode(ASTNode):
         self.jump = jump
         self.token = token
 
-
+# SAIL
 class SailNode(ASTNode):
     def __init__(self, token=None):
         self.token = token
 
-
+# LAND
 class LandNode(ASTNode):
     def __init__(self, token=None):
         self.token = token
 
-# return with value (returning functions).
+# return with value
 class ReturnNode(ASTNode):
     def __init__(self, value, token=None):
         self.value = value
         self.token = token
 
-# bare return (ABYSS functions).
+# return with no value
 class BackNode(ASTNode):
     def __init__(self, token=None):
         self.token = token
 
-
+# unary statement
 class UnaryStmtNode(ASTNode):
     def __init__(self, operator, var_name, target_kind, index1, index2, member, token=None):
         self.operator = operator
