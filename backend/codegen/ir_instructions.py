@@ -1,6 +1,3 @@
-# Imported by: ir_generator.py, optimizer.py, and code_generator.py — shared across the entire codegen pipeline
-# Defines the Quad (TAC instruction) and IRProgram structures, plus all opcode constants and operator maps.
-
 from dataclasses import dataclass, field
 from typing import Any, Optional, List
 
