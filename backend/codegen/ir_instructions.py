@@ -1,13 +1,10 @@
-# Imported by: ir_generator.py, optimizer.py, and code_generator.py — shared across the entire codegen pipeline
-# Defines the Quad (TAC instruction) and IRProgram structures, plus all opcode constants and operator maps.
-
 from dataclasses import dataclass, field
 from typing import Any, Optional, List
 
 
-# =======================
-# QUAD CLASS
-# =======================
+# =================================================================================================
+# QUAD CLASS: represents a three-address code instruction through quadruples
+# =================================================================================================
 
 @dataclass
 class Quad:
@@ -152,9 +149,9 @@ COMPOUND_OP_MAP = {
 }
 
 
-# =======================
-# IR PROGRAM CLASS
-# =======================
+# =================================================================================================
+# IR PROGRAM CLASS: represents the IR program as a list of quadruples
+# =================================================================================================
 
 @dataclass
 class IRProgram:

@@ -1,8 +1,9 @@
-class ErrorHandler:
-    
-    # =========================================================================
-    # CENTRALIZED ERROR MESSAGE
-    # =========================================================================
+
+# =================================================================================================
+# PARSER ERRORS CLASS: returns parser errors
+# =================================================================================================
+
+class SyntaxErrors:
     ERROR_TEMPLATES = {
         "UNEXPECTED_TOKEN": (
             "Line {line}, Col {col} | Unexpected token: '{found}'.\n"
@@ -22,11 +23,11 @@ class ErrorHandler:
         "PROGRAM_START_ERROR": (
             "Line {line}, Col {col} | Program cannot begin with: '{found}'.\n"
             "'{source_line}'\n"
-            "Expected: {expected}" # Usually Global Decs or AHOY
+            "Expected: {expected}" 
         ),
         "UNEXPECTED_EOF": (
             "Line {line}, Col {col} | Unexpected End Of File.\n"
-            "Expected: {expected}" # kunwari ']' or more statements
+            "Expected: {expected}" 
         ),
         "MISSING_START": "Line {line}, Col {col} | Missing Start. Source code is empty.",
         
@@ -60,8 +61,6 @@ class ErrorHandler:
         return f"'{', '.join(clean[:-1])}', or '{clean[-1]}'"
 
     def _get_line_content(self, line_num):
-        # Yung actual line to after "Unexpected Token"
-        # di siya need,,, for visual lang
         if isinstance(line_num, int) and 1 <= line_num <= len(self.lines):
             return self.lines[line_num - 1].strip()
         return ""
@@ -82,16 +81,12 @@ class ErrorHandler:
     # ERROR GENERATION METHODS
     # =========================================================================
 
-    # ==========================================
-    # Case 2: Missing Main/Start (Empty File)
-    # ==========================================
+    # missing start
     def get_missing_start_error(self):
         msg = self.ERROR_TEMPLATES["MISSING_START"].format(line=1, col=1)
         return self._create_error("Source code is empty.", msg, 1, 1)
 
-    # ==========================================
-    # Case 4: Program cannot begin with <token>
-    # ==========================================
+    # incorrect starting token
     def get_program_start_error(self, token, expected_tokens):
         if token:
             line, col = token.line, token.col
@@ -110,7 +105,6 @@ class ErrorHandler:
         return self._create_error("Unexpected Beginning Token", msg, line, col, found, expected_tokens)
 
     def get_expected_eof_error(self, token):
-        # Handled at the end of parse() if tokens remain.
         if token:
             line, col = token.line, token.col
             found = token.type
@@ -125,13 +119,12 @@ class ErrorHandler:
         )
         return self._create_error("Unexpected Token", msg, line, col, found, ["End Of File"])
 
+    # invalid/unexpected token
     def get_invalid_token_error(self, token, expected_tokens):
-        # Case 1 & 3: Unexpected Tokens & Unexpected End Of File.
-        # Triggered when PREDICT table lookup fails.
         expected_str = self._format_list_static(expected_tokens)
 
+        # unexpected token
         if token:
-            # Case 1: Unexpected Token
             line, col = token.line, token.col
             found = token.type
             actual_line = self._get_line_content(line)
@@ -140,12 +133,8 @@ class ErrorHandler:
                 line=line, col=col, found=found, source_line=actual_line, expected=expected_str
             )
             return self._create_error("Unexpected token", msg, line, col, found, expected_tokens)
-        
-        else:
-        # ==================================================================
-        # Case 3: Unexpected End Of File
-        # We hit EOF but expected something else (like ] or more statement decla)
-        # ==================================================================
+        # unexpected EOF
+        else:   
             line = len(self.lines) if self.lines else 1
             col = "End"
             found = "End Of File"
@@ -185,8 +174,8 @@ class ErrorHandler:
     def get_unexpected_token_error(self, token, expected_tokens):
         return self.get_invalid_token_error(token, expected_tokens)
 
+    # generic fallback error
     def get_custom_error(self, token, message):
-        # Generic fallback error just in case
         if token:
             line, col = token.line, token.col
             found = token.type

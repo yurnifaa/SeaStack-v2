@@ -1,14 +1,7 @@
-# =============================================================================
-# ast_nodes.py — SeaStack AST Node Definitions
-# Every class maps to a meaningful grammar construct that the semantic
-# analyzer must reason about. Pure syntax (keywords, delimiters, !!) is
-# consumed by the AST parser and NOT stored in nodes.
-# =============================================================================
 
-
-# =============================================================================
-# BASE NODE - Base class for all AST nodes.
-# =============================================================================
+# =================================================================================================
+# AST NODE CLASS: Base class for all AST nodes.
+# =================================================================================================
 
 class ASTNode:
     resolved_type: str = None
@@ -18,11 +11,11 @@ class ASTNode:
         return f'{self.__class__.__name__}({attrs})'
 
 
-# =============================================================================
-# PROGRAM STRUCTURE
-# =============================================================================
+# =======================
+# ENTRY POINT
+# =======================
 
-#Root node — global_decls + ahoy_body.
+# program node - global_decls + ahoy_body.
 class ProgramNode(ASTNode):
     def __init__(self, global_decls, ahoy_body, token=None):
         self.global_decls = global_decls  # list[ASTNode]
@@ -36,137 +29,106 @@ class AhoyNode(ASTNode):
         self.statements = statements      # list[ASTNode]
         self.token = token
 
-
-# =============================================================================
-# CONSTANTS
-# =============================================================================
-
-# one node per (name, value) pair.
+# constant declaration
 class ConstDeclNode(ASTNode):
     def __init__(self, dtype, name, value, token=None):
-        self.dtype = dtype      # str: COIN|DIME|PARCH|SCROLL|BOOL
-        self.name = name        # str
+        self.dtype = dtype      # str - dtype
+        self.name = name        # str - constant id
         self.value = value      # LiteralNode
         self.token = token
 
-
-# =============================================================================
-# VARIABLE DECLARATIONS
-# =============================================================================
-
-# one node per declared identifier.
+# variable declaration 
 class VarDeclNode(ASTNode):
     def __init__(self, dtype, name, init_value, token=None):
-        self.dtype = dtype            # str
-        self.name = name              # str
+        self.dtype = dtype            # str - dtype
+        self.name = name              # str - variable id
         self.init_value = init_value  # ASTNode | None
         self.token = token
 
-
-# =============================================================================
-# ARRAY DECLARATIONS
-# =============================================================================
-
-# 1D or 2D array declaration.
+# array declaration
 class ArrayDeclNode(ASTNode):
     def __init__(self, dtype, name, dimensions, is_2d, init_values, token=None):
-        self.dtype = dtype              # str
-        self.name = name               # str
-        self.dimensions = dimensions   # list[int] (1 or 2 elements)
+        self.dtype = dtype             # str - dtype
+        self.name = name               # str - array id
+        self.dimensions = dimensions   # list[int] (1d or 2d)
         self.is_2d = is_2d             # bool
         self.init_values = init_values # list | list-of-lists | None
         self.token = token
 
-
-# =============================================================================
-# STRUCT DEFINITION
-# =============================================================================
-
+# structure definition
 class StructDefNode(ASTNode):
     def __init__(self, name, members, token=None):
-        self.name = name          # str
+        self.name = name          # str - structure id
         self.members = members    # list[MemberDeclNode]
         self.token = token
 
-# One member in a MAST definition — one node per id.
+# structure member
 class MemberDeclNode(ASTNode):
     def __init__(self, dtype, name, token=None):
-        self.dtype = dtype   # str
-        self.name = name     # str
+        self.dtype = dtype   # str - dtype
+        self.name = name     # str - structure member id
         self.token = token
 
-
-# =============================================================================
-# STRUCT VARIABLE DECLARATIONS
-# =============================================================================
-
+# structure variable declaration
 class StructVarDeclNode(ASTNode):
     def __init__(self, struct_type, var_name, inits, token=None):
-        self.struct_type = struct_type  # str
-        self.var_name = var_name        # str
+        self.struct_type = struct_type  # str - structure id
+        self.var_name = var_name        # str - structure variable id
         self.inits = inits              # list[PositionalInitNode|NamedInitNode] | None
         self.token = token
 
-# Positional value in struct initializer list.
+# positional value in struct initializer list
 class PositionalInitNode(ASTNode):
     def __init__(self, value, token=None):
         self.value = value   # expression node
         self.token = token
 
-# Named member assignment: $member = value.
+# member assignment: $member = value
 class NamedInitNode(ASTNode):
     def __init__(self, member_name, value, token=None):
-        self.member_name = member_name  # str (without $)
+        self.member_name = member_name  # str - structure member id
         self.value = value              # expression node
         self.token = token
 
-
-# =============================================================================
-# FUNCTION DEFINITIONS
-# =============================================================================
-
-# Returning or non-returning function definition.
+# function definition
 class FuncDefNode(ASTNode):
     def __init__(self, return_type, name, params, local_decls, body, return_expr, token=None):
-        self.return_type = return_type    # str: COIN|DIME|PARCH|SCROLL|BOOL|ABYSS
-        self.name = name                  # str
+        self.return_type = return_type    # str - rtype
+        self.name = name                  # str - function id
         self.params = params              # list[ParamNode]
-        self.local_decls = local_decls   # list[ASTNode]
+        self.local_decls = local_decls    # list[ASTNode]
         self.body = body                  # list[ASTNode]
-        self.return_expr = return_expr   # ASTNode | None (None for ABYSS)
+        self.return_expr = return_expr    # ASTNode | None (None for ABYSS)
         self.token = token
 
-# Single parameter in a function signature.
+# function parameter 
 class ParamNode(ASTNode):
     def __init__(self, dtype, name, token=None):
-        self.dtype = dtype   # str
-        self.name = name     # str
+        self.dtype = dtype   # str - dtype
+        self.name = name     # str - param id
         self.token = token
 
 
-# =============================================================================
-# STATEMENTS
-# =============================================================================
-
+# assign statement
 class AssignNode(ASTNode):
     def __init__(self, var_name, target_kind, index1, index2, member, value, token=None):
-        self.var_name = var_name        # str
-        self.target_kind = target_kind  # 'var' | 'array1d' | 'array2d' | 'member'
+        self.var_name = var_name        # str - variable id
+        self.target_kind = target_kind  # lhs type - variable / array element / structure member
         self.index1 = index1            # ASTNode | None
         self.index2 = index2            # ASTNode | None
         self.member = member            # str | None
         self.value = value              # ASTNode
         self.token = token
 
-# compound assignment (numeric only).
+# compound assignment 
 class CompoundAssignNode(ASTNode):
     def __init__(self, var_name, target_kind, index1, index2, member, operator, value, token=None):
-        self.var_name = var_name
-        self.target_kind = target_kind
+        self.var_name = var_name        # str - variable id
+        self.target_kind = target_kind  # lhs type - variable / array element / structure member
         self.index1 = index1
         self.index2 = index2
         self.member = member
-        self.operator = operator        # str: +=, -=, *=, /=, %=, ^=
+        self.operator = operator        # compound assign operator - +=, -=, *=, /=, %=, ^=
         self.value = value              # ASTNode (numeric expression)
         self.token = token
 

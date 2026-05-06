@@ -1,6 +1,3 @@
-# Called in: server.py — IR Generation phase, after semantic analysis and before optimization
-# Walks the semantic-checked AST node by node and emits a flat list of TAC quadruples into IRProgram.
-
 from codegen.ir_instructions import (
     IRProgram, Quad,
     PROGRAM_START, PROGRAM_END, FUNC_BEGIN, FUNC_END, PARAM_DECL,
@@ -20,10 +17,9 @@ from codegen.ir_instructions import (
     ARITH_OP_MAP, REL_OP_MAP, LOG_OP_MAP, COMPOUND_OP_MAP,
 )
 
-
-# =======================
-# IR GENERATOR CLASS
-# =======================
+# =================================================================================================
+# IR GENERATOR CLASS: reads the ast and generates the IR as a list of quads
+# =================================================================================================
 
 class IRGenerator:
 
@@ -89,14 +85,15 @@ class IRGenerator:
             return getattr(tok, 'col', None)
         return None
 
-    # Entry point
+    # =======================
+    # ENTRY POINT 
+    # =======================
 
     def generate(self):
         self.visit(self.ast)
         return self.ir
 
     # Visitor dispatch
-
     def visit(self, node):
         if node is None:
             return None
