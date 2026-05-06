@@ -180,7 +180,7 @@ def run_code():
         _running_flags[session_id] = stop_event
         _input_queues[session_id]  = input_q
 
-        # Shared namespace so _map_runtime_error can read _ss_line/_ss_col
+        # Shared namespace so _map_runtime_error can resad _ss_line/_ss_col
         exec_globals = {'__builtins__': __builtins__, '_ss_line': 0, '_ss_col': 0}
 
         # Patched print() — routes all output through output_q
@@ -298,6 +298,61 @@ def run_code():
             'X-Accel-Buffering': 'no',
         }
     )
+
+
+# =============================================================================
+#  /api/tokenize  — Run only the lexer; always returns valid tokens even on error
+# =============================================================================
+@app.route('/api/tokenize', methods=['POST'])
+def tokenize_code():
+    data        = request.json
+    code_string = data.get('code', '')
+
+    SKIP_TYPES = {'eof', 'EOF'}
+
+    _WS_LABEL = {'\n': 'newline', ' ': 'whitespace', '\t': 'tab', '\r': 'carriage_return'}
+
+    def _token_row(t):
+        if t.type == 'whitespace':
+            label = _WS_LABEL.get(t.value, 'whitespace')
+            return {"lexeme": label, "token": label}
+        return {"lexeme": t.value, "token": t.type}
+
+    try:
+        lexer = Lexer(code_string)
+        tokens, lex_errors = lexer.tokenize()
+
+        ui_tokens = [
+            _token_row(t)
+            for t in tokens
+            if t.type not in SKIP_TYPES
+        ]
+
+        formatted_errors = []
+        for err in lex_errors:
+            if isinstance(err, dict):
+                formatted_errors.append(err)
+            else:
+                formatted_errors.append({
+                    "line":    getattr(err, 'line',      '?'),
+                    "col":     getattr(err, 'col',       '?'),
+                    "found":   getattr(err, 'value',     '?'),
+                    "message": getattr(err, 'error_msg', str(err)),
+                })
+
+        return jsonify({
+            "success":     True,
+            "tokens":      ui_tokens,
+            "errors":      formatted_errors,
+            "error_count": len(formatted_errors),
+        })
+    except Exception as e:
+        return jsonify({
+            "success":     False,
+            "tokens":      [],
+            "errors":      [{"line": "-", "col": "-", "found": "CRASH", "message": str(e)}],
+            "error_count": 1,
+        })
 
 
 # =============================================================================

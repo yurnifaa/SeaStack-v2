@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Fish, Play, Square, FolderOpen, Download, SquareTerminal } from "lucide-react";
+import { Fish, Play, Square, FolderOpen, Download, SquareTerminal, Table2 } from "lucide-react";
 import SeaStackEditor from "../components/CodeEditor";
 import { simplifyRuntimeMessage } from "../utils/runtimeErrorMsg";
 import type { Tab, FormattedError, RawError } from "../types";
@@ -67,6 +67,11 @@ export default function Home() {
   const [needsInput, setNeedsInput] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const inputFieldRef = useRef<HTMLInputElement>(null);
+
+  // Token table state
+  const [tokenRows, setTokenRows] = useState<{ lexeme: string; token: string }[]>([]);
+  const [rightTab, setRightTab] = useState<'console' | 'tokens'>('console');
+  const [isTokenizing, setIsTokenizing] = useState(false);
 
   // Keep a ref to the active fetch reader so Stop can abort it
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
@@ -347,6 +352,28 @@ export default function Home() {
   };
 
   // ==========================================
+  // --- TOKENIZE (lexer only, always runs) ---
+  // ==========================================
+  const fetchTokens = async (sourceCode: string) => {
+    setIsTokenizing(true);
+    try {
+      const res = await fetch(`${API_URL}/api/tokenize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: sourceCode }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.tokens) setTokenRows(data.tokens);
+      }
+    } catch {
+      // silently ignore — tokenize is best-effort
+    } finally {
+      setIsTokenizing(false);
+    }
+  };
+
+  // ==========================================
   // --- RUN LOGIC  (SSE streaming)         ---
   // ==========================================
   const handleRun = async () => {
@@ -355,7 +382,11 @@ export default function Home() {
     setConsoleOutput("");
     setNeedsInput(false);
     setInputValue("");
+    setTokenRows([]);
     setIsRunning(true);
+
+    // Always tokenize first so Token Table is populated even if compile fails
+    fetchTokens(code);
 
     try {
       const response = await fetch(`${API_URL}/api/run`, {
@@ -613,7 +644,7 @@ export default function Home() {
             height={30}
             className="logo"
           />
-          <span className="title" font-bold>SeaStack</span>
+          <span className="title">SeaStack</span>
           <nav className="main-nav">
             <ul>
               <li>
@@ -762,29 +793,81 @@ export default function Home() {
         {/* Draggable Resize Handle */}
         <div className="resize-handle" onMouseDown={handleResizeMouseDown} />
 
-        {/* Right Panel — Output Console */}
+        {/* Right Panel — Output Console + Token Table */}
         <div className="panel panel-right">
           <div className="console-panel" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-            {/* Console Header */}
+
+            {/* Right Panel Tab Bar */}
             <div style={{
               backgroundColor: '#0C2B4E',
-              color: '#ffffff',
-              padding: '0 15px',
-              height: '42px',
-              fontWeight: '500',
-              fontSize: '0.9rem',
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              alignItems: 'stretch',
               flexShrink: 0,
+              height: '42px',
             }}>
-              <SquareTerminal size={16} />
-              Output Console
+              <button
+                onClick={() => setRightTab('console')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  padding: '0 16px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: rightTab === 'console' ? '2px solid #3498db' : '2px solid transparent',
+                  color: rightTab === 'console' ? '#ffffff' : 'rgba(255,255,255,0.55)',
+                  fontWeight: rightTab === 'console' ? '600' : '400',
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'color 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <SquareTerminal size={15} />
+                Output Console
+              </button>
+              <button
+                onClick={() => setRightTab('tokens')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  padding: '0 16px',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: rightTab === 'tokens' ? '2px solid #3498db' : '2px solid transparent',
+                  color: rightTab === 'tokens' ? '#ffffff' : 'rgba(255,255,255,0.55)',
+                  fontWeight: rightTab === 'tokens' ? '600' : '400',
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'color 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <Table2 size={15} />
+                Token Table
+                {tokenRows.length > 0 && (
+                  <span style={{
+                    backgroundColor: '#3498db',
+                    color: '#fff',
+                    borderRadius: '999px',
+                    padding: '1px 6px',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    marginLeft: '2px',
+                  }}>
+                    {tokenRows.length}
+                  </span>
+                )}
+              </button>
             </div>
 
             {/* Console Body */}
             <div
               style={{
+                display: rightTab === 'console' ? 'block' : 'none',
                 flex: 1,
                 padding: '12px 15px',
                 overflowY: 'auto',
@@ -837,6 +920,97 @@ export default function Home() {
 
               <div ref={consoleEndRef} />
             </div>
+
+            {/* Token Table Body */}
+            <div
+              style={{
+                display: rightTab === 'tokens' ? 'flex' : 'none',
+                flex: 1,
+                flexDirection: 'column',
+                overflowY: 'auto',
+                overflowX: 'auto',
+                backgroundColor: isDarkMode ? 'rgba(17, 25, 40, 0.59)' : 'rgba(255, 255, 255, 0.78)',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+              }}
+            >
+              {tokenRows.length === 0 ? (
+                <span style={{
+                  color: '#6b7280',
+                  fontStyle: 'italic',
+                  fontFamily: '"Fira Code", monospace',
+                  fontSize: '1rem',
+                  padding: '12px 15px',
+                }}>
+                  {isTokenizing ? "Tokenizing..." : "Run a program to see its tokens here."}
+                </span>
+              ) : (
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontFamily: '"Fira Code", monospace',
+                  fontVariantLigatures: 'none',
+                  fontSize: '1rem',
+                }}>
+                  <thead>
+                    <tr style={{
+                      position: 'sticky',
+                      top: 0,
+                      backgroundColor: isDarkMode ? '#0f1f35' : '#dbeafe',
+                      zIndex: 1,
+                    }}>
+                      <th style={{
+                        padding: '8px 16px',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: isDarkMode ? '#93c5fd' : '#1e40af',
+                        borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                        width: '50%',
+                      }}>
+                        Lexeme
+                      </th>
+                      <th style={{
+                        padding: '8px 16px',
+                        textAlign: 'center',
+                        fontWeight: '600',
+                        color: isDarkMode ? '#93c5fd' : '#1e40af',
+                        borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+                        width: '50%',
+                      }}>
+                        Token
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokenRows.map((row, i) => (
+                      <tr
+                        key={i}
+                        style={{
+                          backgroundColor: i % 2 === 0
+                            ? 'transparent'
+                            : isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                          borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                        }}
+                      >
+                        <td style={{
+                          padding: '5px 16px',
+                          color: isDarkMode ? '#e2e8f0' : '#1e293b',
+                        }}>
+                          {row.lexeme}
+                        </td>
+                        <td style={{
+                          padding: '5px 16px',
+                          color: isDarkMode ? '#7dd3fc' : '#1d4ed8',
+                        }}>
+                          {row.token}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
           </div>
         </div>
       </main>
