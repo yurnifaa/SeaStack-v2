@@ -1,3 +1,6 @@
+# Called in: server.py — IR Generation phase, after semantic analysis and before optimization
+# Walks the semantic-checked AST node by node and emits a flat list of TAC quadruples into IRProgram.
+
 from codegen.ir_instructions import (
     IRProgram, Quad,
     PROGRAM_START, PROGRAM_END, FUNC_BEGIN, FUNC_END, PARAM_DECL,
@@ -18,25 +21,22 @@ from codegen.ir_instructions import (
 )
 
 
-# =================================================================================================
-# IR GENERATOR CLASS: walks every AST node and emits a flat list of IR quadruples
-# =================================================================================================
+# =======================
+# IR GENERATOR CLASS
+# =======================
 
 class IRGenerator:
-    """Walks the semantic-checked AST and emits TAC quadruples."""
 
     def __init__(self, ast):
         self.ast = ast
         self.ir = IRProgram()
         self._temp_counter = 0
         self._label_counter = 0
-        # Track loop labels for LAND (break) and SAIL (continue)
-        self._loop_end_stack = []    # label to jump to on LAND
-        self._loop_start_stack = []  # label to jump to on SAIL
-        # Track chart end label for LAND inside CHART
-        self._chart_end_stack = []
+        self._loop_end_stack = []    # label to jump to on LAND (break)
+        self._loop_start_stack = []  # label to jump to on SAIL (continue)
+        self._chart_end_stack = []   # label to jump to on LAND inside CHART
 
-    # ── Utility ──────────────────────────────────────────────────────────
+    # Utility
 
     def _new_temp(self):
         t = f"_t{self._temp_counter}"
@@ -44,25 +44,13 @@ class IRGenerator:
         return t
 
     def _new_temp_typed(self, dtype):
-        """Allocate a new temporary and register its type in temp_types."""
         t = self._new_temp()
         if dtype:
             self.ir.temp_types[t] = dtype
         return t
 
     def _infer_type_from_operands(self, operator, left_temp, right_temp):
-        """Infer the result dtype of a binary op when the semantic analyzer did
-        not stamp resolved_type on the AST node.
-
-        Rules (matching SeaStack spec):
-          - Relational / logical ops  → always BOOL
-          - Concatenation (&)         → always SCROLL
-          - Arithmetic ops            → DIME if either operand is DIME,
-                                        COIN if at least one is COIN (and none
-                                        is DIME), otherwise None (unknown).
-        Operand types are resolved from ir.temp_types (populated for literal
-        and previously-visited sub-expression temps).
-        """
+        # relational/logical → BOOL, concat → SCROLL, arithmetic → widest numeric type
         if operator in REL_OP_MAP or operator in LOG_OP_MAP:
             return 'BOOL'
         if operator in ('!', '!#'):
@@ -101,13 +89,13 @@ class IRGenerator:
             return getattr(tok, 'col', None)
         return None
 
-    # ── Entry Point ──────────────────────────────────────────────────────
+    # Entry point
 
     def generate(self):
         self.visit(self.ast)
         return self.ir
 
-    # ── Visitor Dispatch ─────────────────────────────────────────────────
+    # Visitor dispatch
 
     def visit(self, node):
         if node is None:
@@ -115,13 +103,12 @@ class IRGenerator:
         method = f'visit_{type(node).__name__}'
         visitor = getattr(self, method, None)
         if visitor is None:
-            # Fallback: just return None silently
             return None
         return visitor(node)
 
-    # =====================================================================
+    # =======================
     # PROGRAM STRUCTURE
-    # =====================================================================
+    # =======================
 
     def visit_ProgramNode(self, node):
         self.ir.emit(PROGRAM_START, comment="SeaStack program")
@@ -138,9 +125,9 @@ class IRGenerator:
             self.visit(s)
         self.ir.emit(AHOY_END)
 
-    # =====================================================================
+    # =======================
     # DECLARATIONS
-    # =====================================================================
+    # =======================
 
     def visit_ConstDeclNode(self, node):
         val_temp = self._emit_expr(node.value)
@@ -180,9 +167,6 @@ class IRGenerator:
         self.ir.emit(DECL_STRUCT_TYPE, node.name, members,
                      comment=f"MAST {node.name}", line=self._line(node), col=self._col(node))
 
-    def visit_MemberDeclNode(self, node):
-        pass  # handled inside StructDefNode
-
     def visit_StructVarDeclNode(self, node):
         self.ir.emit(DECL_STRUCT_VAR, node.var_name, node.struct_type,
                      comment=f"MAST {node.struct_type} {node.var_name}", line=self._line(node), col=self._col(node))
@@ -210,9 +194,9 @@ class IRGenerator:
     def visit_NamedInitNode(self, node):
         return self._emit_expr(node.value)
 
-    # =====================================================================
+    # =======================
     # FUNCTION DEFINITIONS
-    # =====================================================================
+    # =======================
 
     def visit_FuncDefNode(self, node):
         self.ir.func_signatures[node.name] = (
@@ -233,12 +217,9 @@ class IRGenerator:
             self.ir.emit(RETURN, ret_temp, comment="BACK")
         self.ir.emit(FUNC_END, node.name)
 
-    def visit_ParamNode(self, node):
-        pass
-
-    # =====================================================================
+    # =======================
     # STATEMENTS
-    # =====================================================================
+    # =======================
 
     def visit_AssignNode(self, node):
         val_temp = self._emit_expr(node.value)
@@ -259,16 +240,13 @@ class IRGenerator:
                          line=self._line(node), col=self._col(node))
 
     def visit_CompoundAssignNode(self, node):
-        # Load current value of target
         target_temp = self._load_target(node.var_name, node.target_kind,
                                         node.index1, node.index2, node.member)
         val_temp = self._emit_expr(node.value)
-        # Perform the arithmetic operation
         arith_op = COMPOUND_OP_MAP.get(node.operator, '+')
         ir_op = ARITH_OP_MAP.get(arith_op, ADD)
         result = self._new_temp()
         self.ir.emit(ir_op, target_temp, val_temp, result, line=self._line(node), col=self._col(node))
-        # Store back
         self._store_target(node.var_name, node.target_kind,
                            node.index1, node.index2, node.member, result)
 
@@ -305,7 +283,7 @@ class IRGenerator:
         elif target_kind == 'member':
             self.ir.emit(ASSIGN_MEMBER, var_name, member, val_temp)
 
-    # ── I/O ──────────────────────────────────────────────────────────────
+    # Input/Output
 
     def visit_AskNode(self, node):
         target_infos = []
@@ -321,18 +299,14 @@ class IRGenerator:
         self.ir.emit(INPUT, node.format_string, target_infos,
                      comment="ASK", line=self._line(node), col=self._col(node))
 
-    def visit_AddressNode(self, node):
-        pass  # handled within AskNode
-
     def visit_EchoNode(self, node):
         arg_temps = [self._emit_expr(a) for a in node.args]
         self.ir.emit(OUTPUT, node.format_string, arg_temps,
                      comment="ECHO", line=self._line(node), col=self._col(node))
 
-    # ── Conditionals ─────────────────────────────────────────────────────
+    # Conditionals
 
     def visit_LookNode(self, node):
-        # LOOK (if)
         end_label = self._new_label()
         next_label = self._new_label()
 
@@ -344,7 +318,7 @@ class IRGenerator:
         self.ir.emit(JUMP, end_label)
         self.ir.emit(LABEL, next_label)
 
-        # DROPLOOK (elif) chains
+        # DROPLOOK chains
         for (dl_cond, dl_body) in node.droplooks:
             next_label = self._new_label()
             dl_temp = self._emit_expr(dl_cond)
@@ -354,7 +328,6 @@ class IRGenerator:
             self.ir.emit(JUMP, end_label)
             self.ir.emit(LABEL, next_label)
 
-        # DROP (else)
         if node.drop_body is not None:
             for s in node.drop_body:
                 self.visit(s)
@@ -362,7 +335,6 @@ class IRGenerator:
         self.ir.emit(LABEL, end_label)
 
     def visit_ChartNode(self, node):
-        # CHART (switch)
         end_label = self._new_label()
         self._chart_end_stack.append(end_label)
         expr_temp = self._emit_expr(node.expr)
@@ -390,13 +362,9 @@ class IRGenerator:
         self.ir.emit(LABEL, end_label)
         self._chart_end_stack.pop()
 
-    def visit_CourseNode(self, node):
-        pass  # handled by ChartNode
-
-    # ── Loops ────────────────────────────────────────────────────────────
+    # Loops
 
     def visit_HoistNode(self, node):
-        # HOIST (for)
         start_label = self._new_label()
         update_label = self._new_label()
         end_label = self._new_label()
@@ -404,20 +372,16 @@ class IRGenerator:
         self._loop_start_stack.append(update_label)  # SAIL goes to update
         self._loop_end_stack.append(end_label)        # LAND goes to end
 
-        # Initialization
         for init in node.inits:
             self._emit_hoist_init(init)
 
-        # Condition check
         self.ir.emit(LABEL, start_label)
         cond_temp = self._emit_expr(node.condition)
         self.ir.emit(JUMP_FALSE, cond_temp, end_label, comment="HOIST condition")
 
-        # Body
         for s in node.body:
             self.visit(s)
 
-        # Update
         self.ir.emit(LABEL, update_label)
         for upd in node.updates:
             self._emit_hoist_update(upd)
@@ -455,7 +419,6 @@ class IRGenerator:
             self.ir.emit(ASSIGN, result, None, target)
 
     def visit_HeaveNode(self, node):
-        # HEAVE (while)
         start_label = self._new_label()
         end_label = self._new_label()
 
@@ -476,7 +439,6 @@ class IRGenerator:
         self._loop_end_stack.pop()
 
     def visit_HaulHeaveNode(self, node):
-        # HAUL-HEAVE (do-while)
         start_label = self._new_label()
         end_label = self._new_label()
 
@@ -495,7 +457,7 @@ class IRGenerator:
         self._loop_start_stack.pop()
         self._loop_end_stack.pop()
 
-    # ── Jump Statements ──────────────────────────────────────────────────
+    # Jump statements
 
     def visit_SailNode(self, node):
         if self._loop_start_stack:
@@ -518,7 +480,7 @@ class IRGenerator:
     def visit_BackNode(self, node):
         self.ir.emit(RETURN_VOID, comment="BACK!!")
 
-    # ── Unary Statement (standalone +# / -#) ─────────────────────────────
+    # Unary statements
 
     def visit_UnaryStmtNode(self, node):
         if node.operator == '+#':
@@ -531,30 +493,27 @@ class IRGenerator:
     def visit_FuncCallStmtNode(self, node):
         self._emit_expr(node.call_expr)
 
-    # =====================================================================
-    # EXPRESSIONS  — each returns the temp (or literal) holding the value
-    # =====================================================================
+    # =======================
+    # EXPRESSIONS
+    # =======================
 
     def _emit_expr(self, node):
-        """Emit IR for an expression subtree.  Returns the temp/literal name."""
         if node is None:
             return None
         return self.visit(node)
 
     def visit_LiteralNode(self, node):
-        # Overflow Checks for COIN and DIME
+        # Overflow checks for COIN and DIME
         if node.dtype == 'COIN':
             val_str = str(node.value).lstrip('-')
             if len(val_str) > 16:
                 raise ValueError(f"Overflow Error: COIN literal '{node.value}' is too large. It exceeds the 16-digit limit.")
-                
         elif node.dtype == 'DIME':
             val_str = str(node.value).lstrip('-')
             if '.' in val_str:
                 int_part, dec_part = val_str.split('.')
             else:
                 int_part, dec_part = val_str, ''
-
             if len(int_part) > 16:
                 raise ValueError(f"Overflow Error: DIME literal '{node.value}' is too large. Integer part exceeds 16-digit limit.")
             if len(dec_part) > 8:
@@ -565,7 +524,7 @@ class IRGenerator:
         return t
 
     def visit_IdentNode(self, node):
-        # Variables are referenced by name; no extra instruction needed
+        # referenced by name; no extra IR instruction needed
         return node.name
 
     def visit_ArrayAccessNode(self, node):
@@ -612,7 +571,7 @@ class IRGenerator:
         for at in arg_temps:
             self.ir.emit(ARG, at)
 
-        # Use resolved_type stamped by semantic analyzer; fall back to sig lookup
+        # use resolved_type from semantic analyzer; fall back to sig lookup
         resolved = getattr(node, 'resolved_type', None)
         if resolved is None:
             sig = self.ir.func_signatures.get(node.name)
@@ -629,9 +588,7 @@ class IRGenerator:
     def visit_BinaryOpNode(self, node):
         left_temp = self._emit_expr(node.left)
         right_temp = self._emit_expr(node.right)
-        # Use the type the semantic analyzer stamped on the node; when it is
-        # absent (None) fall back to operand-type inference so that ir.temp_types
-        # is always populated even if the front-end omits resolved_type.
+        # use resolved_type from semantic analyzer; fall back to operand inference
         resolved = getattr(node, 'resolved_type', None)
         if resolved is None:
             resolved = self._infer_type_from_operands(node.operator, left_temp, right_temp)
@@ -653,7 +610,7 @@ class IRGenerator:
 
     def visit_UnaryOpNode(self, node):
         operand_temp = self._emit_expr(node.operand)
-        # Same fallback: relational/logical unary ops always produce BOOL
+        # relational/logical unary ops always produce BOOL
         resolved = getattr(node, 'resolved_type', None)
         if resolved is None and node.operator in ('!', '!#'):
             resolved = 'BOOL'
@@ -671,7 +628,7 @@ class IRGenerator:
             return operand_temp
         return t
 
-    # ── Nodes that should just visit children ────────────────────────────
+    # Visitor stubs for nodes handled by their parent visitor
 
     def visit_HoistInitNode(self, node):
         self._emit_hoist_init(node)

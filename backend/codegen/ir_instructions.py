@@ -1,24 +1,16 @@
+# Imported by: ir_generator.py, optimizer.py, and code_generator.py — shared across the entire codegen pipeline
+# Defines the Quad (TAC instruction) and IRProgram structures, plus all opcode constants and operator maps.
+
 from dataclasses import dataclass, field
 from typing import Any, Optional, List
 
 
-# =================================================================================================
-# QUAD CLASS: creates the quadruple structure for instructions
-# =================================================================================================
+# =======================
+# QUAD CLASS
+# =======================
 
 @dataclass
-
 class Quad:
-    """Three-Address Code represented as a Quadruple.
-    Attributes:
-        op      – operation code (string)
-        arg1    – first operand  (str | int | float | bool | None)
-        arg2    – second operand (str | int | float | bool | None)
-        result  – destination    (str | None)
-        comment – optional human-readable note (not emitted in code)
-        line    – source line number for traceability (optional)
-        col     – source column number for traceability (optional)
-    """
     op: str
     arg1: Any = None
     arg2: Any = None
@@ -46,11 +38,11 @@ def _fmt(v):
     return str(v)
 
 
-    # =======================
-    # OPCODE CONSTANTS
-    # =======================
+# =======================
+# OPCODE CONSTANTS
+# =======================
 
-# Program Structure
+# Program structure
 PROGRAM_START    = "PROG_START"
 PROGRAM_END      = "PROG_END"
 FUNC_BEGIN       = "FUNC_BEGIN"       # arg1=name, arg2=return_type
@@ -73,77 +65,75 @@ STRUCT_INIT      = "STRUCT_INIT"      # arg1=var_name, arg2=init_dict
 
 # Assignment
 ASSIGN           = "ASSIGN"           # result = arg1
-ASSIGN_ARR       = "ASSIGN_ARR"       # arg1=arr, arg2=index_temp, result=val_temp  (1D)
-ASSIGN_ARR2      = "ASSIGN_ARR2"      # arg1=arr, arg2=(i,j), result=val_temp       (2D)
+ASSIGN_ARR       = "ASSIGN_ARR"       # arg1=arr, arg2=index_temp, result=val_temp
+ASSIGN_ARR2      = "ASSIGN_ARR2"      # arg1=arr, arg2=(i,j), result=val_temp
 ASSIGN_MEMBER    = "ASSIGN_MEMBER"    # arg1=var, arg2=member, result=val_temp
-
-# Compound Assignment
 COMPOUND_ASSIGN  = "COMP_ASSIGN"      # arg1=target_temp, arg2=op, result=val_temp
 
-# Arithmetic Operators
-ADD              = "ADD"              # result = arg1 + arg2
-SUB              = "SUB"              # result = arg1 - arg2
-MUL              = "MUL"              # result = arg1 * arg2
-DIV              = "DIV"              # result = arg1 / arg2
-MOD              = "MOD"              # result = arg1 % arg2
-POW              = "POW"              # result = arg1 ** arg2
+# Arithmetic
+ADD              = "ADD"
+SUB              = "SUB"
+MUL              = "MUL"
+DIV              = "DIV"
+MOD              = "MOD"
+POW              = "POW"
 
-# Relational Operators
-LT               = "LT"              # result = arg1 < arg2
-GT               = "GT"              # result = arg1 > arg2
-LE               = "LE"              # result = arg1 <= arg2
-GE               = "GE"              # result = arg1 >= arg2
-EQ               = "EQ"              # result = arg1 == arg2
-NE               = "NE"              # result = arg1 != arg2
+# Relational
+LT               = "LT"
+GT               = "GT"
+LE               = "LE"
+GE               = "GE"
+EQ               = "EQ"
+NE               = "NE"
 
-# Logical Operators
-LOG_AND          = "LOG_AND"          # result = arg1 and arg2
-LOG_OR           = "LOG_OR"           # result = arg1 or arg2
-LOG_NOT          = "LOG_NOT"          # result = not arg1
-LOG_DNOT         = "LOG_DNOT"         # result = not not arg1
+# Logical
+LOG_AND          = "LOG_AND"
+LOG_OR           = "LOG_OR"
+LOG_NOT          = "LOG_NOT"
+LOG_DNOT         = "LOG_DNOT"         # not not arg1
 
-# Unary Operators
-UNARY_NEG        = "UNARY_NEG"        # result = -arg1
-UNARY_INC        = "UNARY_INC"        # arg1 = arg1 + 1
-UNARY_DEC        = "UNARY_DEC"        # arg1 = arg1 - 1
+# Unary
+UNARY_NEG        = "UNARY_NEG"
+UNARY_INC        = "UNARY_INC"
+UNARY_DEC        = "UNARY_DEC"
 
-# SCROLL Operators
+# String (SCROLL)
 CONCAT           = "CONCAT"           # result = arg1 + arg2
 SCROLL_CHAR      = "SCROLL_CHAR"      # result = arg1[arg2]
 
-# Array / Member Accessing
-LOAD_ARR         = "LOAD_ARR"         # result = arg1[arg2]      (1D)
-LOAD_ARR2        = "LOAD_ARR2"        # result = arg1[arg2.i][arg2.j] (2D)
+# Array / member access
+LOAD_ARR         = "LOAD_ARR"         # result = arg1[arg2]
+LOAD_ARR2        = "LOAD_ARR2"        # result = arg1[i][j]
 LOAD_MEMBER      = "LOAD_MEMBER"      # result = arg1.arg2
 
-# Control Flow
-LABEL            = "LABEL"            # arg1 = label_name
-JUMP             = "JUMP"             # arg1 = target_label
-JUMP_FALSE       = "JUMP_FALSE"       # if arg1 is false, jump to arg2
-JUMP_TRUE        = "JUMP_TRUE"        # if arg1 is true,  jump to arg2
-BREAK            = "BREAK"            # LAND  — break out of loop/chart
-CONTINUE         = "CONTINUE"         # SAIL  — continue to next iteration
+# Control flow
+LABEL            = "LABEL"            # arg1=label_name
+JUMP             = "JUMP"             # arg1=target_label
+JUMP_FALSE       = "JUMP_FALSE"       # jump to arg2 if arg1 is false
+JUMP_TRUE        = "JUMP_TRUE"        # jump to arg2 if arg1 is true
+BREAK            = "BREAK"
+CONTINUE         = "CONTINUE"
 
 # Functions
-ARG              = "ARG"              # arg1 = value to push
+ARG              = "ARG"              # arg1=value to push
 CALL             = "CALL"             # arg1=func_name, arg2=n_args, result=dest_temp
 CALL_VOID        = "CALL_VOID"        # arg1=func_name, arg2=n_args
-RETURN           = "RETURN"           # arg1 = value
+RETURN           = "RETURN"           # arg1=return value
 RETURN_VOID      = "RETURN_VOID"
 
-# Input / Output
+# I/O
 INPUT            = "INPUT"            # arg1=fmt, arg2=targets_list
 OUTPUT           = "OUTPUT"           # arg1=fmt, arg2=args_list
 
-# Others
-NOP              = "NOP"              # no operation
-LITERAL          = "LITERAL"          # result = literal value, arg1=dtype, arg2=value
-COMMENT          = "COMMENT"          # arg1 = comment text (preserved for readability)
+# Misc
+NOP              = "NOP"
+LITERAL          = "LITERAL"          # result=value, arg1=dtype, arg2=value
+COMMENT          = "COMMENT"          # arg1=comment text
 
 
-    # =======================
-    # OPERATOR MAPPING
-    # =======================
+# =======================
+# OPERATOR MAPPING
+# =======================
 
 ARITH_OP_MAP = {
     '+': ADD, '-': SUB, '*': MUL, '/': DIV, '%': MOD, '^': POW,
@@ -162,18 +152,17 @@ COMPOUND_OP_MAP = {
 }
 
 
-# =================================================================================================
-# IR PROGRAM CLASS: creates the list of instructions
-# =================================================================================================
+# =======================
+# IR PROGRAM CLASS
+# =======================
 
 @dataclass
 class IRProgram:
-
     instructions: List[Quad] = field(default_factory=list)
-    struct_types: dict = field(default_factory=dict)   # name → {member: dtype}
+    struct_types: dict = field(default_factory=dict)    # name → {member: dtype}
     struct_orders: dict = field(default_factory=dict)   # name → [member_names]
     func_signatures: dict = field(default_factory=dict) # name → (ret_type, [(p_dtype, p_name)])
-    temp_types: dict = field(default_factory=dict)      # temp_name → dtype (e.g. '_t0' → 'COIN')
+    temp_types: dict = field(default_factory=dict)      # temp_name → dtype
 
     def emit(self, op, arg1=None, arg2=None, result=None, comment="", line=None, col=None):
         q = Quad(op, arg1, arg2, result, comment, line, col)
@@ -181,7 +170,6 @@ class IRProgram:
         return q
 
     def dump(self):
-        """Return a human-readable listing of all instructions."""
         lines = []
         lines.append(f"{'#':>4}  {'OP':18s} | {'ARG1':20s} | {'ARG2':20s} | {'RESULT':20s}")
         lines.append("-" * 92)
