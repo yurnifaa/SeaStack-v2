@@ -1149,7 +1149,7 @@ export default function Home() {
                     ))}
                   </div> */}
 
-                  {/* Per-pass breakdown */}
+                  {/* Per-pass breakdown
                   {tacData.passSnapshots.length > 0 && (
                     <div className="tac-pass-list">
                       {tacData.passSnapshots.map((snap, i) => {
@@ -1163,7 +1163,7 @@ export default function Home() {
                         );
                       })}
                     </div>
-                  )}
+                  )} */}
 
                   {/* Sub-tab: Raw IR | Optimized IR */}
                   <div className="tac-subtab-bar">
