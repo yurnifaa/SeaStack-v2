@@ -38,6 +38,7 @@ class IROptimizer:
             'dead_eliminated': 0,
             'jumps_optimized': 0,
         }
+        self._pass_snapshots: list = []
 
     # Entry point
 
@@ -48,11 +49,22 @@ class IROptimizer:
             before = len(self.ir.instructions)
             before_stats = dict(self._stats)
 
-            self._pass_constant_folding()
-            self._pass_constant_propagation()
-            self._pass_copy_propagation()
-            self._pass_strength_reduction()
-            self._pass_dead_code_elimination()
+            for _pass_fn, _pass_name in [
+                (self._pass_constant_folding,     "Constant Folding"),
+                (self._pass_constant_propagation, "Constant Propagation"),
+                (self._pass_copy_propagation,     "Copy Propagation"),
+                (self._pass_strength_reduction,   "Strength Reduction"),
+                (self._pass_dead_code_elimination,"Dead Code Elimination"),
+            ]:
+                _snap_before = dict(self._stats)
+                _pass_fn()
+                _delta = {k: self._stats[k] - _snap_before[k] for k in self._stats}
+                if any(v > 0 for v in _delta.values()):
+                    self._pass_snapshots.append({
+                        "pass_name":   _pass_name,
+                        "stats_delta": _delta,
+                        "quad_count":  len(self.ir.instructions),
+                    })
 
             after_stats = dict(self._stats)
             changed = (
@@ -61,7 +73,15 @@ class IROptimizer:
             )
 
         # jump optimization is a single structural cleanup — run once at the end
+        _snap_before = dict(self._stats)
         self._pass_jump_optimization()
+        _delta = {k: self._stats[k] - _snap_before[k] for k in self._stats}
+        if any(v > 0 for v in _delta.values()):
+            self._pass_snapshots.append({
+                "pass_name":   "Jump Optimization",
+                "stats_delta": _delta,
+                "quad_count":  len(self.ir.instructions),
+            })
 
         # remove NOP instructions produced by other passes
         self.ir.instructions = [q for q in self.ir.instructions if q.op != NOP]
@@ -76,6 +96,10 @@ class IROptimizer:
     @property
     def stats(self):
         return dict(self._stats)
+
+    @property
+    def pass_snapshots(self):
+        return list(self._pass_snapshots)
 
     # =======================
     # PASS 1: CONSTANT FOLDING

@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import copy
 import threading
 import traceback
 import re
@@ -353,6 +354,71 @@ def tokenize_code():
             "errors":      [{"line": "-", "col": "-", "found": "CRASH", "message": str(e)}],
             "error_count": 1,
         })
+
+
+def _quad_to_dict(q, idx: int) -> dict:
+    def _s(v):
+        if v is None:          return ""
+        if isinstance(v, bool): return str(v)
+        if isinstance(v, (int, float, str)): return str(v)
+        return repr(v)
+    return {
+        "index":   idx,
+        "op":      q.op,
+        "arg1":    _s(q.arg1),
+        "arg2":    _s(q.arg2),
+        "result":  _s(q.result),
+        "comment": q.comment or "",
+        "line":    q.line,
+    }
+
+
+# =============================================================================
+#  /api/tac  — Run pipeline through IR + optimizer, return Quadruple tables
+# =============================================================================
+@app.route('/api/tac', methods=['POST'])
+def tac_code():
+    data        = request.json
+    code_string = data.get('code', '')
+    try:
+        lexer = Lexer(code_string)
+        tokens, lex_errors = lexer.tokenize()
+        if lex_errors:
+            return jsonify({"success": False, "error": "Lexical errors in source."})
+
+        parser = Parser(tokens, code_string)
+        syn_errors = parser.parse()
+        if syn_errors:
+            return jsonify({"success": False, "error": "Syntax errors in source."})
+
+        ast_parser   = ASTParser(tokens, code_string)
+        program_node = ast_parser.build()
+        analyzer     = SemanticAnalyzer(program_node, code_string)
+        sem_errors   = analyzer.analyze()
+        if sem_errors:
+            return jsonify({"success": False, "error": "Semantic errors in source."})
+
+        ir_gen     = IRGenerator(program_node)
+        ir_program = ir_gen.generate()
+
+        # Deep-copy before optimization: optimizer mutates ir_program.instructions in-place
+        raw_quads = [_quad_to_dict(q, i)
+                     for i, q in enumerate(copy.deepcopy(ir_program.instructions))]
+
+        optimizer    = IROptimizer(ir_program)
+        ir_optimized = optimizer.optimize()
+
+        return jsonify({
+            "success":         True,
+            "raw_quads":       raw_quads,
+            "optimized_quads": [_quad_to_dict(q, i)
+                                 for i, q in enumerate(ir_optimized.instructions)],
+            "pass_snapshots":  optimizer.pass_snapshots,
+            "optimizer_stats": optimizer.stats,
+            "temp_types":      dict(ir_optimized.temp_types),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": f"TAC generation failed: {str(e)}"})
 
 
 # =============================================================================

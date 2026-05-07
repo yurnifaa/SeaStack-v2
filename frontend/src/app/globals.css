@@ -610,3 +610,174 @@ body.dark-mode table tr:hover {
         height: 130px;
     }
 }
+
+/* =========================================
+   TAC SIMULATION TAB
+   ========================================= */
+
+.tac-stats-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+body:not(.dark-mode) .tac-stats-bar {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.tac-stat-chip {
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: 0.72rem;
+    font-family: "Fira Code", monospace;
+    white-space: nowrap;
+}
+
+.tac-pass-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: "Fira Code", monospace;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+body:not(.dark-mode) .tac-pass-list {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.tac-pass-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 2px 0;
+}
+
+.tac-subtab-bar {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body:not(.dark-mode) .tac-subtab-bar {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+.tac-subtab-btn {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 6px 16px;
+    font-family: "Fira Code", monospace;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.15s;
+}
+
+.tac-subtab-count {
+    background: rgba(139, 92, 246, 0.2);
+    border-radius: 999px;
+    padding: 1px 6px;
+    font-size: 0.68rem;
+    font-weight: bold;
+}
+
+.tac-subtab-btn.active .tac-subtab-count {
+    background: #8b5cf6;
+    color: #fff;
+}
+
+.tac-table-wrapper {
+    flex: 1;
+    overflow: auto;
+}
+
+.tac-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Fira Code", monospace;
+    font-size: 0.82rem;
+    font-variant-ligatures: none;
+}
+
+.tac-table thead tr {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.tac-table th {
+    padding: 7px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body:not(.dark-mode) .tac-table th {
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+.tac-cell {
+    padding: 4px 10px;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body:not(.dark-mode) .tac-cell {
+    border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+.tac-cell--index {
+    color: #64748b;
+    text-align: right;
+    width: 36px;
+    padding-right: 6px;
+}
+
+.tac-cell--op {
+    font-weight: 700;
+    padding-left: 7px;
+}
+
+.tac-cell--comment {
+    color: #6b7280;
+    font-style: italic;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Row color-coding via left border on the opcode cell */
+.tac-row--arith  .tac-cell--op { color: #60a5fa; border-left: 3px solid #3b82f6; }
+.tac-row--ctrl   .tac-cell--op { color: #fb923c; border-left: 3px solid #f97316; }
+.tac-row--cmp    .tac-cell--op { color: #a78bfa; border-left: 3px solid #8b5cf6; }
+.tac-row--io     .tac-cell--op { color: #34d399; border-left: 3px solid #10b981; }
+.tac-row--decl   .tac-cell--op { color: #94a3b8; border-left: 3px solid #64748b; }
+.tac-row--func   .tac-cell--op { color: #f87171; border-left: 3px solid #ef4444; }
+.tac-row--assign .tac-cell--op { color: #22d3ee; border-left: 3px solid #06b6d4; }
+.tac-row--str    .tac-cell--op { color: #86efac; border-left: 3px solid #22c55e; }
+.tac-row--default .tac-cell--op { border-left: 3px solid #475569; }
+
+/* Light-mode opcode colors */
+body:not(.dark-mode) .tac-row--arith  .tac-cell--op { color: #1d4ed8; }
+body:not(.dark-mode) .tac-row--ctrl   .tac-cell--op { color: #c2410c; }
+body:not(.dark-mode) .tac-row--cmp    .tac-cell--op { color: #7c3aed; }
+body:not(.dark-mode) .tac-row--io     .tac-cell--op { color: #059669; }
+body:not(.dark-mode) .tac-row--decl   .tac-cell--op { color: #475569; }
+body:not(.dark-mode) .tac-row--func   .tac-cell--op { color: #dc2626; }
+body:not(.dark-mode) .tac-row--assign .tac-cell--op { color: #0891b2; }
+body:not(.dark-mode) .tac-row--str    .tac-cell--op { color: #16a34a; }

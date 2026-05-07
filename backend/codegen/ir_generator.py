@@ -33,7 +33,6 @@ class IRGenerator:
         self._chart_end_stack = []   # label to jump to on LAND inside CHART
 
     # Utility
-
     def _new_temp(self):
         t = f"_t{self._temp_counter}"
         self._temp_counter += 1

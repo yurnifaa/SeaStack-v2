@@ -34,3 +34,35 @@ export interface UnstructuredError {
 }
 
 export type FormattedError = StructuredError | UnstructuredError;
+
+export interface QuadRow {
+  index:   number;
+  op:      string;
+  arg1:    string;
+  arg2:    string;
+  result:  string;
+  comment: string;
+  line:    number | null;
+}
+
+export interface PassSnapshot {
+  pass_name:   string;
+  stats_delta: Record<string, number>;
+  quad_count:  number;
+}
+
+export interface OptimizerStats {
+  const_folded:     number;
+  const_propagated: number;
+  copy_propagated:  number;
+  strength_reduced: number;
+  dead_eliminated:  number;
+  jumps_optimized:  number;
+}
+
+export interface TacData {
+  rawQuads:       QuadRow[];
+  optimizedQuads: QuadRow[];
+  passSnapshots:  PassSnapshot[];
+  optimizerStats: OptimizerStats;
+}
