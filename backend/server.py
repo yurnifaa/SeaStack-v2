@@ -8,14 +8,12 @@ import re
 import io
 import queue
 
-# Add project root and backend/ to sys.path for both absolute and bare imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
-# --- IMPORTS ---
 try:
     from backend.lexical.lexer import Lexer
     from backend.syntax.syn_parser import Parser
@@ -31,35 +29,19 @@ except ImportError as e:
 app = Flask(__name__)
 CORS(app)
 
-# Suppress "* Serving Flask app" / "* Debug mode" banner
 import flask.cli
 flask.cli.show_server_banner = lambda *args, **kwargs: None
 
-# Suppress "WARNING: This is a development server. Do not use it in a production deployment."
 import logging
 class _SuppressDevWarning(logging.Filter):
     def filter(self, record):
         return 'Do not use it in a production deployment' not in record.getMessage()
 logging.getLogger('werkzeug').addFilter(_SuppressDevWarning())
 
-# ─── Global state for running programs ───────────────────────────────────────
 _running_flags = {}   # session_id → threading.Event  (set = stop requested)
 _input_queues  = {}   # session_id → queue.Queue       (frontend → execution thread)
 
 
-# =============================================================================
-#  /api/run  — Full pipeline, streamed as Server-Sent Events (SSE)
-#
-#  Each SSE frame is:   data: <json>\n\n
-#
-#  Event shapes sent to the frontend:
-#    {"type": "output",        "text":   "..."}           append to console
-#    {"type": "input_needed"}                             pause; show input field
-#    {"type": "error",         "error":  {...}}           runtime error object
-#    {"type": "done",          "success": bool}           program finished
-#    {"type": "compile_error", "errors": [...],
-#                              "phase":  "..."}           pre-run compile error
-# =============================================================================
 @app.route('/api/run', methods=['POST'])
 def run_code():
     data        = request.json
@@ -70,10 +52,7 @@ def run_code():
         """Wrap a dict as a single SSE data frame."""
         return f"data: {json.dumps(obj)}\n\n"
 
-    # ------------------------------------------------------------------
-    # Compile (lex → parse → semantic → IR → optimise → codegen).
-    # Fast and synchronous.  Raises _CompileError on any failure.
-    # ------------------------------------------------------------------
+    # Compile: Lexical → Syntax → Semantic → IR Generation → Optimisation → Code Generation
     def _compile():
         # Lexical
         try:
@@ -162,11 +141,7 @@ def run_code():
                                                       "expected": [], "message": f"Code generation failed: {e}",
                                                       "phase": "Code Generation"}])
 
-    # ------------------------------------------------------------------
-    # SSE generator: compile, then stream execution events
-    # ------------------------------------------------------------------
     def event_stream():
-        # 1. Compile
         try:
             generated_code = _compile()
         except _CompileError as ce:
@@ -174,49 +149,41 @@ def run_code():
             yield _sse({"type": "done", "success": False})
             return
 
-        # 2. Set up per-session queues / stop flag
         output_q   = queue.Queue()
         input_q    = queue.Queue()
         stop_event = threading.Event()
         _running_flags[session_id] = stop_event
         _input_queues[session_id]  = input_q
 
-        # Shared namespace so _map_runtime_error can resad _ss_line/_ss_col
         exec_globals = {'__builtins__': __builtins__, '_ss_line': 0, '_ss_col': 0}
 
-        # Patched print() — routes all output through output_q
         def captured_print(*args, **kwargs):
             end  = kwargs.get('end', '\n')
             sep  = kwargs.get('sep', ' ')
             text = sep.join(str(a) for a in args) + end
             output_q.put(('output', text))
 
-        # Patched input() — signals frontend then BLOCKS until user submits
         def captured_input(prompt=''):
-            # Detect the hidden dtype marker injected by the code generator.
-            # Format: '__ss:DTYPE:' e.g. '__ss:COIN:' or '__ss:SCROLL:'
             dtype = 'SCROLL'
             display_prompt = prompt
             if isinstance(prompt, str) and prompt.startswith('__ss:'):
                 parts = prompt.split(':', 2)
                 if len(parts) >= 2:
                     dtype = parts[1]
-                display_prompt = ''  # don't echo the internal marker
+                display_prompt = ''
             if display_prompt:
                 output_q.put(('output', str(display_prompt)))
             output_q.put(('input_needed', {'dtype': dtype}))
-            # Block until /api/input delivers a value (or stop is requested)
             while not stop_event.is_set():
                 try:
                     return input_q.get(timeout=0.5)
                 except queue.Empty:
                     continue
-            return ''   # program was stopped while waiting for input
+            return ''
 
         exec_globals['print'] = captured_print
         exec_globals['input'] = captured_input
 
-        # Replace the __main__ guard so _ss_ahoy() runs directly
         modified_code = generated_code.replace(
             "if __name__ == '__main__':\n    _ss_ahoy()",
             "_ss_ahoy()"
@@ -242,19 +209,16 @@ def run_code():
         thread = threading.Thread(target=_run, daemon=True)
         thread.start()
 
-        # Watchdog: hard ceiling of 5 minutes so the server never leaks threads
         def _watchdog():
             if not done_event.wait(timeout=1200):
                 stop_event.set()
                 output_q.put(('timeout', None))
         threading.Thread(target=_watchdog, daemon=True).start()
 
-        # 3. Stream events until execution finishes
         while True:
             try:
                 kind, payload = output_q.get(timeout=1.0)
             except queue.Empty:
-                # Keep-alive comment — prevents browser/proxy from closing stream
                 yield ": keep-alive\n\n"
                 continue
 
@@ -264,8 +228,6 @@ def run_code():
             elif kind == 'input_needed':
                 dtype = payload.get('dtype', 'SCROLL') if isinstance(payload, dict) else 'SCROLL'
                 yield _sse({"type": "input_needed", "dtype": dtype})
-                # The generator stays open here; the execution thread is blocked
-                # inside captured_input() waiting for /api/input.
 
             elif kind == 'timeout':
                 yield _sse({
@@ -287,7 +249,6 @@ def run_code():
                 yield _sse({"type": "done", "success": exec_result['error'] is None})
                 break
 
-        # Cleanup
         _running_flags.pop(session_id, None)
         _input_queues.pop(session_id, None)
 
@@ -301,9 +262,6 @@ def run_code():
     )
 
 
-# =============================================================================
-#  /api/tokenize  — Run only the lexer; always returns valid tokens even on error
-# =============================================================================
 @app.route('/api/tokenize', methods=['POST'])
 def tokenize_code():
     data        = request.json
@@ -373,9 +331,6 @@ def _quad_to_dict(q, idx: int) -> dict:
     }
 
 
-# =============================================================================
-#  /api/tac  — Run pipeline through IR + optimizer, return Quadruple tables
-# =============================================================================
 @app.route('/api/tac', methods=['POST'])
 def tac_code():
     data        = request.json
@@ -401,7 +356,6 @@ def tac_code():
         ir_gen     = IRGenerator(program_node)
         ir_program = ir_gen.generate()
 
-        # Deep-copy before optimization: optimizer mutates ir_program.instructions in-place
         raw_quads = [_quad_to_dict(q, i)
                      for i, q in enumerate(copy.deepcopy(ir_program.instructions))]
 
@@ -421,9 +375,6 @@ def tac_code():
         return jsonify({"success": False, "error": f"TAC generation failed: {str(e)}"})
 
 
-# =============================================================================
-#  /api/stop  — Signal a running program to stop
-# =============================================================================
 @app.route('/api/stop', methods=['POST'])
 def stop_code():
     data       = request.json
@@ -431,7 +382,6 @@ def stop_code():
 
     if session_id in _running_flags:
         _running_flags[session_id].set()
-        # Unblock any pending input() so the execution thread exits cleanly
         if session_id in _input_queues:
             try:
                 _input_queues[session_id].put_nowait('')
@@ -442,9 +392,6 @@ def stop_code():
     return jsonify({"success": False, "message": "No running program found."})
 
 
-# =============================================================================
-#  /api/input  — Deliver a line of user input to a waiting program
-# =============================================================================
 @app.route('/api/input', methods=['POST'])
 def provide_input():
     data       = request.json
@@ -458,9 +405,6 @@ def provide_input():
     return jsonify({"success": False, "message": "No running program is waiting for input."})
 
 
-# =============================================================================
-#  Runtime error mapper
-# =============================================================================
 def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
     """Translate a Python exception into a SeaStack-context error object."""
     tb      = traceback.extract_tb(exc.__traceback__)
@@ -472,7 +416,6 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
 
     exc_msg = str(exc)
 
-    # ── Friendly, jargon-free messages ──────────────────────────────────
     if isinstance(exc, ZeroDivisionError):
         error_type = "Division by Zero"
         message    = "Cannot divide by zero. Check your arithmetic expressions for a denominator that evaluates to 0."
@@ -526,12 +469,10 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
         m = re.sub(r'\s*\(<[^)]*>,\s*line\s*\d+\)', '', exc_msg).strip()
         message = _sanitize_py_message(m)
 
-    # ── Map to SeaStack source line ─────────────────────────────────────
     ss_line     = "-"
     ss_col      = "-"
     actual_line = ""
 
-    # Prefer the _ss_line / _ss_col trackers the code generator injects
     if exec_globals:
         raw_line = exec_globals.get('_ss_line', 0)
         raw_col  = exec_globals.get('_ss_col',  0)
@@ -544,7 +485,6 @@ def _map_runtime_error(exc, source_code, generated_code, exec_globals=None):
             if 0 <= idx < len(src_lines):
                 actual_line = src_lines[idx]
 
-    # Fallback: scan source for identifiers from the failing Python line
     if ss_line == "-" and py_line and generated_code:
         gen_lines = generated_code.split('\n')
         if 0 < py_line <= len(gen_lines):
@@ -606,7 +546,6 @@ def _extract_identifiers(code_line):
                          'end', 'format', 'self', 'flush'}]
 
 
-# ─── Internal compile-error sentinel ─────────────────────────────────────────
 class _CompileError(Exception):
     def __init__(self, phase, errors):
         self.phase  = phase

@@ -33,6 +33,7 @@ const GooeyButton = ({ onClick, children, disabled, style }: GooeyButtonProps) =
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
 
+// For Simulation Purposes
 const TAC_CATEGORIES: Record<string, string> = {
   ADD:'arith', SUB:'arith', MUL:'arith', DIV:'arith', MOD:'arith', POW:'arith',
   UNARY_NEG:'arith', LITERAL:'arith',
@@ -62,6 +63,7 @@ export default function Home() {
 
   // Multi-tab State
   const [tabs, setTabs] = useState<Tab[]>([{ id: 1, fileName: 'file.sea', code: '' }]);
+
   const [activeTabId, setActiveTabId] = useState(1);
   const [tabIdCounter, setTabIdCounter] = useState(2);
   const [renamingTabId, setRenamingTabId] = useState<number | null>(null);
@@ -146,7 +148,9 @@ export default function Home() {
     }
   };
 
-  // --- File Open Logic ---
+  //=================================
+  // Open File Logic
+  //=================================
   const handleFileBtnClick = () => {
     fileInputRef.current?.click();
   };
@@ -174,7 +178,9 @@ export default function Home() {
     event.target.value = '';
   };
 
-  // --- Save As Logic ---
+  //=================================
+  // Save File Logic
+  //=================================
   const handleSaveFile = async () => {
     if ('showSaveFilePicker' in window) {
       try {
@@ -203,7 +209,9 @@ export default function Home() {
     }
   };
 
-  // --- Close Tab Logic ---
+  //=================================
+  // Close Tab Logic (for tabbed Programs)
+  //=================================
   const handleCloseTab = (id: number) => {
     if (tabs.length === 1) {
       setTabs([{ id: tabs[0].id, fileName: 'file.sea', code: '' }]);
@@ -222,7 +230,9 @@ export default function Home() {
     }
   };
 
-  // --- New Tab Logic ---
+  //=================================
+  // New Tab Logic
+  //=================================
   const handleNewTab = () => {
     const newId = tabIdCounter;
     setTabIdCounter(prev => prev + 1);
@@ -230,7 +240,9 @@ export default function Home() {
     setActiveTabId(newId);
   };
 
-  // --- Rename Logic ---
+  //=================================
+  // Rename Tab Logic
+  //=================================
   const handleTabDoubleClick = (id: number) => {
     setTempName(tabs.find(t => t.id === id)?.fileName ?? '');
     setRenamingTabId(id);
@@ -249,7 +261,9 @@ export default function Home() {
     if (e.key === 'Escape') setRenamingTabId(null);
   };
 
-  // --- Tab Drag Logic ---
+  //=================================
+  // Tab Dragging Logic
+  //=================================
   const handleTabDragStart = (e: React.DragEvent, id: number) => {
     setDragTabId(id);
     e.dataTransfer.effectAllowed = 'move';
@@ -432,7 +446,7 @@ export default function Home() {
   };
 
   // ==========================================
-  // --- RUN LOGIC  (SSE streaming)         ---
+  // RUN LOGIC  
   // ==========================================
   const handleRun = async () => {
     setErrors([]);
@@ -442,12 +456,16 @@ export default function Home() {
     setInputValue("");
     setTokenRows([]);
     setTacData(null);
-    setIsRunning(true);
+    setIsRunning(true); 
 
-    // Always tokenize + generate TAC so both side tabs are populated even if compile fails
+    console.group(`[SeaStack] ${fileName}`);
+    code.split('\n').forEach((line, i) => console.log(`${String(i + 1).padStart(4, ' ')} | ${line}`));
+    console.groupEnd();
+
     fetchTokens(code);
     fetchTac(code);
-
+    console.log(code);
+    
     try {
       const response = await fetch(`${API_URL}/api/run`, {
         method: 'POST',
@@ -484,6 +502,7 @@ export default function Home() {
 
             if (event.type === 'output') {
               setConsoleOutput(prev => prev + (event.text ?? ''));
+              console.log(event.text ?? '');
             } else if (event.type === 'input_needed') {
               setNeedsInput(true);
             } else if (event.type === 'error') {

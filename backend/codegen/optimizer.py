@@ -107,9 +107,6 @@ class IROptimizer:
     # Evaluate expressions with compile-time-known operands.
 
     def _pass_constant_folding(self):
-        # Pre-scan: find all variables modified after initial declaration
-        # (loop counters, ASK targets, compound assigns, array/struct stores).
-        # These must NOT be folded — their initial value is not their runtime value.
         self._mutable_vars = set()
         for q in self.ir.instructions:
             if q.op in (UNARY_INC, UNARY_DEC) and isinstance(q.arg1, str):

@@ -38,7 +38,7 @@ from codegen.ir_instructions import (
 # ─── SeaStack escape conversion ─────────────────────────────────────────────
 
 def _convert_parch_escapes(raw):
-    """Convert SeaStack PARCH escape sequences to Python equivalents."""
+    # Convert SeaStack PARCH escape sequences to Python equivalents.
     if raw is None:
         return "''"
     s = str(raw)
@@ -111,7 +111,6 @@ _INPUT_CONVERTERS = {
 
 
 class CodeGenerator:
-    """Generates clean, well-structured Python from optimized IR."""
 
     def __init__(self, ir_program: IRProgram):
         self.ir = ir_program
@@ -126,7 +125,7 @@ class CodeGenerator:
         self._global_decls = []
 
     def generate(self):
-        """Generate executable Python code."""
+        # Generate executable Python code.
         self._partition_instructions()
         self._emit_preamble()
         self._emit_globals()
@@ -135,7 +134,7 @@ class CodeGenerator:
         self._emit_entry()
         return '\n'.join(self._lines)
 
-    # ── Partitioning ─────────────────────────────────────────────────────
+    # ── #1 Partitioning ─────────────────────────────────────────────────────
 
     def _partition_instructions(self):
         """Split IR into global decls, function bodies, and AHOY body."""
@@ -225,15 +224,7 @@ class CodeGenerator:
         return repr(value)
 
     def _resolve_type(self, operand):
-        """Resolve the SeaStack type of an operand.
-
-        After the optimizer's constant propagation, an operand that was
-        originally a temp name (e.g. '_t5') may have been replaced with
-        a Python literal (e.g. the integer 10).  This helper checks:
-          1. Python int/bool → 'COIN'  (bool before int — bool is int subclass)
-          2. Python float    → 'DIME'
-          3. String key      → look up in _var_types, then ir.temp_types
-        """
+        # Resolve the SeaStack type of an operand.
         if isinstance(operand, bool):
             return 'BOOL'
         if isinstance(operand, int):
@@ -251,7 +242,7 @@ class CodeGenerator:
                 return t
         return None
 
-    # ── Preamble ─────────────────────────────────────────────────────────
+    # ── #2 Preamble ─────────────────────────────────────────────────────────
 
     def _emit_preamble(self):
         self._emit("# ═══ SeaStack → Python (Generated Code) ═══")
@@ -446,17 +437,14 @@ class CodeGenerator:
     # ── Line / column tracker ─────────────────────────────────────────────
 
     def _maybe_emit_line_tracker(self, q):
-        """Emit _ss_line / _ss_col assignments if the quad carries source-location info.
-
-        This lets the execution host (server.py) report the exact SeaStack source
-        line when a runtime exception (e.g. ZeroDivisionError) is caught."""
+        # Exact SeaStack source line
         line = getattr(q, 'line', None)
         col  = getattr(q, 'col',  None)
         if line is not None:
             self._emit(f"_ss_line = {line}")
             self._emit(f"_ss_col  = {col if col is not None else 0}")
 
-    # ── Globals ──────────────────────────────────────────────────────────
+    # ── #3 Globals ──────────────────────────────────────────────────────────
 
     def _emit_globals(self):
         if self._global_decls:
@@ -464,7 +452,7 @@ class CodeGenerator:
             self._emit_block(self._global_decls)
             self._emit_blank()
 
-    # ── Functions ────────────────────────────────────────────────────────
+    # ── #4 Functions ────────────────────────────────────────────────────────
 
     def _emit_functions(self):
         for fname, body in self._func_bodies.items():
@@ -498,8 +486,6 @@ class CodeGenerator:
         params_str = ', '.join(params)
         self._emit(f"def {safe_name}({params_str}):")
         self._indent_inc()
-        # Include all module-level variable names in the global declaration so
-        # that assignments inside the function don't shadow them as locals.
         global_var_names = [
             self._sanitize_name(q.arg1)
             for q in self._global_decls
@@ -514,17 +500,12 @@ class CodeGenerator:
         self._indent_dec()
         self._emit_blank()
 
-    # ── AHOY ─────────────────────────────────────────────────────────────
+    # ── #5 AHOY ─────────────────────────────────────────────────────────────
 
     def _emit_ahoy(self):
         self._emit("def _ss_ahoy():")
         self._indent_inc()
-        # Collect names of all module-level (global) variables so that
-        # assignments inside _ss_ahoy() are not mistakenly treated by
-        # Python as locals.  Without this, any global that is both read
-        # AND written inside the function body causes an UnboundLocalError
-        # on the read — because Python classifies the name as local for the
-        # entire function as soon as it sees any assignment to it anywhere.
+        # Collect names of all module-level (global) variables
         global_var_names = [
             self._sanitize_name(q.arg1)
             for q in self._global_decls
@@ -539,7 +520,7 @@ class CodeGenerator:
         self._indent_dec()
         self._emit_blank()
 
-    # ── Entry ────────────────────────────────────────────────────────────
+    # ── #6 Entry ────────────────────────────────────────────────────────────
 
     def _emit_entry(self):
         self._emit("if __name__ == '__main__':")
@@ -549,22 +530,12 @@ class CodeGenerator:
 
     # ── Block Emission (main recursive logic) ────────────────────────────
 
-    # Emit a sequence of IR instructions as Python statements. Reconstructs control flow from LABEL/JUMP patterns.
+    # Emit a sequence of IR instructions as Python statements. 
     def _emit_block(self, instrs):
         i = 0
         emitted_any = False
         while i < len(instrs):
             q = instrs[i]
-
-            # --- LITERAL: register in temps AND emit the Python assignment ---
-            # Registering in self._temps allows _val() to inline the literal
-            # wherever it is later referenced.  Emitting the assignment is the
-            # essential safety net: if _val() is called from a nested/recursive
-            # _emit_block call that hasn't processed this LITERAL yet, the temp
-            # name (e.g. '_t5') would appear as an unresolved bare variable —
-            # causing the "Variable '_t5' is not defined" runtime error seen with
-            # array and struct initialisation.  Always emitting the line ensures
-            # the variable is unconditionally present in the generated Python scope.
             if q.op == LITERAL:
                 py_val = self._python_literal(q.arg1, q.arg2)
                 self._temps[q.result] = py_val
@@ -651,10 +622,6 @@ class CodeGenerator:
                     if vals:
                         val_strs = [self._val(v) for v in vals]
                         n = len(val_strs)
-                        # Extend the array when the init list is longer than the
-                        # declared size so index assignment never goes out of bounds.
-                        # Fewer values than declared is handled automatically:
-                        # DECL_ARR already pre-fills every slot with the type default.
                         self._emit(
                             f"if len({name}) < {n}: "
                             f"{name} += [{default}] * ({n} - len({name}))"
