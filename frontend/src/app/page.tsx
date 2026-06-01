@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { Fish, Play, Square, FolderOpen, Download, SquareTerminal, Table2, TableProperties } from "lucide-react";
+import { Fish, Play, Square, FolderOpen, Download, SquareTerminal, Table2 } from "lucide-react";
 import SeaStackEditor from "../components/CodeEditor";
 import { simplifyRuntimeMessage } from "../utils/runtimeErrorMsg";
-import type { Tab, FormattedError, RawError, TacData } from "../types";
+import type { Tab, FormattedError, RawError } from "../types";
 
 interface GooeyButtonProps {
   onClick: () => void;
@@ -33,30 +33,6 @@ const GooeyButton = ({ onClick, children, disabled, style }: GooeyButtonProps) =
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
 
-// For Simulation Purposes
-const TAC_CATEGORIES: Record<string, string> = {
-  ADD:'arith', SUB:'arith', MUL:'arith', DIV:'arith', MOD:'arith', POW:'arith',
-  UNARY_NEG:'arith', LITERAL:'arith',
-  LABEL:'ctrl', JUMP:'ctrl', JUMP_FALSE:'ctrl', JUMP_TRUE:'ctrl', BREAK:'ctrl', CONTINUE:'ctrl',
-  LT:'cmp', GT:'cmp', LE:'cmp', GE:'cmp', EQ:'cmp', NE:'cmp',
-  LOG_AND:'cmp', LOG_OR:'cmp', LOG_NOT:'cmp', LOG_DNOT:'cmp',
-  INPUT:'io', OUTPUT:'io',
-  DECL_VAR:'decl', DECL_CONST:'decl', DECL_ARR:'decl',
-  DECL_STRUCT_TYPE:'decl', DECL_STRUCT_VAR:'decl', PARAM_DECL:'decl',
-  ARR_INIT_1D:'decl', ARR_INIT_2D:'decl', STRUCT_INIT:'decl',
-  FUNC_BEGIN:'func', FUNC_END:'func', AHOY_BEGIN:'func', AHOY_END:'func',
-  PROG_START:'func', PROG_END:'func',
-  ARG:'func', CALL:'func', CALL_VOID:'func', RETURN:'func', RETURN_VOID:'func',
-  ASSIGN:'assign', COMP_ASSIGN:'assign',
-  ASSIGN_ARR:'assign', ASSIGN_ARR2:'assign', ASSIGN_MEMBER:'assign',
-  LOAD_ARR:'assign', LOAD_ARR2:'assign', LOAD_MEMBER:'assign',
-  UNARY_INC:'assign', UNARY_DEC:'assign',
-  CONCAT:'str', SCROLL_CHAR:'str',
-};
-
-function getTacCategory(op: string): string {
-  return TAC_CATEGORIES[op] ?? 'default';
-}
 
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -96,13 +72,8 @@ export default function Home() {
 
   // Token table state
   const [tokenRows, setTokenRows] = useState<{ lexeme: string; token: string }[]>([]);
-  const [rightTab, setRightTab] = useState<'console' | 'tokens' | 'tac'>('console');
+  const [rightTab, setRightTab] = useState<'console' | 'tokens'>('console');
   const [isTokenizing, setIsTokenizing] = useState(false);
-
-  // TAC simulation state
-  const [tacData, setTacData] = useState<TacData | null>(null);
-  const [tacView, setTacView] = useState<'raw' | 'optimized'>('optimized');
-  const [isTacLoading, setIsTacLoading] = useState(false);
 
   // Keep a ref to the active fetch reader so Stop can abort it
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
@@ -417,36 +388,7 @@ export default function Home() {
   };
 
   // ==========================================
-  // --- TAC (IR + optimizer visualization) ---
-  // ==========================================
-  const fetchTac = async (sourceCode: string) => {
-    setIsTacLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/tac`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: sourceCode }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          setTacData({
-            rawQuads:       data.raw_quads,
-            optimizedQuads: data.optimized_quads,
-            passSnapshots:  data.pass_snapshots,
-            optimizerStats: data.optimizer_stats,
-          });
-        }
-      }
-    } catch {
-      // silently ignore — tac is best-effort
-    } finally {
-      setIsTacLoading(false);
-    }
-  };
-
-  // ==========================================
-  // RUN LOGIC  
+  // RUN LOGIC
   // ==========================================
   const handleRun = async () => {
     setErrors([]);
@@ -455,15 +397,13 @@ export default function Home() {
     setNeedsInput(false);
     setInputValue("");
     setTokenRows([]);
-    setTacData(null);
-    setIsRunning(true); 
+    setIsRunning(true);
 
     console.group(`[SeaStack] ${fileName}`);
     code.split('\n').forEach((line, i) => console.log(`${String(i + 1).padStart(4, ' ')} | ${line}`));
     console.groupEnd();
 
     fetchTokens(code);
-    fetchTac(code);
     console.log(code);
     
     try {
@@ -942,42 +882,6 @@ export default function Home() {
                 )}
               </button>
 
-              {/* TAC Simulation tab button */}
-              <button
-                onClick={() => setRightTab('tac')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '7px',
-                  padding: '0 16px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: rightTab === 'tac' ? '2px solid #8b5cf6' : '2px solid transparent',
-                  color: rightTab === 'tac' ? '#ffffff' : 'rgba(255,255,255,0.55)',
-                  fontWeight: rightTab === 'tac' ? '600' : '400',
-                  fontSize: '0.88rem',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  transition: 'color 0.15s',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <TableProperties size={15} />
-                TAC Simulation
-                {tacData && (
-                  <span style={{
-                    backgroundColor: '#8b5cf6',
-                    color: '#fff',
-                    borderRadius: '999px',
-                    padding: '1px 6px',
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                    marginLeft: '2px',
-                  }}>
-                    {tacView === 'raw' ? tacData.rawQuads.length : tacData.optimizedQuads.length}
-                  </span>
-                )}
-              </button>
             </div>
 
             {/* Console Body */}
@@ -1127,121 +1031,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* TAC Simulation Body */}
-            <div
-              style={{
-                display: rightTab === 'tac' ? 'flex' : 'none',
-                flex: 1,
-                flexDirection: 'column',
-                overflowY: 'hidden',
-                backgroundColor: isDarkMode ? 'rgba(17, 25, 40, 0.59)' : 'rgba(255, 255, 255, 0.78)',
-                backdropFilter: 'blur(16px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-              }}
-            >
-              {!tacData ? (
-                <span style={{
-                  color: '#6b7280',
-                  fontStyle: 'italic',
-                  fontFamily: '"Fira Code", monospace',
-                  fontSize: '1rem',
-                  padding: '12px 15px',
-                }}>
-                  {isTacLoading ? 'Generating TAC...' : 'Run a program to see its three-address code here.'}
-                </span>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-
-                  {/* Optimizer stats chips
-                  <div className="tac-stats-bar">
-                    {([
-                      { label: 'Folded',     key: 'const_folded'     as const, color: '#3b82f6' },
-                      { label: 'Propagated', key: 'const_propagated' as const, color: '#8b5cf6' },
-                      { label: 'Copied',     key: 'copy_propagated'  as const, color: '#06b6d4' },
-                      { label: 'Reduced',    key: 'strength_reduced' as const, color: '#f59e0b' },
-                      { label: 'Eliminated', key: 'dead_eliminated'  as const, color: '#ef4444' },
-                      { label: 'Jumps',      key: 'jumps_optimized'  as const, color: '#10b981' },
-                    ] as { label: string; key: keyof typeof tacData.optimizerStats; color: string }[]).map(({ label, key, color }) => (
-                      <span key={key} className="tac-stat-chip" style={{ borderColor: color, color: isDarkMode ? '#e2e8f0' : '#1e293b' }}>
-                        <span style={{ color, fontWeight: 700 }}>{tacData.optimizerStats[key]}</span>{' '}{label}
-                      </span>
-                    ))}
-                  </div> */}
-
-                  {/* Per-pass breakdown
-                  {tacData.passSnapshots.length > 0 && (
-                    <div className="tac-pass-list">
-                      {tacData.passSnapshots.map((snap, i) => {
-                        const total = Object.values(snap.stats_delta).reduce((a, b) => a + b, 0);
-                        return (
-                          <div key={i} className="tac-pass-row" style={{ color: isDarkMode ? '#94a3b8' : '#64748b' }}>
-                            <span style={{ color: isDarkMode ? '#e2e8f0' : '#1e293b', fontWeight: 600 }}>{snap.pass_name}</span>
-                            <span>— {total} change{total !== 1 ? 's' : ''}</span>
-                            <span style={{ marginLeft: 'auto', color: isDarkMode ? '#475569' : '#94a3b8' }}>{snap.quad_count} quads</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )} */}
-
-                  {/* Sub-tab: Raw IR | Optimized IR */}
-                  <div className="tac-subtab-bar">
-                    {(['raw', 'optimized'] as const).map(view => (
-                      <button
-                        key={view}
-                        onClick={() => setTacView(view)}
-                        className={`tac-subtab-btn${tacView === view ? ' active' : ''}`}
-                        style={{
-                          color: tacView === view
-                            ? (isDarkMode ? '#ffffff' : '#1e293b')
-                            : (isDarkMode ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)'),
-                          borderBottomColor: tacView === view ? '#8b5cf6' : 'transparent',
-                        }}
-                      >
-                        {view === 'raw' ? 'Raw IR' : 'Optimized IR'}
-                        <span className="tac-subtab-count">
-                          {view === 'raw' ? tacData.rawQuads.length : tacData.optimizedQuads.length}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Quadruple table */}
-                  <div className="tac-table-wrapper">
-                    <table className="tac-table">
-                      <thead>
-                        <tr style={{ backgroundColor: isDarkMode ? '#0f1f35' : '#dbeafe' }}>
-                          {['#', 'Opcode', 'Arg1', 'Arg2', 'Result', 'Comment'].map(col => (
-                            <th key={col} style={{ textAlign: 'center', color: isDarkMode ? '#93c5fd' : '#1e40af' }}>{col}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(tacView === 'raw' ? tacData.rawQuads : tacData.optimizedQuads).map((q, i) => (
-                          <tr
-                            key={i}
-                            className={`tac-row tac-row--${getTacCategory(q.op)}`}
-                            style={{
-                              backgroundColor: i % 2 === 0
-                                ? 'transparent'
-                                : isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                            }}
-                          >
-                            <td className="tac-cell tac-cell--index">{q.index}</td>
-                            <td className="tac-cell tac-cell--op">{q.op}</td>
-                            <td className="tac-cell">{q.arg1}</td>
-                            <td className="tac-cell">{q.arg2}</td>
-                            <td className="tac-cell">{q.result}</td>
-                            <td className="tac-cell tac-cell--comment">{q.comment}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                </div>
-              )}
-            </div>
 
           </div>
         </div>
