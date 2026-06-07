@@ -15,7 +15,7 @@ Overall, the SeaStack programming language makes programming accessible and enjo
 
 ## Language Rules
 To know and learn more about the language, linked below is a detailed description of all the rules, from general to specific, as well as its transitional diagram all the way to its context free grammar and sample programs. ^ _ ^
-[Click here to view the Rules of this Language](SeaStack - Rules.pdf)
+[Click here to view the Rules of this Language](./SeaStack-Rules.pdf)
 
 ## 📂 Project Structure
 ```plaintext
