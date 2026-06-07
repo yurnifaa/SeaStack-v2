@@ -1,5 +1,11 @@
 # 🌊 SeaStack | Programming Language and Compiler
-A C-inspired programming language with an oceanic twist — built from scratch for automata theory and formal languages. SeaStack is a high-level programming language designed to combine structured programming principles with a thematic and engaging syntax inspired by the Ocean Voyager theme. It takes its foundation from the C language, adapting familiar constructs such as functions, loops, conditionals, and data type.  This built as part of an academic project in automata theory and formal languages, SeaStack includes its own lexer, parser, and GUI-based IDE.
+SeaStack is a high-level programming language designed to combine structured programming principles with a thematic and engaging syntax inspired by the ocean voyager theme. It takes its foundation from the C language, adapting familiar constructs such as functions, loops, conditionals, and structures while introducing an oceanic twist to make coding both intuitive and enjoyable.
+
+The integration of the Ocean Voyager theme enhances the language by aligning programming commands with navigational and seafaring terms. This thematic consistency creates an immersive environment that not only strengthens recall of syntax but also sparks creativity in the programming experience.
+
+SeaStack supports a wide range of constructs, including global and local declarations, expressions, statements, arrays, structures, and user-defined functions that enable programmers to implement both simple and complex logic. These features make SeaStack suitable for learning core programming concepts, developing simple yet structured algorithms, and introducing problem-solving skills more interactively.
+
+Overall, the SeaStack programming language makes programming accessible and enjoyable by combining solid foundations with a creative oceanic theme. It encourages learners to see coding as a voyage of discovery, emphasizing clarity, engagement, and a fun learning experience.
 
 ### 🌕 IDE - Light Mode
 ![Light Mode](frontend/public/GitHub_shots/Light_Mode3.png)
