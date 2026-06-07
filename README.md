@@ -13,9 +13,10 @@ Overall, the SeaStack programming language makes programming accessible and enjo
 ### 🌑 IDE - Dark Mode
 ![Dark Mode](frontend/public/GitHub_shots/Dark_Mode3.png)
 
-## Language Rules
-To know and learn more about the language, linked below is a detailed description of all the rules, from general to specific, as well as its transitional diagram all the way to its context free grammar and sample programs. ^ _ ^
-[Click here to view the Rules of this Language](./SeaStack-Rules.pdf)
+## 📖 Language Rules
+To dive deeper into the language, We've put together a detailed breakdown of all the rules. It covers everything from general syntax rules and transition diagrams to the context-free grammar (CFG) and sample programs.
+
+🔗 **[Read the SeaStack Language Rules (PDF)](./SeaStack-Rules.pdf)**
 
 ## 📂 Project Structure
 ```plaintext
